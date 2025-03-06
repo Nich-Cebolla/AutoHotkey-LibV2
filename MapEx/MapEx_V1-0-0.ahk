@@ -1,4 +1,3 @@
-
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MapEx/MapEx_V1-0-0.ahk
     Author: Nich-Cebolla
@@ -62,6 +61,12 @@ class MapEx extends Map {
         return this.Get(Key)
     }
 
+    /**
+     * @description - Similar to `AddToCategory`, except no item is added; only the nested MapEx
+     * object is created.
+     * @param {String} Key - The key that accesses the nested MapEx object.
+     * @return {MapEx} - Returns the nested MapEx object.
+     */
     GetCategoryIf(Key) {
         if !this.Has(Key)
             this.Set(Key, MapEx())
