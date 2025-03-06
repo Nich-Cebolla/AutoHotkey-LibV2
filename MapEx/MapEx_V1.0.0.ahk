@@ -1,5 +1,5 @@
 /*
-    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MapEx/MapEx_V1-0-0.ahk
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MapEx/MapEx_V1.0.0.ahk
     Author: Nich-Cebolla
     Version: 1.0.0
     License: MIT
