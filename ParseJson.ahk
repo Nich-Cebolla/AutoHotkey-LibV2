@@ -1,7 +1,13 @@
 /*
+    Github: https://github.com/Nich-Cebolla/ParseCsv-AutoHotkey/blob/main/ParseCsv.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
     Dependency:
         DecodeUnicodeEscapeSequence.ahk
+        https://github.com/Nich-Cebolla/AutoHotkey-DecodeUnicodeEscapeSequence/blob/main/DecodeUnicodeEscapeSequence.ahk
 */
+
 
 /**
  * @description - Parses a JSON string. If the JSON was created with the associated OBJECT_STRINGIFY
