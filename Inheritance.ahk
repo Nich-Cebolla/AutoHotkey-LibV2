@@ -1,7 +1,7 @@
 /*
    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Inheritance.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.1.0
     License: MIT
 */
 
@@ -133,4 +133,26 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
         }
     }
     return Result
+}
+
+/**
+ * @description - Gets the property descriptor object for the specified property of the input object.
+ * {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}
+ * @param {Object} Obj - The object from which to get the property descriptor.
+ * @param {String} Prop - The name of the property.
+ * @param {VarRef} [OutObj] - A variable that will receive the object which owns the property.
+ * @param {VarRef} [OutIndex] - A variable that will receive the index position of the object which
+ * owns the property in the inheritance chain.
+ * @returns {Object} - The property descriptor object.
+ */
+GetPropDesc(Obj, Prop, &OutObj?, &OutIndex?) {
+    OutObj := Obj
+    OutIndex := 0
+    while !OutObj.HasOwnProp(Prop) {
+        OutIndex++
+        OutObj := OutObj.Base
+        if OutObj.__Class == 'Any'
+            throw Error('The property does not exist in the inheritance chain.', -1, Prop)
+    }
+    return OutObj.GetOwnPropDesc(Prop)
 }
