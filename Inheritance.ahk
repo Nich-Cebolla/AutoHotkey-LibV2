@@ -143,7 +143,7 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
  * @param {VarRef} [OutObj] - A variable that will receive the object which owns the property.
  * @param {VarRef} [OutIndex] - A variable that will receive the index position of the object which
  * owns the property in the inheritance chain.
- * @returns {Object} - The property descriptor object.
+ * @returns {Object} - If the property exists, the property descriptor object. Else, an empty string.
  */
 GetPropDesc(Obj, Prop, &OutObj?, &OutIndex?) {
     OutObj := Obj
@@ -152,7 +152,7 @@ GetPropDesc(Obj, Prop, &OutObj?, &OutIndex?) {
         OutIndex++
         OutObj := OutObj.Base
         if OutObj.__Class == 'Any'
-            throw Error('The property does not exist in the inheritance chain.', -1, Prop)
+            return
     }
     return OutObj.GetOwnPropDesc(Prop)
 }
