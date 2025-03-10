@@ -83,7 +83,9 @@ HandleContinuation(&Text, Match, Operator?, SubGroup := 'body', &OutPosEnd?, &Ou
     static Brackets := ['[', ']', '(', ')', '{', '}']
     static PatternContinuation := (
         'm)'
-        /** {@link https://www.pcre.org/pcre.txt} search for "Defining subpatterns for use by reference only" */
+        /**
+         * {@link https://www.pcre.org/pcre.txt} search for "Defining subpatterns for use by reference only"
+         */
         '(?(DEFINE)'
             '(?<operator>'
                 '(?://|>>|<<|>>>|\?\?|[:+*/.|&^-])='
