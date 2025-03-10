@@ -12,9 +12,9 @@
  * of a function or property definition statement. `HandleContinuation` will analyze the subcapture
  * group along with subsequent lines. If the lines are joined by a continuation operator or bracket,
  * this function will concatenate the related lines into a single string.
- * - Note that, in this description and in the code, "Body" refers to the text content that follows
- * the arrow function operator or assignment operator.
- * - Limitations:
+ * - **Note** that, in this description and in the code, "Body" refers to the text content that follows
+ * the arrow function operator or assignment operator, including the entire continuation section.
+ * - **Limitations**:
  *   - If any quoted strings or comments contain a bracket that does not have its closing pair nearby,
  * the string may need to be removed prior to calling `HandleContinuation`.
  *   - The function is not designed to handle string continuation sections as described here:
@@ -31,18 +31,20 @@
  * - The object has a subcapture group that contains a single line of code.
  * - The subcapture group is a property or function definition statement that has an assignment
  * operator or arrow function operator. This function does not work with definition statements
- * that are bracketed; getting that content is comparatively much easier.<br>
+ * that are bracketed; getting that content is comparatively much easier.
+ *
  * If you aren't sure where to begin drafting a pattern that will work with this function, the
  * below pattern will match with any function definition or property definition statement which
  * use an arrow function operator. Both statements will include several subcapture groups:
- * - indent: The indent prior to the statement, if any.
- * - static: The `static` keyword, if present.
- * - name: The name of the function or property.
- * - params: The parameters of the function or property, if present. The encompassing brackets
+ * - **indent**: The indent prior to the statement, if any.
+ * - **static**: The `static` keyword, if present.
+ * - **name**: The name of the function or property.
+ * - **params**: The parameters of the function or property, if present. The encompassing brackets
  * are included in the subcapture group.
- * - arrow: The arrow function operator (=>).
- * - body: The line of code following the arrow function operator. This is the subgroup that is
- * expected to be passed to this function. <br>
+ * - **arrow**: The arrow function operator (=>).
+ * - **body**: The line of code following the arrow function operator. This is the subgroup that is
+ * expected to be passed to this function.
+ *
  * Also included is a `Mark` which you can use to determine if a property was matched or if a
  * class method / function was matched. Example: `if Match.Mark == 'func'`.
  * @example
