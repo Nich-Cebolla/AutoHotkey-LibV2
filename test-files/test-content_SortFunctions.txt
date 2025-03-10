@@ -1,0 +1,190 @@
+
+    /**
+     * @description - some content.1
+     * @returns {String} - Whatever
+     */
+    static z1ArrowMethod() => Var1 * Var2 - SomeMap.Get('key').CallableProperty({
+        Prop1: 'val1', Prop2: Map(
+        )
+        , Prop3: 'val3' ; comment.1 here
+
+        , Prop4: FunctionCall(Param1, param2, ParamWithDefault := 'value'
+        , param?)
+
+    })
+
+    /**
+     * @description - some content.2
+     * @param {String} WithParam1 - some content
+     * @returns {String} - Whatever
+     */
+    f2InstanceArrowMethod(WithParam1) => ( ; comment.2 with a bracket )
+        ' string continuation section'
+        '`r`nstring continuation section' variable concatenation
+        '`r`nmore string continuation '  mymap.Get('otherkey') FunctionCall('GetString')
+        '`r`nstring continuation section'
+    )
+
+    .
+
+    'Just a little more string'
+
+    /**
+     * @description - some content.3
+     * @param {String} Param1 - some content
+     * @param {String} param2 - some content
+     * @param {String} param3 - some content
+     * @returns {String} - Whatever
+     */
+    i3InstanceArrowMethod(Param1, param2, param3) =>  ComCall(p, p2, p3, p4)
+
+    /**
+     * @description - some content.4
+     * @param {String} WithParam1 - some content
+     * @returns {String} - Whatever
+     */
+    n4InstanceArrowMethod(WithParam1) => (
+        ' string continuation section'
+        ; comment.3 explaining something
+        '`r`nstring continuation section' variable concatenation
+        '`r`nmore string continuation '  mymap.Get('otherkey') FunctionCall('GetString')
+        '`r`nstring continuation section'
+    ) .
+
+    'Just a little more string'
+
+    /**
+     * @description - some content.5
+     * @returns {String} - Whatever
+     */
+    s5InstanceArrowProp => GetValueFunc(this.Prop1, this.Prop2, globalval)
+
+    /**
+     * @description - some content.6
+     * @param {String} param1 - some content
+     * @returns {String} - Whatever
+     */
+    l6InstanceArrowProp[param1] => assignmenttovariable :=
+
+            IsValidDownHere * OtherMap[key] + AnotherFuncCall(this.Prop1,
+            , param2
+            , param3
+            ) / param1
+
+    /**
+     * @description - some content.7
+     * @param {String} param1 - some content
+     * @param {String} param2 - some content
+     * @param {String} param3 - some content
+     * @returns {String} - Whatever
+     */
+    _7InstanceArrowProp[param1
+    , param2
+    , param3
+    ] => AssignmentOverHere /= ; comment.4
+    5 + 10 - 20
+
+    /**
+     * @description - some content.8
+     * @param {String} Param1 - some content
+     * @param {String} param2 - some content
+     * @param {String} param3 - some content
+     * @param {String} param4 - some content
+     * @returns {String} - Whatever
+     */
+    static e8ArrowProp => FuncCall(Param1
+    ,param2,param3, param4)
+
+    /**
+     * @description - some content.9
+     * @returns {String} - Whatever
+     */
+    static q9ArrowProp => [lets, make, an, array_, [with, nested, array_, 5, 7]
+
+    , , , empty, slots ].join(', ') ; comment.5
+
+    /**
+     * @description - some content.10
+     * @param {String} Param1 - some content
+     * @param {String} param2 - some content
+     * @param {String} param3 - some content
+     * @param {String} param4 - some content
+     * @param {String} param5 - some content
+     * @returns {String} - Whatever
+     */
+    static l10ArrowProp[params?] => FuncCall(Param1, param2, param3?, param4 := 'default'
+
+    ,
+
+
+    param5)
+
+    /**
+     * @description - some content.11
+     * @param {String} params - some content
+     * @param {String} params2 - some content
+     * @param {String} params3 - some content
+     * @returns {String} - Whatever
+     */
+    g11Function(params, params2, params3) {
+        AssignSomeObj := {
+            Prop1: 'Val1'
+          , Prop2: ['Array of values', 2, 4, { Prop: 'Value with some random bracket }' }]
+        }
+    }
+
+    /**
+     * @description - some content.12
+     * @param {String} Params - some content
+     * @returns {String} - Whatever
+     */
+    static y12Function(Params*) {
+        nestedfunction(otherParams*) {
+            return 'Nested function with string value with random bracket {'
+        }
+    }
+
+    /**
+     * @description - some content.13
+     * @returns {String} - Whatever
+     */
+    static k13Property {
+        Get => FuncCall('
+            ; Why would you write a comment here
+            /**
+            Sill valid technically
+            */
+            (
+                Continuation section text
+                Random bracket }
+                Other random bracket {
+            `)Not the end yet
+            )') || 'Alternate value'
+        Set {
+            This.Value := Value
+        }
+    }
+
+    /**
+     * @description - some content.14
+     * @param {String} DefaultParamIsContinuation - some content
+     * @param {String} NextParam - some content
+     * @returns {String} - Whatever
+     */
+    z14InstanceFunction(DefaultParamIsContinuation := '
+        ; Comment still valid here
+        (
+
+
+
+
+        )', NextParam?)
+    {
+        FunctionDefinitionOtherContinuationSection := '
+        (
+            text
+        )'
+        NestedFunc(Params) {
+            return value := 1
+        }
+    }
