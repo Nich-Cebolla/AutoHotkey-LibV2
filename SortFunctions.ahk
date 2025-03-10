@@ -420,6 +420,11 @@ class SortFunctions {
         }
     }
 
+    /**
+     * @description - Replaced the removed strings.
+     * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
+     * @param {Object} Removed - The object returned by `RemoveStringLiterals`.
+     */
     static ReplaceStrings(&Text, Removed) {
         for Prop, Arr in Removed.OwnProps() {
             for Item in Arr {
