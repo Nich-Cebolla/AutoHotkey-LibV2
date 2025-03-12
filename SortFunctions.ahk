@@ -1,7 +1,7 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SortFunctions.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
 #SingleInstance force
@@ -9,6 +9,8 @@
 #Include *i %A_WorkingDir%\SortFunctionsConfig.ahk
 #Include *i <GuiResizer_V1.0.0>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/GuiResizer.ahk
+#Include <MenuBarConstructor>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MenuBarConstructor.ahk
 
 if A_ScriptFullpath == A_LineFile && !A_IsCompiled {
     SortFunctions()
@@ -33,13 +35,17 @@ class SortFunctions {
      * @description - The default values to use when a configuration file is not in use.
      */
     class Default {
-        static CR := false
-        , LF := true
-        , AddToClipboard := true
+        static AddToClipboard := true
+        , CR := false
         , Hotkey := ''
+        , LF := true
+        , Path := ''
         , SaveWorking := false
         , SaveAppData := false
         , SaveOnExit := false
+        , SortOptions := ''
+        , SortOrder := 'SF SP F P'
+        , SortStyle := 1
     }
 
     /**
@@ -50,8 +56,28 @@ class SortFunctions {
 
     /**
      * @description - Constructs the Gui window.
-     * @param {String} [Path] - The path to the file containing the text to be sorted. This value
-     * gets added to the `Path` edit control.
+     * @param {Object} [Config] - A configuration object. The object can have the following properties:
+     * - **AddToClipboard**: A boolean value indicating whether the sorted text should be added to
+     * the clipboard.
+     * - **CR**: A boolean value indicating whether the carriage return character should be included
+     * in the copied text.
+     * - **Hotkey**: A string containing the hotkey to use for sorting.
+     * - **LF**: A boolean value indicating whether the line feed character should be included in the
+     * copied text.
+     * - **Path**: A string containing the path to the file to sort.
+     * - **SaveWorking**: A boolean value indicating whether the configuration should be saved to the
+     * working directory.
+     * - **SaveAppData**: A boolean value indicating whether the configuration should be saved to the
+     * AppData directory.
+     * - **SaveOnExit**: A boolean value indicating whether the configuration should be saved on exit.
+     * - **SortOptions**: A string containing the options to use for sorting.
+     * - **SortOrder**: A string containing the order in which to sort the properties. The string
+     * should contain the following abbreviations:
+     *   - **SF**: Static functions
+     *   - **SP**: Static properties
+     *   - **F**: Functions
+     *   - **P**: Properties
+     * - **SortStyle**: An integer value indicating the style of sorting to use. The default is 1.
      * @param {Func} [Callback] - The callback function for custom sorting. The callback function
      * will receive two parameters:
      * - The `Containers` object which has four properties
@@ -69,56 +95,99 @@ class SortFunctions {
      * will construct its own string, and so no further processing would be needed from the built-in
      * process. To replace the removed strings with their original text, you can call `ReplaceStrings`.
      */
-    static Call(Path?, Callback?) {
-        Config := SortFunctions_Config_AppData ?? SortFunctions_Config_Working ?? SortFunctions.Default
+    static Call(Config?, Callback?) {
+        Config := Config ?? SortFunctions_Config_AppData ?? SortFunctions_Config_Working ?? {}
+        ObjSetBase(Config, SortFunctions.Default)
         G := this.G := Gui('+Resize')
-        G.Add('Button', 'Section vExit', 'Exit').OnEvent('Click', (*) => ExitApp())
-        G.Add('Button', 'ys vCopy', 'Copy').OnEvent('Click', _Copy)
+        G.Add('Button', 'Section vCopy', 'Copy').OnEvent('Click', _Copy)
         G.Add('Checkbox', 'ys vCR', 'CR')
         G.Add('Checkbox', 'ys vLF', 'LF')
         G.Add('Button', 'ys vSort', 'Sort').OnEvent('Click', _Sort)
         G.Add('Checkbox', 'ys vAddToClipboard', 'Add to Clipboard')
         G.Add('Text', 'ys vTxtHotkey', 'Hotkey: ')
-        G.Add('Edit', 'ys w50 vHotkey')
+        G.Add('Edit', 'ys w30 vHotkey')
         G.Add('Button', 'ys vApplyHotkey', 'Apply Hotkey').OnEvent('Click', _ApplyHotkey)
-        G.Add('Checkbox', 'ys vSaveWorking', 'Save to working directory').OnEvent('Click', _ClickSaveChk)
-        G.Add('Checkbox', 'ys vSaveAppData', 'Save to AppData').OnEvent('Click', _ClickSaveChk)
-        G.Add('Checkbox', 'ys vSaveOnExit', 'Save on exit').OnEvent('Click', _SaveOnExit)
-        G.Add('Button', 'ys vSaveNow', 'Save Config').OnEvent('Click', _Save)
+        G.Add('Text', 'ys vTxtSortStyle', 'Sort style: ')
+        G.Add('Edit', 'ys w30 vSortStyle')
+        G.Add('Text', 'ys vTxtSortOptions', 'Sort options: ')
+        G.Add('Edit', 'ys w50 vSortOptions')
         G.Add('Text', 'xs Section vTxtPath', 'Input Path: ')
-        G.Add('Edit', 'ys w500 vPath', Path ?? '')
+        G.Add('Edit', 'ys w500 vPath')
         G.Add('Button', 'ys vChoose', 'Choose')
+        G.Add('Text', 'ys vTxtSortOrder', 'Sort order: ')
+        G.Add('Edit', 'ys w100 vSortOrder')
         G.Add('Edit', 'xs w1000 r30 -wrap +Hscroll vDisplay')
+        Menus := [
+            ['File', 'Exit', (*) => ExitApp()],
+            ['Options'
+                , 'Save to working directory', _MenuOptions
+                , 'Save to AppData', _MenuOptions
+                , 'Save on exit', _MenuOptions
+                , 'Save config now', _MenuSaveNow
+                , 'Open config directory', _MenuOpenConfigDir
+            ]
+            ; ['Help', 'About', _MenuAbout, 'Help info', _MenuHelp]
+        ]
+        G.MenuBar := MenuBarConstructor(Menus, &MenuObjects)
+        this.Menus := MenuObjects
+        mOptions := MenuObjects.Get('Options')
+        G.Options := {
+            SaveAppData: Config.SaveAppData
+          , SaveWorking: Config.SaveWorking
+          , SaveOnExit: Config.SaveOnExit
+        }
+        if Config.SaveAppData {
+            mOptions.Check('Save to AppData')
+        }
+        if Config.SaveWorking {
+            mOptions.Check('Save to working directory')
+        }
+        if Config.SaveOnExit {
+            mOptions.Check('Save on exit')
+            this.SaveOnExit(true)
+        }
 
         if IsSet(GuiResizer) {
             G['Display'].Resizer := { W: 1, H: 1 }
             GuiResizer(G)
         }
 
-        G['Copy'].GetPos(, &cy, , &ch)
-        Mid := cy + ch * 0.5
+        G['Copy'].GetPos(, &cy1, , &ch)
+        Mid1 := cy1 + ch * 0.5
+        G['Path'].GetPos(, &cy2, , &ch)
+        Mid2 := cy2 + ch * 0.5
         for Ctrl in G {
             if Ctrl.Type == 'CheckBox' {
                 _Align(Ctrl)
                 Ctrl.Value := Config.%Ctrl.Name%
+            } if Ctrl.Type == 'Text' {
+                _Align(Ctrl)
             }
         }
-        _Align(G['TxtHotkey'])
         G['Hotkey'].Text := Config.Hotkey
+        G['Path'].Text := Config.Path
+        G['SortOptions'].Text := Config.SortOptions
+        G['SortOrder'].Text := Config.SortOrder
+        G['SortStyle'].Text := Config.SortStyle
         if !this.HasOwnProp('Hotkey') {
             this.Hotkey := Config.Hotkey
+            if G['Hotkey'].Text
+                _ApplyHotkey(G['Hotkey'])
         }
-        if G['Hotkey'].Text
-            _ApplyHotkey(G['Hotkey'])
-        if G['SaveOnExit'].Value
-            this.SaveOnExit(true)
         this.Callback := Callback ?? ''
 
         G.Show()
+        return
 
         _Align(Ctrl) {
             Ctrl.GetPos(, &cy, , &ch)
-            Ctrl.Move(, cy + Mid - (cy + ch * 0.5))
+            if cy == cy1 {
+                Ctrl.Move(, cy + Mid1 - (cy + ch * 0.5))
+            } else if cy == cy2 {
+                Ctrl.Move(, cy + Mid2 - (cy + ch * 0.5))
+            } else {
+                throw ValueError('Unexpected ``cy`` value.', -1, cy)
+            }
         }
         _ApplyHotkey(Ctrl, *) {
             G := Ctrl.Gui
@@ -141,29 +210,54 @@ class SortFunctions {
         _Choose(Ctrl, *) {
             Ctrl.Gui['Path'].Text := FileSelect()
         }
-        _ClickSaveChk(Ctrl, *) {
-            if !Ctrl.Value {
-                if Ctrl.Name == 'SaveWorking' && FileExist(A_WorkingDir '\SortFunctionsConfig.ahk') {
-                    if MsgBox('Delete current file? Path: ' A_WorkingDir '\SortFunctionsConfig.ahk', 'Delete?', 'YN') == 'Yes'
-                        FileDelete(A_WorkingDir '\SortFunctionsConfig.ahk')
-                } else if Ctrl.Name == 'SaveAppData' && DirExist(A_AppData '\SortFunctions') {
-                    if MsgBox('Delete folder? Path: ' A_AppData '\SortFunctions', 'Delete?', 'YN') == 'Yes'
-                        DirDelete(A_AppData '\SortFunctions', 1)
-                }
-            }
-        }
         _Copy(*) {
             this.Copy()
             this.ShowTooltip('Copied!')
         }
-        _Save(Ctrl, *) {
-            G := Ctrl.Gui
+        _MenuOpenConfigDir(ItemName, ItemPos, MenuObj) {
+            Options := G.Options
             Flag := 0
-            if G['SaveWorking'].Value {
+            if Options.SaveWorking {
+                this.OpenConfigDir('Working')
+                Flag := 1
+            }
+            if Options.SaveAppData {
+                this.OpenConfigDir('AppData')
+                Flag := 1
+            }
+            this.ShowTooltip(Flag ? 'Opening!' : 'Please check one of the boxes!')
+        }
+        _MenuOptions(ItemName, ItemPos, MenuObj) {
+            static MenuItems := Map('Save to working directory', 'SaveWorking'
+            , 'Save to AppData', 'SaveAppData', 'Save on exit', 'SaveOnExit')
+            Options := G.Options
+            mOptions := this.Menus.Get('Options')
+            Prop := MenuItems.Get(ItemName)
+            Options.%Prop% := !Options.%Prop%
+            if Options.%Prop% {
+                mOptions.Check(ItemName)
+            } else {
+                mOptions.Uncheck(ItemName)
+                if Prop == 'SaveWorking' && FileExist(A_WorkingDir '\SortFunctionsConfig.ahk') {
+                    if MsgBox('Delete current file? Path: ' A_WorkingDir '\SortFunctionsConfig.ahk', 'Delete?', 'YN') == 'Yes'
+                        FileDelete(A_WorkingDir '\SortFunctionsConfig.ahk')
+                } else if Prop == 'SaveAppData' && DirExist(A_AppData '\SortFunctions') {
+                    if MsgBox('Delete folder? Path: ' A_AppData '\SortFunctions', 'Delete?', 'YN') == 'Yes'
+                        DirDelete(A_AppData '\SortFunctions', 1)
+                }
+            }
+            if ItemName == 'Save on exit' {
+                this.SaveOnExit(Options.SaveOnExit)
+            }
+        }
+        _MenuSaveNow(ItemName, ItemPos, MenuObj) {
+            Options := G.Options
+            Flag := 0
+            if Options.SaveWorking {
                 this.WriteConfig('Working')
                 Flag := 1
             }
-            if G['SaveAppData'].Value {
+            if Options.SaveAppData {
                 this.WriteConfig('AppData')
                 Flag := 1
             }
@@ -173,8 +267,10 @@ class SortFunctions {
             this.SaveOnExit(Ctrl.Value)
             this.ShowTooltip('Save on exit ' (Ctrl.Value ? 'enabled!' : 'disabled!'))
         }
-        _Sort(*) {
-            this.Sort(, this.G['Path'].Text || unset)
+        _Sort(Ctrl, *) {
+            G := Ctrl.Gui
+            this.Sort(, G['Path'].Text || unset, G['SortStyle'].Text || unset
+            , G['SortOptions'].Text || unset, G['SortOrder'].Text || unset)
         }
     }
 
@@ -188,249 +284,24 @@ class SortFunctions {
     }
 
     /**
-     * @description - Sorts the code alphabetically or passes the objects to a callback function
-     * to sort. If a path is provided, the function will read the file and sort the content therein.
-     * The file cannot be a typical code file, because it will probably confuse this function. The
-     * file should contain only the code that is intended to be sorted. If neither a string input nor
-     * path are provided, the function sorts the clipboard. If a callback function is not provided,
-     * `Sort` relies on AHK's internal sorting that occurs when iterating a `Map` object's contents.
-     *
-     * `Sort` divides the code into four groups:
-     * - Static properties
-     * - Properties
-     * - Static functions
-     * - Functions
-     *
-     * In terms of `Sort`'s process, global functions and class instance methods are equivalent and
-     * would be grouped together if both are present in the input content. Each group is sorted
-     * individually.
+     * @description - Returns an array of property names in the indicated order.
+     * @returns {Array} - An array of property names.
      */
-    static Sort(Text?, Path?, Callback?) {
-        static pBracket := '(?<bracket>\{(?:[^}{]++|(?&bracket))*\})'
-        , rChar := this.rChar
-        , pStatement := (
-            'mJi)^'
-            '(?<jsdoc>[ \t]*+' rChar '_jsdoc-(?<n>\d+)_' rChar '\s*+)?'
-            '[ \t]*' '(?<static>static[ \t]+)?'
-            '(?<name>[\w\d_]+)'
-            '(?:'
-                '(?<func>(?<params>\(([^()]++|(?&params))*\))\s*(?:(?<operator>=>)(?<body>.+)|(?<call>\{)))'
-                '|'
-                '(?<prop>(?<params>\[(?:[^\][]++|(?&params))*\])?.*?'
-                    '(?:'
-                        '(?<operator>=>)(?<body>.+)'
-                        '|'
-                        '(?<operator>:=)(*MARK:assign)(?<body>.+)'
-                        '|'
-                        '(?<call>\{)'
-                    ')'
-                ')'
-            ')'
-        )
-        local Match, Pos, MatchBody, cb
-        if IsSet(Path)
-            Text := FileRead(Path)
-        else if !IsSet(Text)
-            Text := A_Clipboard
-        ; This function relies on a pattern that requires every open bracket to have a matching close bracket
-        ; to work as expected. If a string literal has one bracket but not the other, the function wouldn't
-        ; process correctly. So we need to remove string literals before processing just in case.
-        Removed := this.RemoveStringliterals(&Text)
-        Containers := {
-            Functions: Map()
-          , StaticFunctions: Map()
-          , Properties: Map()
-          , StaticProperties: Map()
+    static GetSortOrder(SortOrder) {
+        Props := Map('SF', 'StaticFunctions', 'SP', 'StaticProperties'
+        , 'F', 'Functions', 'P', 'Properties')
+        Order := []
+        Order.Capacity := 4
+        for Str in StrSplit(this.G['SortOrder'].Text, ' ') {
+            Order.Push(Props[Str])
+            Props.Delete(Str)
         }
-        ; OutputDebug('`n' Text)
-        while RegExMatch(Text, pStatement, &Match, Pos ?? 1) {
-            Containers.%Trim(Match['static'], '`s`t`r`n') (Match['func'] ? 'Functions' : 'Properties')%.Set(
-                Match['name']
-              , Match['body']
-                ? this.HandleContinuation(&Text, Match, Match['operator'], 'body', &Pos)
-                : SubStr(Match[0], 1, Match.Len - Match.Len['call']) _MatchBrackets()[0]
-            )
-            ; OutputDebug('`n' Match[0])
-            ; OutputDebug('`n' Match['jsdoc'])
-            ; OutputDebug('`n' Containers.%Trim(Match['static'], '`s`t`r`n') (Match['func'] ? 'Functions' : 'Properties')%.Get(Match['name']))
-        }
-        if !IsSet(Callback) {
-            if this.Callback
-                Callback := this.Callback
-        }
-        if IsSet(Callback) {
-            Callback(Containers, Removed)
-            return
-        }
-        for Prop, Container in Containers.OwnProps() {
-            if Container.Count {
-                for Name, Statement in Container
-                    SortedText .= Statement '`r`n`r`n'
-                if A_Index < ObjOwnPropCount(Containers)
-                    SortedText .= '`r`n'
+        if Props.Count {
+            for Abbr, Prop in Props {
+                Order.Push(Prop)
             }
         }
-        this.ReplaceStrings(&SortedText, Removed)
-        this.G['Display'].Text := RegExReplace(SortedText, '\R', '`r`n')
-        if this.G['AddToClipboard'].Value {
-            this.Copy()
-            this.ShowTooltip('Sorted text added to clipboard!')
-        } else {
-            this.ShowTooltip('Sorted text!')
-        }
-        return SortedText
-
-        _Make() => { Primary: Match, Body: cb() }
-        _MatchBrackets() {
-            if !RegExMatch(Text, pBracket, &MatchBody, Match.Pos + Match.Len - 1)
-            || MatchBody.Pos !== Match.Pos + Match.Len - 1
-                throw Error('Failed to match with the function brackets.')
-            Pos := MatchBody.Pos + MatchBody.Len
-            return MatchBody
-        }
-    }
-
-    /**
-     * @description - `RemoveStringLiterals` removes quoted strings and comments from the input
-     * text, which is expected to be AHK code. The function returns arrays of objects that contain
-     * the matched content and a replacement string. The replacement string is a unique string that
-     * is used to replace the matched content in the input text. This is done so the text can be
-     * added back at a later time, if needed.
-     *
-     * All pairs of unescaped consecutive quote characters are removed first, and share the same
-     * replacement strings (`Chr(0xFFFC)_String-1_Chr(0xFFFC)` for single quote chararacters and
-     * `Chr(0xFFFC)_String-n_Chr(0xFFFC)` for double quote char, `n` 1 or 2 depending on if any
-     * pairs of single quote chararacters were removed). This is to speed up the process for large
-     * inputs.
-     *
-     * The integer in the replacement string is the item's index in its respective array.
-     *
-     * The match objects have additional subcapture groups which you can use to analyze the content
-     * that was removed.
-     * - All matches have the following:
-     *   - **removed**: The text that was removed from the input string.
-     * - Continuation sections:
-     *   - **comment**: The last comment between the open quote character and the open bracket character,
-     * if any are present.
-     *   - **quote**: The open quote character.
-     *   - **text**: The text content between the open bracket and the close bracket, i.e. the continuation
-     * section's string value.
-     *   - **tail**: Any code that is on the same line as the close bracket, after the close quote character.
-     * - Single line comments:
-     *   - **comment**: The content of the comment without the semicolon character and without leading
-     * whitespace.
-     * - Multi-line comments:
-     *   - **comment**: The content of the comment without the the open and closing operators
-     * (/ * and * /) and without the surrounding whitespace.
-     * - Jsdoc comments:
-     *   - **comment**: The content of the comment without the open and closing operators (/ * * and * /)
-     * and without the surrounding whitespace.
-     *   - **line**: The next line following the comment, included so the comment can be paired with
-     * whatever it is describing. If the next line of text is a class definition, these subgroups
-     * are used:
-     *     - **class**: The class name. This will always be present.
-     *     - **super**: If the class has the `extends` keyword, this subgroup will contain the name of
-     * the superclass.
-     *   - If the next line of text is a class method, property, or function definition, these subgroups
-     * are used:
-     *     - **name**: The name of the method, property, or function. This will always be present.
-     *     - **static**: The `static` keyword, if present.
-     *     - **func**: If it is a function definition, then this subgroup will contain the open
-     * parentheses. This is mostly to indicate whether its a function or property, but you can also
-     * use the position of the character for some tasks.
-     *     - **prop**: If it is a property definition, then this subgroup will contain the first character
-     * following the property name.
-     * - Quoted strings:
-     *   - **text**: The text content of the quoted string, without the encompassing quote characters.
-     * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
-     * @returns {Object} - An object with properties `{ Comment, Continuation, Jsdoc, String }`, each
-     * an array of objects. Each object contains two properties:
-     * - **Match**: The `RegExMatchInfo` object.
-     * - **Replacement**: The replacement string.
-     */
-    static RemoveStringLiterals(&Text) {
-        static pContinuationSection := (
-            '(?(DEFINE)(?<singleline>\s*;.*))'
-            '(?(DEFINE)(?<multiline>\s*/\*[\w\W]*?\*/))'
-            '(?<removed>(?<=[\s=:,&(.[?])(?<quote>[`'"])(*MARK:Continuation)'
-            '(?<comment>'
-                '(?&singleline)'
-                '|'
-                '(?&multiline)'
-            ')*'
-            '\s*+\('
-            '(?<text>[\w\W]*?)'
-            '\R[ \t]*+\).*?\g{quote})(?<tail>.*)'
-        )
-        , pSingleline := '(?<removed>(?<=\s|^);[ \t]*(?<comment>.*))(*MARK:Comment)'
-        , pMultiline := ('(?<removed>/\*\s*(?<comment>[\w\W]+?)\s*\*/)(*MARK:Comment)')
-        , pJsDoc := (
-            '(?<removed>/\*\*(?<comment>[\w\W]+?)\*/)(*MARK:jsdoc)\s*'
-            '(?<line>'
-                'class[ \t]+'
-                '(?<class>[a-zA-Z0-9_]+)'
-                '(?:'
-                    '[ \t]*extends[ \t]+(?<super>[a-zA-Z0-9_.]+)'
-                ')?'
-                '\s*\{'
-                '|'
-                '(?<static>static[ \t]+)?(?<name>[\w\d_]+)(?:(?<func>\()|(?<prop>[^(])).+'
-                '|'
-                '.+'
-            ')'
-        )
-        , pQuotedString := '(?<removed>(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2})(*MARK:String)'
-        , pLoopRemove := (
-            'J)'
-            pSingleline
-            '|' pJsdoc
-            '|' pMultiline
-            '|' pQuotedString
-        )
-        , rChar := this.rChar
-        , Replacement := rChar '_{}-{}_' rChar
-
-        Removed := {
-            Comment: []
-          , Continuation: []
-          , Jsdoc: []
-          , String: []
-        }
-        Text := RegExReplace(Text, '(?<!``)(?:````)*`'`'', r := Format(Replacement, 1), &Count)
-        if Count
-            Removed.String.Push({ Match: Map(0, "''"), Replacement: r })
-        Text := RegExReplace(Text, '(?<!``)(?:````)*""', r := Format(Replacement, Removed.String.Length + 1), &Count)
-        if Count
-            Removed.String.Push({ Match: Map(0, '""'), Replacement: r })
-        Pos := 1
-        ; Remove continuation sections.
-        _Process(&pContinuationSection)
-        Pos := 1
-        ; Remove other quotes and comments.
-        _Process(&pLoopRemove)
-        return Removed
-
-        _Process(&Pattern) {
-            while RegExMatch(Text, Pattern, &MatchRemove, Pos) {
-                Arr := Removed.%MatchRemove.Mark%
-                Arr.Push({ Match: MatchRemove, Replacement: Format(Replacement, MatchRemove.Mark, Arr.Length + 1) })
-                Text := StrReplace(Text, MatchRemove['removed'], Arr[-1].Replacement)
-                Pos := MatchRemove.Pos + StrLen(Arr[-1].Replacement)
-            }
-        }
-    }
-
-    /**
-     * @description - Replaced the removed strings.
-     * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
-     * @param {Object} Removed - The object returned by `RemoveStringLiterals`.
-     */
-    static ReplaceStrings(&Text, Removed) {
-        for Prop, Arr in Removed.OwnProps() {
-            for Item in Arr {
-                Text := StrReplace(Text, Item.Replacement, Item.Match['removed'])
-            }
-        }
+        return Order
     }
 
     /**
@@ -639,6 +510,162 @@ class SortFunctions {
     }
 
     /**
+     * @description - Opens the configuration file's directory in Explorer.
+     * @param {String} Location - The location to open. Can be either 'Working' or 'AppData'.
+     */
+    static OpenConfigDir(Location) {
+        switch Location, 0 {
+            case 'Working':
+                Run('Explorer.exe "' A_WorkingDir '"')
+            case 'AppData':
+                Run('Explorer.exe "' A_AppData '"')
+        }
+    }
+
+    /**
+     * @description - `RemoveStringLiterals` removes quoted strings and comments from the input
+     * text, which is expected to be AHK code. The function returns arrays of objects that contain
+     * the matched content and a replacement string. The replacement string is a unique string that
+     * is used to replace the matched content in the input text. This is done so the text can be
+     * added back at a later time, if needed.
+     *
+     * All pairs of unescaped consecutive quote characters are removed first, and share the same
+     * replacement strings (`Chr(0xFFFC)_String-1_Chr(0xFFFC)` for single quote chararacters and
+     * `Chr(0xFFFC)_String-n_Chr(0xFFFC)` for double quote char, `n` 1 or 2 depending on if any
+     * pairs of single quote chararacters were removed). This is to speed up the process for large
+     * inputs.
+     *
+     * The integer in the replacement string is the item's index in its respective array.
+     *
+     * The match objects have additional subcapture groups which you can use to analyze the content
+     * that was removed.
+     * - All matches have the following:
+     *   - **removed**: The text that was removed from the input string.
+     * - Continuation sections:
+     *   - **comment**: The last comment between the open quote character and the open bracket character,
+     * if any are present.
+     *   - **quote**: The open quote character.
+     *   - **text**: The text content between the open bracket and the close bracket, i.e. the continuation
+     * section's string value.
+     *   - **tail**: Any code that is on the same line as the close bracket, after the close quote character.
+     * - Single line comments:
+     *   - **comment**: The content of the comment without the semicolon character and without leading
+     * whitespace.
+     * - Multi-line comments:
+     *   - **comment**: The content of the comment without the the open and closing operators
+     * (/ * and * /) and without the surrounding whitespace.
+     * - Jsdoc comments:
+     *   - **comment**: The content of the comment without the open and closing operators (/ * * and * /)
+     * and without the surrounding whitespace.
+     *   - **line**: The next line following the comment, included so the comment can be paired with
+     * whatever it is describing. If the next line of text is a class definition, these subgroups
+     * are used:
+     *     - **class**: The class name. This will always be present.
+     *     - **super**: If the class has the `extends` keyword, this subgroup will contain the name of
+     * the superclass.
+     *   - If the next line of text is a class method, property, or function definition, these subgroups
+     * are used:
+     *     - **name**: The name of the method, property, or function. This will always be present.
+     *     - **static**: The `static` keyword, if present.
+     *     - **func**: If it is a function definition, then this subgroup will contain the open
+     * parentheses. This is mostly to indicate whether its a function or property, but you can also
+     * use the position of the character for some tasks.
+     *     - **prop**: If it is a property definition, then this subgroup will contain the first character
+     * following the property name.
+     * - Quoted strings:
+     *   - **text**: The text content of the quoted string, without the encompassing quote characters.
+     * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
+     * @returns {Object} - An object with properties `{ Comment, Continuation, Jsdoc, String }`, each
+     * an array of objects. Each object contains two properties:
+     * - **Match**: The `RegExMatchInfo` object.
+     * - **Replacement**: The replacement string.
+     */
+    static RemoveStringLiterals(&Text) {
+        static pContinuationSection := (
+            '(?(DEFINE)(?<singleline>\s*;.*))'
+            '(?(DEFINE)(?<multiline>\s*/\*[\w\W]*?\*/))'
+            '(?<removed>(?<=[\s=:,&(.[?])(?<quote>[`'"])(*MARK:Continuation)'
+            '(?<comment>'
+                '(?&singleline)'
+                '|'
+                '(?&multiline)'
+            ')*'
+            '\s*+\('
+            '(?<text>[\w\W]*?)'
+            '\R[ \t]*+\).*?\g{quote})(?<tail>.*)'
+        )
+        , pSingleline := '(?<removed>(?<=\s|^);[ \t]*(?<comment>.*))(*MARK:Comment)'
+        , pMultiline := ('(?<removed>/\*\s*(?<comment>[\w\W]+?)\s*\*/)(*MARK:Comment)')
+        , pJsDoc := (
+            '(?<removed>/\*\*(?<comment>[\w\W]+?)\*/)(*MARK:jsdoc)\s*'
+            '(?<line>'
+                'class[ \t]+'
+                '(?<class>[a-zA-Z0-9_]+)'
+                '(?:'
+                    '[ \t]*extends[ \t]+(?<super>[a-zA-Z0-9_.]+)'
+                ')?'
+                '\s*\{'
+                '|'
+                '(?<static>static[ \t]+)?(?<name>[\w\d_]+)(?:(?<func>\()|(?<prop>[^(])).+'
+                '|'
+                '.+'
+            ')'
+        )
+        , pQuotedString := '(?<removed>(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2})(*MARK:String)'
+        , pLoopRemove := (
+            'J)'
+            pSingleline
+            '|' pJsdoc
+            '|' pMultiline
+            '|' pQuotedString
+        )
+        , rChar := this.rChar
+        , Replacement := rChar '_{}-{}_' rChar
+
+        Removed := {
+            Comment: []
+          , Continuation: []
+          , Jsdoc: []
+          , String: []
+        }
+        Text := RegExReplace(Text, '(?<!``)(?:````)*`'`'', r := Format(Replacement, 1), &Count)
+        if Count
+            Removed.String.Push({ Match: Map('removed', "''"), Replacement: r })
+        Text := RegExReplace(Text, '(?<!``)(?:````)*""', r := Format(Replacement, Removed.String.Length + 1), &Count)
+        if Count
+            Removed.String.Push({ Match: Map('removed', '""'), Replacement: r })
+        Pos := 1
+        ; Remove continuation sections.
+        _Process(&pContinuationSection)
+        Pos := 1
+        ; Remove other quotes and comments.
+        _Process(&pLoopRemove)
+        return Removed
+
+        _Process(&Pattern) {
+            while RegExMatch(Text, Pattern, &MatchRemove, Pos) {
+                Arr := Removed.%MatchRemove.Mark%
+                Arr.Push({ Match: MatchRemove, Replacement: Format(Replacement, MatchRemove.Mark, Arr.Length + 1) })
+                Text := StrReplace(Text, MatchRemove['removed'], Arr[-1].Replacement)
+                Pos := MatchRemove.Pos + StrLen(Arr[-1].Replacement)
+            }
+        }
+    }
+
+    /**
+     * @description - Replaced the removed strings.
+     * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
+     * @param {Object} Removed - The object returned by `RemoveStringLiterals`.
+     */
+    static ReplaceStrings(&Text, Removed) {
+        for Prop, Arr in Removed.OwnProps() {
+            for Item in Arr {
+                Text := StrReplace(Text, Item.Replacement, Item.Match['removed'])
+            }
+        }
+    }
+
+    /**
      * @description - Toggles the `OnExit` save function.
      * @param {Boolean} Value - If nonzero, the save on exit function is enabled. Else, it is disabled.
      */
@@ -646,12 +673,11 @@ class SortFunctions {
         OnExit(_Save, Value ? 1 : 0)
 
         _Save(*) {
-            G := this.G
-            if G['SaveWorking'].Value
+            Options := this.G.Options
+            if Options.SaveWorking
                 this.WriteConfig('Working')
-            if G['SaveAppData'].Value
+            if Options.SaveAppData
                 this.WriteConfig('AppData')
-
         }
     }
 
@@ -677,6 +703,199 @@ class SortFunctions {
     }
 
     /**
+     * @description - Sorts the code alphabetically or passes the objects to a callback function
+     * to sort. If a path is provided, the function will read the file and sort the content therein.
+     * The file cannot be a typical code file, because it will probably confuse this function. The
+     * file should contain only the code that is intended to be sorted. If neither a string input nor
+     * path are provided, the function sorts the clipboard. If a callback function is not provided,
+     * `Sort` relies on AHK's internal sorting that occurs when iterating a `Map` object's contents.
+     *
+     * `Sort` divides the code into four groups:
+     * - Static properties
+     * - Properties
+     * - Static functions
+     * - Functions
+     *
+     * In terms of `Sort`'s process, global functions and class instance Functions are equivalent and
+     * would be grouped together if both are present in the input content. Each group is sorted
+     * individually.
+     * @param {String} [Text] - The code to sort.
+     * @param {String} [Path] - The path to a file containing the code to sort.
+     * @param {Integer} [SortStyle=1] - An integer representing one of the available built-in sort
+     * styles. Currently there are three options:
+     * - 0: The functions are sorted according to AutoHotkey's internal sorting method for Map objects.
+     * This places capitalized letters before lowercase letters, regardless of the letter. For example,
+     * "Myfunc" would occur after "MyMethod".
+     * - 1: The functions / properties are sorted using the built-in `Sort` function. Each name
+     * is combined into a string, then `Sort` is called (per group). Names that begin with "__"
+     * are moved to the end of the group.
+     * - 2: The same as 1 except names that begin with "__" are not moved to the end of the group.
+     * @param {String} [SortOptions=''] - The options to use when sorting. This parameter is only
+     * used when `SortStyle` is set to 1. The options are passed directly to `Sort`.
+     * @param {String} [SortOrder='SF SP F P'] - A space-delimited list specifying the order to
+     * construct the string after sorting the functions / properties. The groups are:
+     * - SF: Static Functions
+     * - SP: Static properties
+     * - F: Functions
+     * - P: Properties
+     * @param {Func} [Callback] - The callback function for custom sorting. The callback function
+     * will receive two parameters:
+     * - The `Containers` object which has four properties
+     * { Functions, StaticFunctions, Properties, StaticProperties }. Each property is a map object,
+     * where the key is the function or property name, and the value is a string containing
+     * the content of that statement. If a Jsdoc comment was above the statement, the Jsdoc's
+     * replacement string is included in the content.
+     * - The `Removed` object, which also has four properties
+     * { Comment, Continuation, Jsdoc, String }. Each property is an array of objects. Each object
+     * contains two properties:
+     * - **Match**: The `RegExMatchInfo` object.
+     * - **Replacement**: The replacement string.
+     * The callback function does not need to return a value. It is expected the callback function
+     * will construct its own string, and so no further processing would be needed from the built-in
+     * process. To replace the removed strings with their original text, you can call `ReplaceStrings`.
+     * @returns {String} - The sorted text.
+     */
+    static Sort(Text?, Path?, SortStyle := 1, SortOptions := '', SortOrder := 'SF SP F P', Callback?) {
+        static pBracket := '(?<bracket>\{(?:[^}{]++|(?&bracket))*\})'
+        , rChar := this.rChar
+        , pStatement := (
+            'mJi)^'
+            '(?<jsdoc>[ \t]*+' rChar '_jsdoc-(?<n>\d+)_' rChar '\s*+)?'
+            '[ \t]*' '(?<static>static[ \t]+)?'
+            '(?<name>[\w\d_]+)'
+            '(?:'
+                '(?<func>(?<params>\(([^()]++|(?&params))*\))\s*(?:(?<operator>=>)(?<body>.+)|(?<call>\{)))'
+                '|'
+                '(?<prop>(?<params>\[(?:[^\][]++|(?&params))*\])?.*?'
+                    '(?:'
+                        '(?<operator>=>)(?<body>.+)'
+                        '|'
+                        '(?<operator>:=)(*MARK:assign)(?<body>.+)'
+                        '|'
+                        '(?<call>\{)'
+                    ')'
+                ')'
+            ')'
+        )
+        local Match, Pos, MatchBody, cb
+        if IsSet(Path)
+            Text := FileRead(Path)
+        else if !IsSet(Text)
+            Text := A_Clipboard
+        ; This function relies on a pattern that requires every open bracket to have a matching close bracket
+        ; to work as expected. If a string literal has one bracket but not the other, the function wouldn't
+        ; process correctly. So we need to remove string literals before processing just in case.
+        Removed := this.RemoveStringliterals(&Text)
+        Containers := {
+            Functions: Map()
+          , StaticFunctions: Map()
+          , Properties: Map()
+          , StaticProperties: Map()
+        }
+        ; OutputDebug('`n' Text)
+        while RegExMatch(Text, pStatement, &Match, Pos ?? 1) {
+            Containers.%Trim(Match['static'], '`s`t`r`n') (Match['func'] ? 'Functions' : 'Properties')%.Set(
+                Match['name']
+              , Match.Len['body']
+                ? this.HandleContinuation(&Text, Match, Match['operator'], 'body', &Pos)
+                : SubStr(Match[0], 1, Match.Len - Match.Len['call']) _MatchBrackets()[0]
+            )
+            ; OutputDebug('`n' Match[0])
+            ; OutputDebug('`n' Match['jsdoc'])
+            ; OutputDebug('`n' Containers.%Trim(Match['static'], '`s`t`r`n') (Match['func'] ? 'Functions' : 'Properties')%.Get(Match['name']))
+        }
+        if !IsSet(Callback) {
+            if this.Callback
+                Callback := this.Callback
+        }
+        if IsSet(Callback) {
+            Callback(Containers, Removed)
+            return
+        }
+        _Sort%SortStyle%()
+        this.ReplaceStrings(&SortedText, Removed)
+        if this.HasOwnProp('G') && HasProp(this.G, 'Hwnd') && WinExist(this.G.Hwnd) {
+            this.G['Display'].Text := RegExReplace(SortedText, '\R', '`r`n')
+            if this.G['AddToClipboard'].Value {
+                this.Copy()
+                this.ShowTooltip('Sorted text added to clipboard!')
+            } else {
+                this.ShowTooltip('Sorted text!')
+            }
+        }
+        return SortedText
+
+        _Make() => { Primary: Match, Body: cb() }
+        _MatchBrackets() {
+            if !RegExMatch(Text, pBracket, &MatchBody, Match.Pos + Match.Len - 1)
+            || MatchBody.Pos !== Match.Pos + Match.Len - 1
+                throw Error('Failed to match with the function brackets.')
+            Pos := MatchBody.Pos + MatchBody.Len
+            return MatchBody
+        }
+        _Sort0() {
+            for Prop in this.GetSortOrder(SortOrder) {
+                Container := Containers.%Prop%
+                if !Container.Count {
+                    continue
+                }
+                for Name, Statement in Container {
+                    SortedText .= Statement '`r`n`r`n'
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
+                }
+            }
+        }
+        _Sort1() {
+            for Prop in this.GetSortOrder(SortOrder) {
+                Container := Containers.%Prop%
+                if !Container.Count {
+                    continue
+                }
+                Names := ''
+                for Name in Container {
+                    Names .= Name '`n'
+                }
+                DoubleUnderscore := []
+                for Name in StrSplit(Sort(Trim(Names, '`n'), SortOptions), '`n') {
+                    if SubStr(Name, 1, 2) == '__' {
+                        DoubleUnderscore.Push(Name)
+                        continue
+                    }
+                    SortedText .= Container[Name] '`r`n`r`n'
+                }
+                if DoubleUnderscore.Length {
+                    for Name in DoubleUnderscore {
+                        SortedText .= Container[Name] '`r`n`r`n'
+                    }
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
+                }
+            }
+        }
+        _Sort2() {
+            for Prop in this.GetSortOrder(SortOrder) {
+                Container := Containers.%Prop%
+                if !Container.Count {
+                    continue
+                }
+                Names := ''
+                for Name in Container {
+                    Names .= Name '`n'
+                }
+                for Name in StrSplit(Sort(Trim(Names, '`n'), SortOptions), '`n') {
+                    SortedText .= Container[Name] '`r`n`r`n'
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
+                }
+            }
+        }
+    }
+
+    /**
      * @description - Writes the configuration to a file.
      * @param {String} Location - The location to write the configuration file. Either 'Working' or
      * 'AppData'.
@@ -685,38 +904,51 @@ class SortFunctions {
         static Config := '
         (
             class SortFunctions_Config_{1} {
-                static CR := {2}
-                , LF := {3}
-                , AddToClipboard := {4}
-                , Hotkey := {5}
-                , SaveWorking := {6}
-                , SaveAppData := {7}
-                , SaveOnExit := {8}
+                static AddToClipboard := {2}
+              , CR := {3}
+              , Hotkey := {4}
+              , LF := {5}
+              , Path := {6}
+              , SaveWorking := {7}
+              , SaveAppData := {8}
+              , SaveOnExit := {9}
+              , SortOptions := {10}
+              , SortOrder := {11}
+              , SortStyle := {12}
             }
 
         )'
         G := this.G
-        if Location == 'Working'
+        Options := G.Options
+        if Location == 'Working' {
             Path := A_WorkingDir
-        else if Location == 'AppData' {
+        } else if Location == 'AppData' {
             if !DirExist(A_AppData '\SortFunctions') {
-                try
+                try {
                     DirCreate(A_AppData '\SortFunctions')
-                catch
+                } catch {
                     MsgBox('Failed to create directory: ' A_AppData '\SortFunctions')
+                    return
+                }
             }
             Path := A_AppData '\SortFunctions'
+        } else {
+            throw ValueError('Unexpected ``Location``.', -1, Location)
         }
         f := FileOpen(Path '\SortFunctionsConfig.ahk', 'w')
         f.Write(Format(Config
             , Location
-            , G['CR'].Value ? 'true' : 'false'
-            , G['LF'].Value ? 'true' : 'false'
             , G['AddToClipboard'].Value ? 'true' : 'false'
+            , G['CR'].Value ? 'true' : 'false'
             , '"' G['Hotkey'].Text '"'
-            , G['SaveWorking'].Value ? 'true' : 'false'
-            , G['SaveAppData'].Value ? 'true' : 'false'
-            , G['SaveOnExit'].Value ? 'true' : 'false'
+            , G['LF'].Value ? 'true' : 'false'
+            , '"' G['Path'].Text '"'
+            , Options.SaveAppData ? 'true' : 'false'
+            , Options.SaveOnExit ? 'true' : 'false'
+            , Options.SaveWorking ? 'true' : 'false'
+            , '"' G['SortOptions'].Text '"'
+            , '"' G['SortOrder'].Text '"'
+            , IsNumber(G['SortStyle'].Text) ? G['SortStyle'].Text : '"' G['SortStyle'].Text '"'
         ))
         f.Close()
     }
