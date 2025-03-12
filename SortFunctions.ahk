@@ -909,9 +909,9 @@ class SortFunctions {
               , Hotkey := {4}
               , LF := {5}
               , Path := {6}
-              , SaveWorking := {7}
-              , SaveAppData := {8}
-              , SaveOnExit := {9}
+              , SaveAppData := {7}
+              , SaveOnExit := {8}
+              , SaveWorking := {9}
               , SortOptions := {10}
               , SortOrder := {11}
               , SortStyle := {12}
