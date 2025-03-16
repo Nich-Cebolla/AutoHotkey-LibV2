@@ -1,7 +1,7 @@
 /*
    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Inheritance.ahk
     Author: Nich-Cebolla
-    Version: 1.1.0
+    Version: 1.1.1
     License: MIT
 */
 
@@ -146,13 +146,19 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
  * @returns {Object} - If the property exists, the property descriptor object. Else, an empty string.
  */
 GetPropDesc(Obj, Prop, &OutObj?, &OutIndex?) {
+    static GetOwnPropDesc := Object.Prototype.GetOwnPropDesc
+    , HasOwnProp := Object.Prototype.HasOwnProp
+    if !HasProp(Obj, Prop) {
+        return ''
+    }
     OutObj := Obj
     OutIndex := 0
-    while !OutObj.HasOwnProp(Prop) {
+    while !HasOwnProp(OutObj, Prop) {
         OutIndex++
+        if OutObj.__Class == 'Any' {
+            break
+        }
         OutObj := OutObj.Base
-        if OutObj.__Class == 'Any'
-            return
     }
-    return OutObj.GetOwnPropDesc(Prop)
+    return GetOwnPropDesc(OutObj, Prop)
 }
