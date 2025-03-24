@@ -62,9 +62,6 @@ class Align {
         Win2.Move(X2, Y2)
     }
 
-
-
-
     /**
      * @description - Centers a list of windows horizontally with respect to one another, splitting
      * the difference between them. The center of each window will be the midpoint between the least
@@ -144,6 +141,154 @@ class Align {
                 , 'int', 0
                 , 'int', 0
                 , 'uint', 0x0001 | 0x0004 | 0x0010 ; SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
+                , 'ptr'
+            )) {
+                throw Error('``DeferWindowPos`` failed.', -1)
+            }
+        }
+        if !DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr') {
+            throw Error('``EndDeferWindowPos`` failed.', -1)
+        }
+        return
+    }
+
+    /**
+     * @description - Standardizes a group's width to the largest width in the group.
+     * @param {Array} List - An array of windows to be standardized. This function assumes there are
+     * no unset indices.
+     */
+    static GroupWidth(List) {
+        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', List.Length, 'ptr')) {
+            throw Error('``BeginDeferWindowPos`` failed.', -1)
+        }
+        List[-1].GetPos(, , &GW, &H)
+        Params := [{ H: H, Hwnd: List[-1].Hwnd }]
+        Params.Capacity := List.Length
+        loop List.Length - 1 {
+            List[A_Index].GetPos(, , &W, &H)
+            Params.Push({ H: H, Hwnd: List[A_Index].Hwnd })
+            if W > GW
+                GW := W
+        }
+        for ps in Params {
+            if !(hDwp := DllCall('DeferWindowPos'
+                , 'ptr', hDwp
+                , 'ptr', ps.Hwnd
+                , 'ptr', 0
+                , 'int', 0
+                , 'int', 0
+                , 'int', GW
+                , 'int', ps.H
+                , 'uint', 0x0002 | 0x0004 | 0x0010 ; SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
+                , 'ptr'
+            )) {
+                throw Error('``DeferWindowPos`` failed.', -1)
+            }
+        }
+        if !DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr') {
+            throw Error('``EndDeferWindowPos`` failed.', -1)
+        }
+        return
+    }
+
+    static GroupWidthCb(G, Callback, ApproxCount := 2) {
+        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', ApproxCount, 'ptr')) {
+            throw Error('``BeginDeferWindowPos`` failed.', -1)
+        }
+        GW := -99999
+        Params := []
+        Params.Capacity := ApproxCount
+        for Ctrl in G {
+            Ctrl.GetPos(, , &W, &H)
+            if Callback(&GW, W, Ctrl) {
+                Params.Push({ H: H, Hwnd: Ctrl.Hwnd })
+                break
+            }
+        }
+        for ps in Params {
+            if !(hDwp := DllCall('DeferWindowPos'
+                , 'ptr', hDwp
+                , 'ptr', ps.Hwnd
+                , 'ptr', 0
+                , 'int', 0
+                , 'int', 0
+                , 'int', GW
+                , 'int', ps.H
+                , 'uint', 0x0002 | 0x0004 | 0x0010 ; SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
+                , 'ptr'
+            )) {
+                throw Error('``DeferWindowPos`` failed.', -1)
+            }
+        }
+        if !DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr') {
+            throw Error('``EndDeferWindowPos`` failed.', -1)
+        }
+        return
+    }
+
+    /**
+     * @description - Standardizes a group's height to the largest height in the group.
+     * @param {Array} List - An array of windows to be standardized. This function assumes there are
+     * no unset indices.
+     */
+    static GroupHeight(List) {
+        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', List.Length, 'ptr')) {
+            throw Error('``BeginDeferWindowPos`` failed.', -1)
+        }
+        List[-1].GetPos(, , &W, &GH)
+        Params := [{ W: W, Hwnd: List[-1].Hwnd }]
+        Params.Capacity := List.Length
+        loop List.Length - 1 {
+            List[A_Index].GetPos(, , &W, &H)
+            Params.Push({ W: W, Hwnd: List[A_Index].Hwnd })
+            if H > GH
+                GH := H
+        }
+        for ps in Params {
+            if !(hDwp := DllCall('DeferWindowPos'
+                , 'ptr', hDwp
+                , 'ptr', ps.Hwnd
+                , 'ptr', 0
+                , 'int', 0
+                , 'int', 0
+                , 'int', ps.W
+                , 'int', GH
+                , 'uint', 0x0002 | 0x0004 | 0x0010 ; SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
+                , 'ptr'
+            )) {
+                throw Error('``DeferWindowPos`` failed.', -1)
+            }
+        }
+        if !DllCall('EndDeferWindowPos', 'ptr', hDwp, 'ptr') {
+            throw Error('``EndDeferWindowPos`` failed.', -1)
+        }
+        return
+    }
+
+    static GroupHeightCb(G, Callback, ApproxCount := 2) {
+        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', ApproxCount, 'ptr')) {
+            throw Error('``BeginDeferWindowPos`` failed.', -1)
+        }
+        GH := -99999
+        Params := []
+        Params.Capacity := ApproxCount
+        for Ctrl in G {
+            Ctrl.GetPos(, , &W, &H)
+            if Callback(&GH, H, Ctrl) {
+                Params.Push({ W: W, Hwnd: Ctrl.Hwnd })
+                break
+            }
+        }
+        for ps in Params {
+            if !(hDwp := DllCall('DeferWindowPos'
+                , 'ptr', hDwp
+                , 'ptr', ps.Hwnd
+                , 'ptr', 0
+                , 'int', 0
+                , 'int', 0
+                , 'int', ps.W
+                , 'int', GH
+                , 'uint', 0x0002 | 0x0004 | 0x0010 ; SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE
                 , 'ptr'
             )) {
                 throw Error('``DeferWindowPos`` failed.', -1)
