@@ -1,0 +1,296 @@
+
+class Patterns {
+
+    /**
+     * @property {String} BracketCurly
+     * @property {String} BracketRound
+     * @property {String} BracketSquare
+     * Matches a string of text enclosed by brackets, including any number of nested bracketed
+     * substrings. This pattern is provided in the pcre.org manual as an example of recursive
+     * patterns. If you are interested in learning more about RegEx, the user manual was immensely
+     * helpful for improving my skillset, and I recommend reading it. If you are limited on time,
+     * I recommend reading the section beginning from "Repetition" which you can find by searching
+     * for "Repetition is specified by quantifiers" within the manual
+     * at {@link https://www.pcre.org/pcre.txt}.
+     * For just the section on recursive patterns, search for "RECURSIVE PATTERNS".
+     * There's two subcapture group available:
+     * - full - The bracketed text, including open and close brackets.
+     * - inner - The bracketed text, without the open and close brackets.
+     * @example
+        Text := '
+        (
+            Arr := [
+                1,
+                { Prop: 'Val' },
+                [ 1, 2, [3, 4, 5], 6 ],
+                (1 + 2 + 3 + 4)
+            ]
+        )'
+        RegExMatch(Text, '(?<var>\w+) := ' Re.Pattern.BracketSquare, &Match)
+        MsgBox(Match['var']) ; Arr
+        MsgBox(Match['full']) ; [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
+        MsgBox(Match[0]) ; Arr := [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
+     * @
+     * One creative way to use this pattern is to include a callout next to the open bracket or
+     * close bracket, or both, so that every time an open bracket or close bracket is encountered,
+     * your function can react. Run the example file "Example-bracket-callouts.ahk" to see
+     * what this looks like.
+     */
+    static BracketCurly := '(?<full>\{(?:[^}{]++|(?-2))*\})'
+    ; Using named backreference: '(?<bracket>\{(?:[^}{]++|(?&bracket))*\})'
+    static BracketRound := '(?<full>\((?:[^)(]++|(?-2))*\))'
+    static BracketSquare := '(?<full>\[(?:[^\][]++|(?-2))*\])'
+
+    /**
+     * @property {String} ContinuationSectionAhk - Matches any syntactically correct
+     * continuation section.  Refers to this kind of continuation section
+     * {@link https://www.autohotkey.com/docs/v2/Scripts.htm#continuation-section}
+     * There's four subcapture groups available:
+     * - comment - This will contain the last comment that occurs before the opening parenthesis at
+     * the start of the continuation section, if one exists.
+     * - quote - The quote character used by the continuation section.
+     * - text - The text content between the start and end quote characters, but not including
+     * the quote characters.
+     * - tail - The text that occurs after the closing quotation mark on the same line, if any.
+     */
+    static ContinuationSectionAhk := (
+        '(?(DEFINE)(?<singleline>\s*;.*))'
+        '(?(DEFINE)(?<multiline>\s*/\*[\w\W]*?\*/))'
+        '(?<=[\s=:,&(.[?])(?<quote>[`'"])'
+        '(?<comment>'
+            '(?&singleline)'
+            '|'
+            '(?&multiline)'
+        ')*'
+        '\s*+\('
+        '(?<text>[\w\W]*?)'
+        '\R[ \t]*+\).*?\g{quote}(?<tail>.*)'
+    )
+
+    /**
+     * @property {String} ContinuationSectionJs - Matches a basic Javascript continuation section
+     * using the backtick. There's one subcapture groups available:
+     * - content - The content of the continuation section.
+     * For the example, assume a Kapital.js file:
+        const dasKapital = `The wealth of those societies in which the capitalist mode of
+        production prevails, presents itself as “an immense accumulation of commodities,”[1] its
+        unit being a single commodity. Our investigation must therefore begin with the analysis
+        of a commodity.`
+     * @example
+        RegExMatch(FileRead('Kapital.js'), Re.Pattern.ContinuationSectionJs, &Match)
+        MsgBox(Match['content']) ; The wealth of those societies... analysis of a commodity.
+     * @
+     */
+    static ContinuationSectionJs := 's)(?<!\\)(?:\\\\)*+``(?<content>.*?)(?<!\\)(?:\\\\)*+``'
+
+
+    /**
+     * @property {String} RootPath - Matches a standard Windows root path. There are four
+     * subcapture groups available:
+     * - dir - The directory path. Note the directory does have the trailing '\' at the end.
+     * - drive - The drive letter.
+     * - name - The file name.
+     * - ext - The file extension.
+     * @example
+        RegExMatch(A_LineFile, Re.Pattern.RootPath, &Match)
+        MsgBox(Match['dir']) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\
+        MsgBox(Match['drive']) ; C
+        MsgBox(Match['name']) ; Re
+        MsgBox(Match['ext']) ; ahk
+        MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\Re.ahk
+     * @
+     */
+    static RootPath := '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:\*\?"<>\|]+\\?)+)\\(?<name>[^\r\n\\/:\*\?"<>\|]+)\.(?<ext>[\w\d]+)\b'
+
+    /**
+     * @description - Constructs one of the Bracket patterns dynamically using an input character.
+     * @param {String} BracketChar - The open bracket character.
+     * @returns {String} - The regular expression pattern.
+     */
+    static GetBracketPattern(BracketChar) {
+        return Format('(?<full>\{1}(?<inner>(?:[^{1}{2}]++|(?-2))*)\{3})', BracketChar
+        , BracketChar == '[' ? '\]' : Pattern.GetMatchingBrace(BracketChar)
+        , Pattern.GetMatchingBrace(BracketChar))
+    }
+
+    static QuotedString := '(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2}'
+
+    /**
+     * @description - Matches a complete quoted string. This differentiates between quote chars
+     * that have an even or odd number of escape characters behind it, allowing certainty that
+     * the closing quote character is the correct closing character, and not an escaped character.
+     * There is one subcapture group available:
+     * - text - The content of the quoted string.
+     * @example
+        Pattern := Re.Pattern.GetQuotedString('\', '"', false)
+        Text := 'Variable := "Some Json field with \"escaped quotes\""'
+        RegExMatch(Text, Pattern, &Match)
+        MsgBox(Match['text']) ; Some Json field with "escaped quotes"
+        MsgBox(Match[0]) ; "Some Json field with \"escaped quotes\""
+     * @
+     * @param {String} [EscapeChar='``'] - The escape character.
+     * @param {String} [QuoteChars='"`''] - The quote characters. If the strings will only
+     * be quoted by one type of character, you can slightly improve performance by setting this
+     * to just that character.
+     * @param {Boolean} [Options] - The RegEx options to include at the start of the pattern.
+     * {@link https://www.autohotkey.com/docs/v2/misc/RegEx-QuickRef.htm#Options}
+     * The option "Dot-All" is a primary consideration with this pattern.
+     * @returns {String} - The regular expression pattern.
+     */
+    static GetQuotePattern(EscapeChar := '``', QuoteChars := '"`'', Options?) {
+        if InStr(EscapeChar, '\') && StrLen(EscapeChar) == 1
+            EscapeChar .= EscapeChar
+        Options := IsSet(Options) ? StrReplace(Options, ')', '') ')' : ''
+        return Format('{2}(?<!{1})(?:{1}{1})*+({3})(?<text>.*?)'
+        '(?<!{1})(?:{1}{1})*+\g{-2}', EscapeChar, Options
+        , '[' StrReplace(StrReplace(QuoteChars, '"', '``"'), "'", "``'") ']')
+    }
+
+    /**
+     * @description - This function will return a pattern that allows a match to occur only when
+     * zero or an even number of escape characters are present behind text that matches with the input
+     * `Pattern`. If an odd number of escape characters are behind the text, the pattern does not match.
+     * There are two subcapture groups available:
+     * - escape - If the string is preceded by an even number of escape characters, you can
+     * access them with this subcapture group.
+     * - str - The character or substring without preceding escape characters.
+     * @example
+        Text := 'Some text with\nbackslash escapes like\n\\n and \\t.'
+        RegExMatch(Text, Re.Pattern.GetUnescapedStr('n', '\\'), &Match)
+        MsgBox(Match['escape']) ; \\
+        MsgBox(Match['str']) ; n
+        MsgBox(Match.Pos) ; 41
+        MsgBox(Match[0]) ; \\n
+     * @
+     * @param {String} Pattern - Pattern to match.
+     * @param {String} [EscapeChar='``'] - The escape character.
+     * @returns {String} - The regular expression pattern.
+     */
+    static GetUnescapedStr(Pattern, EscapeChar := '``') {
+        if EscapeChar == '\'
+            EscapeChar .= EscapeChar
+        return Format('(?<escape>(?<!{1})(?:{1}{1})*+)(?<str>{2})', EscapeChar, Pattern)
+    }
+
+    static GetEscapedStr(Pattern, EscapeChar := '``') {
+        if EscapeChar == '\'
+            EscapeChar .= EscapeChar
+        return Format('(?<escape>(?<!{1})(?:{1}{1})*+{1})(?<str>{2})', EscapeChar, Pattern)
+    }
+
+    static Escape[EscapeChar := '``'] => Format('(?<!{1})(?:{1}{1})*+{1}', EscapeChar == '\' ? EscapeChar EscapeChar : EscapeChar)
+
+    /**
+     * @description - Matches a singleline comment. This assumes that the comment character is
+     * expected to follow a newline, whitespace character, or is at the beginning of the string.
+     * There is one subcapture group available:
+     * - comment - The comment text.
+     * @example
+        Text := 'Some text before the comment. // This is a comment.'
+        RegExMatch(Text, Re.Pattern.GetSinglelineComment('//'), &Match)
+        MsgBox(Match['comment']) ; This is a comment.
+        MsgBox(Match[0]) ; // This is a comment.
+     * @param {String} CommentChar - The character that indicates the beginning of a comment.
+     * @returns {String} - The regular expression pattern.
+     */
+    static GetSinglelineComment(CommentChar) {
+        return Format('(?<=\s|^){1}[ \t]*(?<comment>.*)', CommentChar)
+    }
+
+    /**
+     * @description - Matches text between any two substrings. There is one subcapture group
+     * available:
+     * - content - The text between the two substrings.
+     * @example
+        ; We can capture all of the comments in this code file thusly:
+        Result := Re.Loop(FileRead(A_ScriptFullPath), Re.Pattern.GetTextBetweenSubstrings('/\*\*', '\*/'), &Match)
+        for Match in Result {
+            MsgBox(Match['content'])
+        }
+     * @
+     * @param {String} OpenSubstring - The opening substring.
+     * @param {String} CloseSubstring - The closing substring.
+     */
+    static GetTextBetweenSubstrings(OpenSubstring, CloseSubstring) {
+        return Format('s){1}(?<content>.*?){2}', OpenSubstring, CloseSubstring)
+    }
+
+    /**
+     * @property {String} Pattern.Parentheses - Matches a string enclosed by parentheses while also
+     * allowing for any number of nested escaped parentheses which do not affect the match, and
+     * requires an even number of not-escaped parentheses for the match to succeed.
+     * @example
+        Str := '[a-z]+(?<somegroup>.+\(.+?\))'
+        p := Pattern.Parentheses
+        RegExMatch(Str, p, &Match1)
+        MsgBox(Match1[0]) ; [a-z]+(?<somegroup>.+\(.+?\))
+        ; Escape the last character so now there's an odd number of unescaped parentheses
+        Str := '[a-z]+(?<somegroup>.+\(.+?\)\)'
+        RegExMatch(Str, p, &Match2)
+        MsgBox(Match2 ? Match2[0] : '') ; ''
+        ; Escape the first
+        Str := '[a-z]+\(?<somegroup>.+\(.+?\))'
+        RegExMatch(Str, p, &Match3)
+        MsgBox(Match3 ? Match3[0] : '') ; ''
+     * @
+     *
+     */
+    static Parentheses :=  (
+        '(?<full>'
+            '(?<!\\)(?:\\\\)*\('
+            '(?:'
+                '[^()]+'
+                '|'
+                '(?<escape>(?<!\\)(?:\\\\)*\\[^\\])'
+                '|'
+                '(?&full)'
+            ')*'
+            '(?<!\\)(?:\\\\)*\)'
+        ')'
+    )
+
+    /**
+     * @property {String} Pattern.NamedSubcaptureGroup - Matches a named subcapture group.
+     */
+    static NamedSubcaptureGroup := '(?<!\\)(?:\\\\)*\(\?[<`'p]{1,2}(?<name>[_\p{L}][_\p{L}\p{Nd}]*)>'
+
+    /**
+     * @property {String} Pattern.Mark - Matches a named control verb.
+     */
+    static Mark := (
+        '(?<!\\)(?:\\\\)*'
+        '\(\*'
+        '(?:MARK|COMMIT|ACCEPT|FAIL|SKIP|PRUNE|THEN|\*)'
+        ':'
+        '(?<name>'
+            '(?:'
+                '(?<!\\)(?:\\\\)*\\Q[\w\W]+?(?<!\\)(?:\\\\)*\\E'
+                '|'
+                '[^(\\)]+'
+                '|'
+                '(?<escape>(?<!\\)(?:\\\\)*\\[^\\])'
+            ')*'
+        ')'
+        '(?<!\\)(?:\\\\)*\)'
+    )
+
+    static Callout := (
+        'J)(?<!\\)(?:\\\\)*'
+        '\(\?C'
+        '(?:'
+            '(?<o>[```'"^%#$])'
+            '(?<name>.*?)\g{o}\)'
+            '|'
+            '\{(?<name>.*?)\}\)'
+        ')'
+    )
+}
+
+
+; if A_LineFile == A_ScriptFullpath {
+;     A_Clipboard := Pattern.Escape['\']
+;     msgbox(A_Clipboard)
+; }
+
+
+
