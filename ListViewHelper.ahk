@@ -126,12 +126,12 @@ class ListViewHelper {
         _Process(Obj) {
             Row := LV.Add(Opt ?? unset)
             if Obj is Map {
-                for Col in LVH.Cols(LV, 1) {
+                for Col in ListViewHelper.Cols(LV, 1) {
                     Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
                     LV.Modify(Row, 'Col' A_Index, Obj.Has(Col) ? Obj.Get(Col) : '')
                 }
             } else {
-                for Col in LVH.Cols(LV, 1) {
+                for Col in ListViewHelper.Cols(LV, 1) {
                     Col := RegExReplace(Col, '[^a-zA-Z0-9_]', '')
                     LV.Modify(Row, 'Col' A_Index, HasProp(Obj, Col) ? Obj.%Col% : '')
                 }
@@ -168,7 +168,7 @@ class ListViewHelper {
                 Name := LV.GetText(0, MatchCol)
                 for O in Obj
                     ListObjText .= O[Name] '`n'
-                for RowTxt in LVH.Rows(LV, -1, MatchCol)
+                for RowTxt in ListViewHelper.Rows(LV, -1, MatchCol)
                     ListRowText .= RowTxt '`n'
                 ListObjText := StrSplit(Sort(Trim(ListObjText, '`n')), '`n')
                 ListRowText := StrSplit(Sort(Trim(ListRowText, '`n')), '`n')
@@ -200,7 +200,7 @@ class ListViewHelper {
                     Columns.Push(RegExReplace(LV.GetText(0, z), '[^a-zA-Z0-9_]', ''))
                 for O in Obj
                     ListObjText .= O.%Name% '`n'
-                for Txt in LVH.Rows(LV, -1, MatchCol)
+                for Txt in ListViewHelper.Rows(LV, -1, MatchCol)
                     ListRowText .= Txt '`n'
                 ListObjText := StrSplit(Sort(Trim(ListObjText, '`n')), '`n')
                 ListRowText := StrSplit(Sort(Trim(ListRowText, '`n')), '`n')
@@ -225,7 +225,7 @@ class ListViewHelper {
             }
         } else {
             if Obj is Map {
-                for RowText in LVH.Rows(LV, -1, MatchCol) {
+                for RowText in ListViewHelper.Rows(LV, -1, MatchCol) {
                     if Obj[Name] = RowText {
                         while ++k <= EndCol {
                             ColName := LV.GetText(0, k)
@@ -237,7 +237,7 @@ class ListViewHelper {
                     }
                 }
             } else {
-                for RowText in LVH.Rows(LV, -1, MatchCol) {
+                for RowText in ListViewHelper.Rows(LV, -1, MatchCol) {
                     if Obj.%RegExReplace(Name, '[^a-zA-Z0-9_]', '')% = RowText {
                         while ++k <= EndCol {
                             ColName := RegExReplace(LV.GetText(0, k), '[^a-zA-Z0-9_]', '')
@@ -264,11 +264,11 @@ class ListViewHelper {
 </pre>
      * @example
 
-        for ColName in LVH.Cols(LV)
+        for ColName in ListViewHelper.Cols(LV)
             Str .= ColName ', '
         MsgBox(Trim(Str, ', ')) ; Name, Age, Favorite Anime Character
 
-        for ColName, RowText in LVH.Cols(LV, 2, 2)
+        for ColName, RowText in ListViewHelper.Cols(LV, 2, 2)
             Str2 .= ColName ': ' RowText ', '
         MsgBox(Trim(Str2, ', ')) ; Name: Albert Einstein, Age: Relative, Favorite Anime Character: Kurisu Makise
 
@@ -277,9 +277,9 @@ class ListViewHelper {
     * @param {Number} [Row=1] - If using the enumerator in its two-parameter mode, you can specify
     * a row from which to obtain the text which gets passed to the second parameter.
     * @param {Number} [VarCount=1] - Specify if you are calling the enumerator in its 1-parameter mode
-    * ( `for ColName in LVH.Cols(Lv)` )
+    * ( `for ColName in ListViewHelper.Cols(Lv)` )
     * or its 2-parameter mode
-    * ( `for ColName, RowText in LVH.Cols(Lv, n, 2)` ).
+    * ( `for ColName, RowText in ListViewHelper.Cols(Lv, n, 2)` ).
     * @returns {Enumerator} - An enumerator function that can be used to iterate over the columns.
     */
     static Cols(LV, Row := 1, VarCount := 1) {
@@ -318,16 +318,16 @@ class ListViewHelper {
 </pre>
      * @example
 
-        for RowText in LVH.Rows(LV, 'C')
+        for RowText in ListViewHelper.Rows(LV, 'C')
             Str .= RowText ', '
         MsgBox(Trim(Str, ', ')) ; Johnny Appleseed, The Rock
 
-        for Row, RowText in LVH.Rows(LV, 'C', Col := 3, Output := 2)
+        for Row, RowText in ListViewHelper.Rows(LV, 'C', Col := 3, Output := 2)
             Str2 .= Row ': ' RowText ', '
         MsgBox(Trim(Str2, ', ')) ; 1: Holo, 3: Konata Izumi
 
         OutputText := []
-        for Row, RowText in LVH.Rows(LV, -1, , OutputText)
+        for Row, RowText in ListViewHelper.Rows(LV, -1, , OutputText)
             Str3 .= ArrayJoin(OutputText) '; '
         MsgBox(Trim(Str2, ', ')) ; Johnny Appleseed, 27, Holo; Albert Einstein, ...
 
@@ -503,7 +503,7 @@ class ListViewHelper {
             Name := LV.GetText(0, MatchCol)
             for O in Obj
                 ListObjText .= O[Name] '`n'
-            for RowTxt in LVH.Rows(LV, -1, MatchCol)
+            for RowTxt in ListViewHelper.Rows(LV, -1, MatchCol)
                 ListRowText .= RowTxt '`n'
             ListObjText := StrSplit(Sort(Trim(ListObjText, '`n')), '`n')
             ListRowText := StrSplit(Sort(Trim(ListRowText, '`n')), '`n')
@@ -535,7 +535,7 @@ class ListViewHelper {
                 Columns.Push(RegExReplace(LV.GetText(0, z), '[^a-zA-Z0-9_]', ''))
             for O in Obj
                 ListObjText .= O.%Name% '`n'
-            for Txt in LVH.Rows(LV, -1, MatchCol)
+            for Txt in ListViewHelper.Rows(LV, -1, MatchCol)
                 ListRowText .= Txt '`n'
             ListObjText := StrSplit(Sort(Trim(ListObjText, '`n')), '`n')
             ListRowText := StrSplit(Sort(Trim(ListRowText, '`n')), '`n')
