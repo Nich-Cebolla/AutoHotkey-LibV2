@@ -87,20 +87,20 @@ class Patterns {
     /**
      * @property {String} RootPath - Matches a standard Windows root path. There are four
      * subcapture groups available:
-     * - dir - The directory path. Note the directory does have the trailing '\' at the end.
+     * - dir - The directory path. Note the directory does not the trailing '\' at the end.
      * - drive - The drive letter.
-     * - name - The file name.
+     * - file - The file name.
      * - ext - The file extension.
      * @example
         RegExMatch(A_LineFile, Re.Pattern.RootPath, &Match)
-        MsgBox(Match['dir']) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\
         MsgBox(Match['drive']) ; C
-        MsgBox(Match['name']) ; Re
+        MsgBox(Match['dir']) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re
+        MsgBox(Match['file']) ; Pattern
         MsgBox(Match['ext']) ; ahk
-        MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\Re.ahk
+        MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re\Pattern.ahk
      * @
      */
-    static RootPath := '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
+    static RootPath := '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
 
     /**
      * @description - Constructs one of the Bracket patterns dynamically using an input character.
