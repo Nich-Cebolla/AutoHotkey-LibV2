@@ -100,7 +100,7 @@ class Patterns {
         MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\Re.ahk
      * @
      */
-    static RootPath := '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:\*\?"<>\|]+\\?)+)\\(?<name>[^\r\n\\/:\*\?"<>\|]+)\.(?<ext>[\w\d]+)\b'
+    static RootPath := '(?<dir>(?<drive>[a-zA-Z]):\\(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
 
     /**
      * @description - Constructs one of the Bracket patterns dynamically using an input character.
