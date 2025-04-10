@@ -1,7 +1,7 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/FillStr.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
 
@@ -73,7 +73,7 @@ class FillStr {
      * @param {String} Str - The string to repeat.
      * @example
         Filler := FillStr('-')
-        Filler[10] ; ----------
+        Filler[10]                                  ; ----------
         Filler.LeftAlign('Hello, world!', 26)       ; Hello, world!-------------
         Filler.LeftAlign('Hello, world!', 26, 5)    ; -----Hello, world!--------
         Filler.CenterAlign('Hello, world!', 26)     ; -------Hello, world!------
@@ -92,13 +92,12 @@ class FillStr {
             Out .= Str
         this[10] := Out
         this.Len := StrLen(Str)
+        this.Cache := Map()
     }
-    Cache := Map()
     __Item[Qty] {
         /**
          * @description - Returns the string of the specified number of repetitions. The `Qty`
-         * parameter does not represent string length, it represents number of repetitions of
-         * `Filler.Str`, which is the same as string length only when the length of `Filler.Str` == 1.
+         * represents number of repetitions of `Filler.Str`.
          * @param {Integer} Qty - The number of repetitions.
          * @returns {String} - The string of the specified number of repetitions.
          */
@@ -168,8 +167,18 @@ class FillStr {
      * - 1: Add the remainder to the left side.
      * - 2: Add the remainder to the right side.
      * - 3: Add the remainder to both sides.
+     * @param {String} [Padding=' '] - The `Padding` value is added to the left and right side of
+     * `Str` to create space between the string and the filler characters. To not use padding, set
+     * it to an empty string.
+     * @param {Integer} [TruncateActionLeft=1] - This parameter controls how the filler string
+     * `Filler.Str` is truncated when the LeftOffset is not evenly divisible by the length of
+     * `Filler.Str`. For a full explanation, see {@link FillStr.GetOffsetStr}.
+     * @param {Integer} [TruncateActionRight=2] - This parameter controls how the filler string
+     * `Filler.Str` is truncated when the remaining character count on the right side of the output
+     * string is not evenly divisible by the length of `Filler.Str`. For a full explanation, see
+     * {@link FillStr.GetOffsetStr}.
      */
-    CenterAlign(Str, Width, RemainderAction := 1, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
+    CenterAlignEx(Str, Width, RemainderAction := 1, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
         Space := Width - StrLen(Str) - (LenPadding := StrLen(Padding) * 2)
         if Space < 1
             return Str
@@ -201,7 +210,7 @@ class FillStr {
      * - 3: Add the remainder to both sides.
      * @returns {String} - The center aligned string.
      */
-    CenterAlignA(Str, Width, RemainderAction := 1) {
+    CenterAlign(Str, Width, RemainderAction := 1) {
         Space := Width - StrLen(Str)
         r := Mod(Space, 2)
         Split := (Space - r) / 2
@@ -237,7 +246,7 @@ class FillStr {
      * string is not evenly divisible by the length of `Filler.Str`. For a full explanation, see
      * {@link FillStr.GetOffsetStr}.
      */
-    LeftAlign(Str, Width, LeftOffset := 0, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
+    LeftAlignEx(Str, Width, LeftOffset := 0, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
         if LeftOffset + (LenStr := StrLen(Str)) + (LenPadding := StrLen(Padding) * 2) > Width
             LeftOffset := Width - LenStr - LenPadding
         if LeftOffset > 0
@@ -256,7 +265,7 @@ class FillStr {
      * @param {Number} [LeftOffset=0] - The offset from the left side.
      * @returns {String} - The left aligned string.
      */
-    LeftAlignA(Str, Width, LeftOffset := 0) {
+    LeftAlign(Str, Width, LeftOffset := 0) {
         if LeftOffset {
             if LeftOffset + StrLen(Str) > Width
                 LeftOffset := Width - StrLen(Str)
@@ -285,7 +294,7 @@ class FillStr {
      * `Filler.Str`. For a full explanation, see {@link FillStr.GetOffsetStr}.
      * @returns {String} - The right aligned string.
      */
-    RightAlign(Str, Width, RightOffset := 0, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
+    RightAlignEx(Str, Width, RightOffset := 0, Padding := ' ', TruncateActionLeft := 1, TruncateActionRight := 2) {
         if RightOffset + (LenStr := StrLen(Str)) + (LenPadding := StrLen(Padding) * 2) > Width
             RightOffset := Width - LenStr - LenPadding
         Out := Padding Str Padding
@@ -304,7 +313,7 @@ class FillStr {
      * @param {Number} [RightOffset=0] - The offset from the right side.
      * @returns {String} - The right aligned string.
      */
-    RightAlignA(Str, Width, RightOffset := 0) {
+    RightAlign(Str, Width, RightOffset := 0) {
         if RightOffset {
             if RightOffset + StrLen(Str) > Width
                 RightOffset := Width - StrLen(Str)
