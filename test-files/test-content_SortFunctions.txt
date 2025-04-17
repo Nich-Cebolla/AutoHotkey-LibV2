@@ -1,4 +1,4 @@
-
+﻿
     /**
      * @description - some content.1
      * @returns {String} - Whatever
@@ -12,6 +12,8 @@
         , param?)
 
     })
+
+    ; Some comment in-between functions
 
     /**
      * @description - some content.2
@@ -27,7 +29,7 @@
 
     .
 
-    'Just a little more string'
+    'Just a little more string'     ; Another comment over here
 
     /**
      * @description - some content.3
@@ -52,6 +54,10 @@
     ) .
 
     'Just a little more string'
+
+    /*
+    random comment
+    */
 
     /**
      * @description - some content.5
@@ -83,6 +89,12 @@
     , param3
     ] => AssignmentOverHere /= ; comment.4
     5 + 10 - 20
+
+    /**
+     * jsdoc style comment but not above a function
+     *
+     */
+
 
     /**
      * @description - some content.8
@@ -188,3 +200,4 @@
             return value := 1
         }
     }
+

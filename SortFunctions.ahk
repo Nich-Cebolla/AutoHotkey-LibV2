@@ -1,4 +1,4 @@
-/*
+﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SortFunctions.ahk
     Author: Nich-Cebolla
     Version: 1.0.2
@@ -44,7 +44,6 @@ class SortFunctions {
         static AddToClipboard := true
         , CR := false
         , Hotkey := ''
-        , LinesBetween := 1
         , LF := true
         , Path := ''
         , SaveWorking := false
@@ -103,7 +102,7 @@ class SortFunctions {
      * process. To replace the removed strings with their original text, you can call `ReplaceStrings`.
      */
     static Call(Config?, Callback?) {
-        Config := this.Config := Config ?? SortFunctions_Config_AppData ?? SortFunctions_Config_Working ?? {}
+        Config := Config ?? SortFunctions_Config_AppData ?? SortFunctions_Config_Working ?? {}
         ObjSetBase(Config, SortFunctions.Default)
         G := this.G := Gui('+Resize')
         G.Add('Button', 'Section vCopy', 'Copy').OnEvent('Click', _Copy)
@@ -118,8 +117,6 @@ class SortFunctions {
         G.Add('Edit', 'ys w30 vSortStyle')
         G.Add('Text', 'ys vTxtSortOptions', 'Sort options: ')
         G.Add('Edit', 'ys w50 vSortOptions')
-        G.Add('Text', 'ys vTxtLinesBetween', 'Lines between: ')
-        G.Add('Edit', 'ys w50 vLinesBetween')
         G.Add('Text', 'xs Section vTxtPath', 'Input Path: ')
         G.Add('Edit', 'ys w500 vPath')
         G.Add('Button', 'ys vChoose', 'Choose')
@@ -140,6 +137,11 @@ class SortFunctions {
         G.MenuBar := MenuBarConstructor(Menus, &MenuObjects)
         this.Menus := MenuObjects
         mOptions := MenuObjects.Get('Options')
+        G.Options := {
+            SaveAppData: Config.SaveAppData
+          , SaveWorking: Config.SaveWorking
+          , SaveOnExit: Config.SaveOnExit
+        }
         if Config.SaveAppData {
             mOptions.Check('Save to AppData')
         }
@@ -169,7 +171,6 @@ class SortFunctions {
             }
         }
         G['Hotkey'].Text := Config.Hotkey
-        G['LinesBetween'].Text := Config.LinesBetween
         G['Path'].Text := Config.Path
         G['SortOptions'].Text := Config.SortOptions
         G['SortOrder'].Text := Config.SortOrder
@@ -220,15 +221,13 @@ class SortFunctions {
             this.ShowTooltip('Copied!')
         }
         _MenuOpenConfigDir(ItemName, ItemPos, MenuObj) {
+            Options := G.Options
             Flag := 0
-            if Config.SaveWorking {
+            if Options.SaveWorking {
                 this.OpenConfigDir('Working')
                 Flag := 1
             }
-            if Config.SaveAppData {
-                if Flag {
-                    sleep 500
-                }
+            if Options.SaveAppData {
                 this.OpenConfigDir('AppData')
                 Flag := 1
             }
@@ -237,10 +236,11 @@ class SortFunctions {
         _MenuOptions(ItemName, ItemPos, MenuObj) {
             static MenuItems := Map('Save to working directory', 'SaveWorking'
             , 'Save to AppData', 'SaveAppData', 'Save on exit', 'SaveOnExit')
+            Options := G.Options
             mOptions := this.Menus.Get('Options')
             Prop := MenuItems.Get(ItemName)
-            Config.%Prop% := !Config.%Prop%
-            if Config.%Prop% {
+            Options.%Prop% := !Options.%Prop%
+            if Options.%Prop% {
                 mOptions.Check(ItemName)
             } else {
                 mOptions.Uncheck(ItemName)
@@ -253,16 +253,17 @@ class SortFunctions {
                 }
             }
             if ItemName == 'Save on exit' {
-                this.SaveOnExit(Config.SaveOnExit)
+                this.SaveOnExit(Options.SaveOnExit)
             }
         }
         _MenuSaveNow(ItemName, ItemPos, MenuObj) {
+            Options := G.Options
             Flag := 0
-            if Config.SaveWorking {
+            if Options.SaveWorking {
                 this.WriteConfig('Working')
                 Flag := 1
             }
-            if Config.SaveAppData {
+            if Options.SaveAppData {
                 this.WriteConfig('AppData')
                 Flag := 1
             }
@@ -275,7 +276,7 @@ class SortFunctions {
         _Sort(Ctrl, *) {
             G := Ctrl.Gui
             this.Sort(, G['Path'].Text || unset, G['SortStyle'].Text || unset
-            , G['SortOptions'].Text || unset, G['SortOrder'].Text || unset, , G['LinesBetween'].Text || unset)
+            , G['SortOptions'].Text || unset, G['SortOrder'].Text || unset)
         }
     }
 
@@ -599,10 +600,10 @@ class SortFunctions {
             '(?<text>[\w\W]*?)'
             '\R[ \t]*+\).*?\g{quote})(?<tail>.*)'
         )
-        , pSingleline := '(?<removed>(?<=\s|^);[ \t]*(?<comment>.*))(*MARK:Comment)'
-        , pMultiline := ('(?<removed>/\*\s*(?<comment>[\w\W]+?)\s*\*/)(*MARK:Comment)')
+        , pSingleline := '(?<removed>(?<=\s|^)[ \t]*;[ \t]*(?<comment>.*))(*MARK:Comment)'
+        , pMultiline := ('(?<removed>(?<=[\r\n]|^)[ \t]*/\*\s*(?<comment>[\w\W]+?)\s*\*/)(*MARK:Comment)')
         , pJsDoc := (
-            '(?<removed>/\*\*(?<comment>[\w\W]+?)\*/)(*MARK:jsdoc)\s*'
+            '(?<removed>(?<=[\r\n]|^)[ \t]*/\*\*(?<comment>[\w\W]+?)\*/)(*MARK:jsdoc)\s*'
             '(?<line>'
                 'class[ \t]+'
                 '(?<class>[a-zA-Z0-9_]+)'
@@ -658,16 +659,27 @@ class SortFunctions {
     }
 
     /**
-     * @description - Replaced the removed strings.
+     * @description - Replaced the removed strings. If any removed strings do not get added back
+     * to the text, they get added to an array and returned. This is useful for validation, but
+     * also any comments which are not JSDoc-style comments and that are located outside of any
+     * function calls would otherwise be lost when sorted. If using the built-in sorter, these
+     * items get added to the top of the output text so you can add them back where they need to go.
      * @param {VarRef} Text - The text to search. `Text` is expected to be AHK code.
      * @param {Object} Removed - The object returned by `RemoveStringLiterals`.
+     * @returns {Array} - If any items do not get added back to the text, an array of those strings.
+     * Else, an empty string is returned.
      */
     static ReplaceStrings(&Text, Removed) {
+        Remainder := []
         for Prop, Arr in Removed.OwnProps() {
             for Item in Arr {
                 Text := StrReplace(Text, Item.Replacement, Item.Match['removed'], , &Count)
+                if !Count {
+                    Remainder.Push(Item)
+                }
             }
         }
+        return Remainder.Length ? Remainder : ''
     }
 
     /**
@@ -678,9 +690,10 @@ class SortFunctions {
         OnExit(_Save, Value ? 1 : 0)
 
         _Save(*) {
-            if this.Config.SaveWorking
+            Options := this.G.Options
+            if Options.SaveWorking
                 this.WriteConfig('Working')
-            if this.Config.SaveAppData
+            if Options.SaveAppData
                 this.WriteConfig('AppData')
         }
     }
@@ -713,18 +726,17 @@ class SortFunctions {
      * file should contain only the code that is intended to be sorted. If neither a string input nor
      * path are provided, the function sorts the clipboard. If a callback function is not provided,
      * `Sort` relies on AHK's internal sorting that occurs when iterating a `Map` object's contents.
-     * <br>
+     *
      * `Sort` divides the code into four groups:
      * - Static properties
      * - Properties
      * - Static functions
      * - Functions
-     * <br>
+     *
      * In terms of `Sort`'s process, global functions and class instance Functions are equivalent and
      * would be grouped together if both are present in the input content. Each group is sorted
      * individually.
-     * @param {String} [Text] - The code to sort. If neither `Text` nor `Path` are set, the
-     * contents of the clipboard is sorted.
+     * @param {String} [Text] - The code to sort.
      * @param {String} [Path] - The path to a file containing the code to sort.
      * @param {Integer} [SortStyle=1] - An integer representing one of the available built-in sort
      * styles. Currently there are three options:
@@ -758,11 +770,9 @@ class SortFunctions {
      * The callback function does not need to return a value. It is expected the callback function
      * will construct its own string, and so no further processing would be needed from the built-in
      * process. To replace the removed strings with their original text, you can call `ReplaceStrings`.
-     * @param {Integer} [LinesBetween=1] - The number of blank lines between each item.
      * @returns {String} - The sorted text.
      */
-    static Sort(Text?, Path?, SortStyle := 1, SortOptions := '', SortOrder := 'SF SP F P', Callback?
-    , LinesBetween := 1) {
+    static Sort(Text?, Path?, SortStyle := 1, SortOptions := '', SortOrder := 'SF SP F P', Callback?) {
         static pBracket := '(?<bracket>\{(?:[^}{]++|(?&bracket))*\})'
         , rChar := this.rChar
         , pStatement := (
@@ -789,9 +799,6 @@ class SortFunctions {
             Text := FileRead(Path)
         else if !IsSet(Text)
             Text := A_Clipboard
-        loop LinesBetween {
-            BlankLines .= '`r`n'
-        }
         ; This function relies on a pattern that requires every open bracket to have a matching close bracket
         ; to work as expected. If a string literal has one bracket but not the other, the function wouldn't
         ; process correctly. So we need to remove string literals before processing just in case.
@@ -823,8 +830,13 @@ class SortFunctions {
             return
         }
         _Sort%SortStyle%()
-        this.ReplaceStrings(&SortedText, Removed)
-        if this.HasOwnProp('G') && HasProp(this.G, 'Hwnd') && IsNumber(this.G.Hwnd) {
+        if Remainder := this.ReplaceStrings(&SortedText, Removed) {
+            for Item in Remainder {
+                _str .= Item.Match['removed'] '`r`n`r`n'
+            }
+            SortedText := _str '`r`n`r`n' SortedText
+        }
+        if this.HasOwnProp('G') && HasProp(this.G, 'Hwnd') && WinExist(this.G.Hwnd) {
             this.G['Display'].Text := RegExReplace(SortedText, '\R', '`r`n')
             if this.G['AddToClipboard'].Value {
                 this.Copy()
@@ -850,7 +862,10 @@ class SortFunctions {
                     continue
                 }
                 for Name, Statement in Container {
-                    SortedText .= Statement '`r`n' BlankLines
+                    SortedText .= Statement '`r`n`r`n'
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
                 }
             }
         }
@@ -871,10 +886,13 @@ class SortFunctions {
                         DoubleUnderscore.Push(Name)
                         continue
                     }
-                    SortedText .= Container[Name] '`r`n' BlankLines
+                    SortedText .= Container[Name] '`r`n`r`n'
                 }
                 for Name in DoubleUnderscore {
-                    SortedText .= Container[Name] '`r`n' BlankLines
+                    SortedText .= Container[Name] '`r`n`r`n'
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
                 }
             }
         }
@@ -889,7 +907,10 @@ class SortFunctions {
                     Names .= Name '`n'
                 }
                 for Name in StrSplit(Sort(Trim(Names, '`n'), SortOptions), '`n') {
-                    SortedText .= Container[Name] '`r`n' BlankLines
+                    SortedText .= Container[Name] '`r`n`r`n'
+                }
+                if A_Index < ObjOwnPropCount(Containers) {
+                    SortedText .= '`r`n'
                 }
             }
         }
@@ -901,26 +922,25 @@ class SortFunctions {
      * 'AppData'.
      */
     static WriteConfig(Location) {
-        static ConfigStr := '
+        static Config := '
         (
             class SortFunctions_Config_{1} {
                 static AddToClipboard := {2}
               , CR := {3}
               , Hotkey := {4}
-              , LinesBetween := {5}
-              , LF := {6}
-              , Path := {7}
-              , SaveAppData := {8}
-              , SaveOnExit := {9}
-              , SaveWorking := {10}
-              , SortOptions := {11}
-              , SortOrder := {12}
-              , SortStyle := {13}
+              , LF := {5}
+              , Path := {6}
+              , SaveAppData := {7}
+              , SaveOnExit := {8}
+              , SaveWorking := {9}
+              , SortOptions := {10}
+              , SortOrder := {11}
+              , SortStyle := {12}
             }
 
         )'
         G := this.G
-        Config := this.Config
+        Options := G.Options
         if Location == 'Working' {
             Path := A_WorkingDir
         } else if Location == 'AppData' {
@@ -937,17 +957,16 @@ class SortFunctions {
             throw ValueError('Unexpected ``Location``.', -1, Location)
         }
         f := FileOpen(Path '\SortFunctionsConfig.ahk', 'w')
-        f.Write(Format(ConfigStr
+        f.Write(Format(Config
             , Location
             , G['AddToClipboard'].Value ? 'true' : 'false'
             , G['CR'].Value ? 'true' : 'false'
             , '"' G['Hotkey'].Text '"'
-            , G['LinesBetween'].Text
             , G['LF'].Value ? 'true' : 'false'
             , '"' G['Path'].Text '"'
-            , Config.SaveAppData ? 'true' : 'false'
-            , Config.SaveOnExit ? 'true' : 'false'
-            , Config.SaveWorking ? 'true' : 'false'
+            , Options.SaveAppData ? 'true' : 'false'
+            , Options.SaveOnExit ? 'true' : 'false'
+            , Options.SaveWorking ? 'true' : 'false'
             , '"' G['SortOptions'].Text '"'
             , '"' G['SortOrder'].Text '"'
             , IsNumber(G['SortStyle'].Text) ? G['SortStyle'].Text : '"' G['SortStyle'].Text '"'
