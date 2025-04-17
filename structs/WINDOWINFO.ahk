@@ -10,7 +10,7 @@ class WINDOWINFO extends Buffer {
      * @param {Integer} hWnd - The handle to the window whose information will be retrieved.
      * @returns {WINDOWINFO} - The instance of the `WINDOWINFO` class.
      */
-    __New(hWnd) {a
+    __New(hWnd) {
         this.hWnd := hWnd
         ; DWORD - 4 bytes x 4, RECT - 16 bytes x 2, UINT - 4 bytes x 2, ATOM - 2 bytes, WORD - 2 bytes
         this.Size := 60
