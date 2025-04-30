@@ -33,7 +33,7 @@
  */
 GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|Prototype') {
     static OBJ_GETOWNPROPDESC := Object.Prototype.GetOwnPropDesc
-    OutBaseObjectsList := GetBaseObjects(Obj, &i, StopAt)
+    OutBaseObjectsList := GetBaseObjects(Obj, StopAt)
     OutBaseObjectsList.InsertAt(1, Obj)
     Result := Map()
     i += 2
@@ -62,14 +62,12 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
     }
     return Result
 
-    GetBaseObjects(Obj, &OutCount?, StopAt := '-Any') {
+    GetBaseObjects(Obj, StopAt := '-Any') {
         b := Obj.Base
-        OutCount := 0
         if !b {
             return []
         }
         Result := [b]
-        OutCount := 1
         if !StopAt
             StopAt := '-Any'
         if InStr(StopAt, '-') {
@@ -103,7 +101,6 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
         }
         if IsSet(FlagStopBefore) {
             Result.Pop()
-            OutCount--
         }
         return Result
 
@@ -129,7 +126,6 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
         }
         _Process() {
             b := b.Base
-            OutCount++
             Result.Push(b)
         }
     }
