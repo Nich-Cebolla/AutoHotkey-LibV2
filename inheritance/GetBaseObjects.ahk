@@ -10,15 +10,19 @@
 /**
  * @description - Traverses an object's inheritance chain and returns the base objects.
  * @param {Object} Obj - The object from which to get the base objects.
- * @param {VarRef} [OutCount] - A variable that will receive the number of base objects.
- * @param {+Integer|String} [StopAt='-Any'] - If an integer, the number of base objects to traverse up
- * the inheritance chain. If a string, the case-insensitive name of the class to stop at. If zero or
- * false, the function will traverse the entire inheritance chain up to but not including `Any`.
+ * @param {+Integer|String} [StopAt=GBO_STOP_AT_DEFAULT ?? '-Any'] - If an integer, the number of
+ * base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the
+ * class to stop at. If zero or false, the function will traverse the entire inheritance chain up to
+ * but not including `Any`.
+ *
+ * If you define global variable `GBO_STOP_AT_DEFAULT` with a value somewhere in your code, that
+ * value will be used as the default for the function call. Otherwise, '-Any' is used.
+ *
  * There are two ways to modify the function's interpretation of this value:
- * - Stop before or after the class: To directThe default is to stop after the class, such that the base object
+ * - Stop before or after the class: The default is to stop after the class, such that the base object
  * associated with the class is included in the result array. To change this, include a hyphen "-"
- * anywhere in the value, and this will cause the last base object to be removed from the result array
- * prior to returning it.
+ * anywhere in the value and `GetBaseObjects` will not include the last iterated object in the
+ * result array.
  * - The type of object which will be stopped at: This only applies to `StopAt` values which are
  * strings. The default behavior is to stop at a prototype object for the class by the name of
  * `StopAt` (case-insensitive). Specifically, `BaseObject.__Class = StopAt` is the condition. To
@@ -26,8 +30,7 @@
  * instance object, include ":I" at the end of `StopAt`.
  * @returns {Array} - The array of base objects.
  */
-GetBaseObjects(Obj, &OutCount?, StopAt := '-Any') {
-    OutCount := 0
+GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
     Result := []
     b := Obj
     if InStr(StopAt, '-') {
@@ -47,7 +50,6 @@ GetBaseObjects(Obj, &OutCount?, StopAt := '-Any') {
     if IsNumber(StopAt) {
         Loop Number(StopAt) - (IsSet(FlagStopBefore) ? 2 : 1) {
             if b := b.Base {
-                OutCount++
                 Result.Push(b)
             } else {
                 break
@@ -63,7 +65,6 @@ GetBaseObjects(Obj, &OutCount?, StopAt := '-Any') {
                 if CheckStopAt() {
                     break
                 }
-                OutCount++
                 Result.Push(b)
             }
         } else {
@@ -72,7 +73,6 @@ GetBaseObjects(Obj, &OutCount?, StopAt := '-Any') {
                     _Throw()
                     break
                 }
-                OutCount++
                 Result.Push(b)
                 if CheckStopAt() {
                     break
