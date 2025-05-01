@@ -29,7 +29,7 @@ GetPropDesc(Obj, Prop, &OutObj?, &OutIndex?) {
         OutObj := OutObj.Base
     }
     if OutObj {
-        return OBJ_GETOWNPROPDESC(OutObj, Prop)
+        return ObjGetOwnPropDesc(OutObj, Prop)
     } else {
         throw Error('``GetPropDesc`` failed to identify the object which owns the property.', -1)
     }

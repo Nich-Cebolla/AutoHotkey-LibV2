@@ -5,4 +5,4 @@
     License: MIT
 */
 
-OBJ_GETOWNPROPDESC := Object.Prototype.GetOwnPropDesc
+ObjGetOwnPropDesc := Object.Prototype.GetOwnPropDesc

@@ -32,7 +32,7 @@
  *  - `Desc` - The property descriptor object.
  */
 GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|Prototype') {
-    static OBJ_GETOWNPROPDESC := Object.Prototype.GetOwnPropDesc
+    static ObjGetOwnPropDesc := Object.Prototype.GetOwnPropDesc
     OutBaseObjectsList := GetBaseObjects(Obj, StopAt)
     OutBaseObjectsList.InsertAt(1, Obj)
     Result := Map()
@@ -49,12 +49,12 @@ GetProps(Obj, &OutBaseObjectsList?, StopAt := '-Any', Exclude := 'Base|__Class|P
                 PropObj := Result.Get(Prop)
                 if not PropObj.Overridden is Array
                     PropObj.Overridden := []
-                PropObj.Overridden.Push({ Index: i-1, Desc: OBJ_GETOWNPROPDESC(b, Prop) })
+                PropObj.Overridden.Push({ Index: i-1, Desc: ObjGetOwnPropDesc(b, Prop) })
             } else {
                 Result.Set(Prop, {
                     Index: i-1
                 , Name: Prop
-                , Desc: OBJ_GETOWNPROPDESC(b, Prop)
+                , Desc: ObjGetOwnPropDesc(b, Prop)
                 , Overridden: false
                 })
             }

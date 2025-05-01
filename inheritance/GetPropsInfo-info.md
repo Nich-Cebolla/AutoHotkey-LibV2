@@ -69,7 +69,7 @@ switch PropsInfoItemObj.Type {
 The above function is a bit easier to read at a glance, and easier to write, compared to checking `HasOwnProp` multiple times. For better performance, skip the string altogether; if you write your code knowing the index values, you can use the indices. Just include comments specifying what the indices are.
 
 ```ahk
-switch PropsInfoItemObj.TypeIndex {
+switch PropsInfoItemObj.KindIndex {
     case 1: return DoSomething1() ; Call
     case 2: return DoSomething2() ; Get
     case 3: return DoSomething3() ; Get_Set
@@ -78,7 +78,7 @@ switch PropsInfoItemObj.TypeIndex {
 }
 ```
 
-It would have been an expensive inclusion if, for each `PropsInfoItem` object, the `Type` property was set with the string value as a value property. That would have required significant memory and processing time. Instead, `PropsInfoItem.Prototype.__TypeNames` is an array of strings, so each of "Call", "Get", etc. are associated with an index number. When `PropsInfoItemObj.Type` is accessed the first time, it performs the same calculations that our external code would need to do to identify what type of descriptor object our code is working with, then caches the index on the `PropsInfoItemObj.TypeIndex` property so the calculation only needs to be performed once. In this way, the processing time is only consumed if the property is accessed, and instead of caching the string, it caches an integer, minimizing memory usage.
+It would have been an expensive inclusion if, for each `PropsInfoItem` object, the `Type` property was set with the string value as a value property. That would have required significant memory and processing time. Instead, `PropsInfoItem.Prototype.__TypeNames` is an array of strings, so each of "Call", "Get", etc. are associated with an index number. When `PropsInfoItemObj.Type` is accessed the first time, it performs the same calculations that our external code would need to do to identify what type of descriptor object our code is working with, then caches the index on the `PropsInfoItemObj.KindIndex` property so the calculation only needs to be performed once. In this way, the processing time is only consumed if the property is accessed, and instead of caching the string, it caches an integer, minimizing memory usage.
 
 I used a similar approach with the property names as well. For any property which is defined on multiple base objects, the `PropsInfoItem` objects all share a base object on which the `Name` property is defined, so there's no repeated strings. I also wanted to see if it were possible to do the same thing but with the `Index` property shared by the `PropsInfoItem` objects associated with a single base object. I concluded that it is not possible to do both in a single-inheritance object model. Either the `Index` property is defined on every object, allowing the `Name` property to be defined on the base, or vise-versa. I chose to delegate the name to the base, a decision made by guessing which approach requires less memory; I don't plan on spending the time to actually calculate it.
 

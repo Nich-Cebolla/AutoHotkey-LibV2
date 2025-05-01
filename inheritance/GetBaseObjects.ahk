@@ -12,30 +12,47 @@
  * @param {Object} Obj - The object from which to get the base objects.
  * @param {+Integer|String} [StopAt=GBO_STOP_AT_DEFAULT ?? '-Any'] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the
- * class to stop at. If zero or false, the function will traverse the entire inheritance chain up to
+ * class to stop at. If falsy, the function will traverse the entire inheritance chain up to
  * but not including `Any`.
  *
  * If you define global variable `GBO_STOP_AT_DEFAULT` with a value somewhere in your code, that
  * value will be used as the default for the function call. Otherwise, '-Any' is used.
  *
  * There are two ways to modify the function's interpretation of this value:
+ *
  * - Stop before or after the class: The default is to stop after the class, such that the base object
  * associated with the class is included in the result array. To change this, include a hyphen "-"
  * anywhere in the value and `GetBaseObjects` will not include the last iterated object in the
  * result array.
+ *
  * - The type of object which will be stopped at: This only applies to `StopAt` values which are
- * strings. The default behavior is to stop at a prototype object for the class by the name of
- * `StopAt` (case-insensitive). Specifically, `BaseObject.__Class = StopAt` is the condition. To
- * instead stop at a Class object, include ":C" at the end of `StopAt`. To instead stop at an
- * instance object, include ":I" at the end of `StopAt`.
+ * strings. In the code snippets below, `b` is the base object being evaluated.
+ *
+ *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
+ * with a `__Class` property equal to `StopAt`. This is the literal condition used:
+ * `Type(b) == 'Prototype' && (b.__Class = 'Any' || b.__Class = StopAt)`.
+ *
+ *   - Stop at a class object: To direct `GetBaseObjects` to stop at a class object tby he name
+ * `StopAt`, include ":C" at the end of `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
+ * condition used:
+ * `Type(b) == 'Class' && ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt`.
+ *
+ *  - Stop at an instance object: To direct `GetBaseObjects` to stop at an instance object of type
+ * `StopAt`, incluide ":I" at the end of `StopAt`, e.g. `StopAt := "MyClass:I"`. This is the literal
+ * condition used: `Type(b) = StopAt`.
  * @returns {Array} - The array of base objects.
  */
 GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
     Result := []
     b := Obj
-    if InStr(StopAt, '-') {
-        StopAt := StrReplace(StopAt, '-', '')
+    if StopAt {
+        if InStr(StopAt, '-') {
+            StopAt := StrReplace(StopAt, '-', '')
+            FlagStopBefore := true
+        }
+    } else {
         FlagStopBefore := true
+        StopAt := 'Any'
     }
     if InStr(StopAt, ':C') {
         StopAt := StrReplace(StopAt, ':C', '')
@@ -98,7 +115,8 @@ GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
         ; expected. In all other cases, this means that the input `StopAt` value was never
         ; encountered, and results in this error.
         if IsSet(FlagStopBefore) || StopAt != 'Any' {
-            throw Error('``GetBaseObjects`` did not encounter an object that matched the ``StopAt`` value.', -2, 'Stop at: ' StopAt)
+            throw Error('``GetBaseObjects`` did not encounter an object that matched the ``StopAt`` value.'
+            , -2, '``StopAt``: ' (IsSet(FlagStopBefore) ? '-' : '') StopAt)
         }
     }
 }
