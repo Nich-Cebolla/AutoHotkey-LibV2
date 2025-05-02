@@ -3,11 +3,11 @@
 #Include <Stringify>
 
 
-test_Inheritance()
+test_Inheritance(0)
 
 class test_Inheritance {
     static PathOut := A_MyDocuments '\test-output_Inheritance.json'
-    , PathEditor := 'code' ; change to your preferred text editing program. Enclose in quotes if path has spaces
+    , PathEditor := 'code-insiders' ; change to your preferred text editing program. Enclose in quotes if path has spaces
     , Functions :=  ['GetBaseObjects', 'GetPropsInfo']
     , Result := []
 
@@ -68,6 +68,7 @@ class test_Inheritance {
             }
         }
         this.WriteOut(Results.Length ? Results : 'No problems')
+        OutputDebug('`n' (Results.Length || 'No problems'))
         if OpenEditor {
             this.OpenEditor()
         }
@@ -78,25 +79,25 @@ class test_Inheritance {
         this.Result.Push({ Test: A_ThisFunc, Result: Result := [] })
         ; Validates `StopAt` parameter stops where expected, and validates the index assigned to the
         ; output objects is correct.
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_A, &count), A_LineNumber, 'A'), 4, count, A_LineNumber)
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_A, &count, 'Any'), A_LineNumber, 'A'), 5, count, A_LineNumber)
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_A, &count, 'Object-'), A_LineNumber, 'A'), 3, count, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_A), A_LineNumber, 'A'), 4, List.Length, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_A, 'Any'), A_LineNumber, 'A'), 5, List.Length, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_A, 'Object-'), A_LineNumber, 'A'), 3, List.Length, A_LineNumber)
         ; This should result in an error
         try {
-            BaseObjects := GetBaseObjects(this.Obj_A, &count, 'Array:I')
+            BaseObjects := GetBaseObjects(this.Obj_A, 'Array:I')
             Result.Push({ Id: 1, Line: A_LineNumber, List: BaseObjects })
         } catch Error as err {
             if err.Message !== '``GetBaseObjects`` did not encounter an object that matched the ``StopAt`` value.' {
                 Result.Push({ Id: 2, Line: A_LineNumber, err: err })
             }
         }
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_M2_C, &count, 'Object:C-'), A_LineNumber, 'C'), 3, count, A_LineNumber)
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_M2_C, &count, 'Object:C'), A_LineNumber, 'C'), 4, count, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_C, 'Object:C-'), A_LineNumber, 'C'), 3, List.Length, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_C, 'Object:C'), A_LineNumber, 'C'), 4, List.Length, A_LineNumber)
         ; When we set `b1.base := b2`, b1 is no longer considered an `M2` object because it no longer
         ; has `M2.Prototype` as its base. It is then considered an `M` object, so there are two
         ; `M` objects in the inheritance chain, not including `M.Prototype`.
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_M2_I, &count, 'M:I-'), A_LineNumber, 'I'), 0, count, A_LineNumber)
-        _CheckCount(_CheckList(GetBaseObjects(this.Obj_M2_I, &count, 'M:I'), A_LineNumber, 'I'), 1, count, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_I, 'M:I-'), A_LineNumber, 'I'), 0, List.Length, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_I, 'M:I'), A_LineNumber, 'I'), 1, List.Length, A_LineNumber)
 
         return Result.Length ? Result : ''
 
@@ -133,11 +134,11 @@ class test_Inheritance {
      */
     static GetProps_1() {
         this.GetPropsResult := [
-            { Subject: this.Obj_A, Exclude: 'Prop2', Props: GetPropsInfo(this.Obj_A, , 'Prop2', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 4 } }
-          , { Subject: this.Obj_M2_C, Props: GetPropsInfo(this.Obj_M2_C, , , , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 7 } }
-          , { Subject: this.Obj_M2_I, Props: GetPropsInfo(this.Obj_M2_I, , , , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 5 } }
-          , { Subject: this.Obj_M2_I_b1, Props: GetPropsInfo(this.Obj_M2_I_b1, , , , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 4 } }
-          , { Subject: this.Obj_M2_I_b2, Props: GetPropsInfo(this.Obj_M2_I_b2, , , , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 3 } }
+            { Subject: this.Obj_A, Exclude: 'Prop2', Props: GetPropsInfo(this.Obj_A, , 'Prop2', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 3 } }
+          , { Subject: this.Obj_M2_C, Exclude: ',__Class,Prototype,', Props: GetPropsInfo(this.Obj_M2_C, , ',__Class,Prototype,', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 6 } }
+          , { Subject: this.Obj_M2_I, Exclude: ',__Class,Prototype,', Props: GetPropsInfo(this.Obj_M2_I, , ',__Class,Prototype,', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 4 } }
+          , { Subject: this.Obj_M2_I_b1, Exclude: ',__Class,Prototype,', Props: GetPropsInfo(this.Obj_M2_I_b1, , ',__Class,Prototype,', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 3 } }
+          , { Subject: this.Obj_M2_I_b2, Exclude: ',__Class,Prototype,', Props: GetPropsInfo(this.Obj_M2_I_b2, , ',__Class,Prototype,', , &BaseObjList), BaseObj: BaseObjList, Expected: { BaseObjCount: 2 } }
         ]
     }
 
@@ -169,7 +170,7 @@ class test_Inheritance {
      * - The properties returned by the function are correct (no extras, none missing, `Exclude` works as expected)
      * - The containers (__InfoIndex and __InfoItems) are equal size
      * - The Enumerator works in both 1- and 2-paramater modes
-     * - `PropsInfo.Prototype.Get` and `PropsInfo.Prototype.__Item` return the correct object
+     * - `Get` and `__Item` return the correct object
      */
     static GetProps_3() {
         this.Result.Push({ Test: A_ThisFunc, Result: Result := [] })
@@ -183,7 +184,7 @@ class test_Inheritance {
                 Result.Push({ LoopIndex: i,  Id: 7, Line: A_LineNumber, MapCount: _PropsInfo.__InfoIndex.Count, ArrLength: _PropsInfo.__InfoItems.Length })
             }
             ; Ensure excluded properties are excluded
-            for s in StrSplit(Obj.HasOwnProp('Exclude') ? Obj.Exclude : '', ',') {
+            for s in StrSplit(Obj.Exclude, ',') {
                 if _PropsInfo.Has(s) {
                     Result.Push({ LoopIndex: i, ExcludeIndex: A_Index, Id: 8, Line: A_LineNumber, Name: s })
                     break
@@ -204,11 +205,9 @@ class test_Inheritance {
                     break
                 }
             }
-            if i == 1 {
-                List1.Delete('Prop2')
-            } else {
-                if List1.Has('Prototype') {
-                    List1.Delete('Prototype')
+            for s in StrSplit(Obj.Exclude, ',', '`s`t') {
+                if (s) && List1.Has(s) {
+                    List1.Delete(s)
                 }
             }
             ; If List1 is not empty then a property was missed
@@ -234,11 +233,9 @@ class test_Inheritance {
                     break
                 }
             }
-            if i == 1 {
-                List1.Delete('Prop2')
-            } else {
-                if List1.Has('Prototype') {
-                    List1.Delete('Prototype')
+            for s in StrSplit(Obj.Exclude, ',', '`s`t') {
+                if (s) && List1.Has(s) {
+                    List1.Delete(s)
                 }
             }
             ; If List1 is not empty then a property was missed
@@ -276,9 +273,9 @@ class test_Inheritance {
 
     /**
      * @description - Validates the following for StringMode = true
-     * - `PropsInfo.Prototype.Get`
-     * - `PropsInfo.Prototype.__Item`
-     * - `PropsInfo.Prototype.__Enum`
+     * - `Get`
+     * - `__Item`
+     * - `__Enum`
      */
     static GetProps_4() {
         this.Result.Push({ Test: A_ThisFunc, Result: Result := [] })
@@ -294,7 +291,7 @@ class test_Inheritance {
             ; objects are ordered using the map objects' built-in sorting as well.
             List := []
             List.Capacity := Master.Count
-            Exclude := Obj.HasOwnProp('Exclude') ? ',' Obj.Exclude ',': ',__Class,Prototype,'
+            Exclude := ',' Obj.Exclude ','
             for Name in Master {
                 if !InStr(Exclude, ',' Name ',') {
                     List.Push(Name)
@@ -358,7 +355,7 @@ class test_Inheritance {
             Result.Push({ Line: A_LineNumber, Id: 19, Filter: _PropsInfo.Filter })
             return 1
         }
-        if ObjPtr(_PropsInfo.Filter.Get(6).Function) !== ObjPtr(_FilterCustom) {
+        if ObjPtr(_PropsInfo.Filter.Get(5).Function) !== ObjPtr(_FilterCustom) {
             Result.Push({ Line: A_LineNumber, Id: 20, Filter: _PropsInfo.Filter })
         }
         _PropsInfo.FilterDelete(1)
@@ -420,25 +417,30 @@ class test_Inheritance {
                 }
             }
             ; Ensure no properties from objects past index 2 are present
-            for InfoItem in _PropsInfo.__InfoItems {
+            _PropsInfo.StringMode := 0
+            for InfoItem in _PropsInfo {
                 if InfoItem.Index > 2 {
                     Result.Push({ LoopIndex: i, Id: 27, Line: A_LineNumber, PropsInfo: _PropsInfo })
                 }
             }
-            ; Get object ptrs to test FilterActivateFromCache
-            PtrItems2 := ObjPtr(_PropsInfo.__InfoItems)
-            PtrIndex2 := ObjPtr(_PropsInfo.__InfoIndex)
+            ; Check if the filter has already been set
+            if _PropsInfo.__FilterCache && _PropsInfo.__FilterCache.Count {
+                throw Error('``__FilterCache`` already set.',  -1)
+            }
+            ; Add to the cache
             _PropsInfo.FilterCache('Test')
-            Cache := _PropsInfo.__FilterCache.Get('Test')
-            if ObjPtr(Cache.Items) !== PtrItems2 || ObjPtr(Cache.Index) !== PtrIndex2 {
+            if !_PropsInfo.__FilterCache || !_PropsInfo.__FilterCache.Has('Test') {
                 Result.Push({ LoopIndex: i, Id: 28, Line: A_LineNumber, PropsInfo: _PropsInfo })
             }
+            FilteredItemsPtr := ObjPtr(_PropsInfo.__FilteredItems)
+            FilteredIndexPtr := ObjPtr(_PropsInfo.__FilteredIndex)
+            ; Deactivate the filter
             _PropsInfo.FilterDeactivate()
-            if ObjPtr(_PropsInfo.__InfoItems) !== PtrItems1 || ObjPtr(_PropsInfo.__InfoIndex) !== PtrIndex1 {
+            if _PropsInfo.FilterActive || _PropsInfo.__FilteredItems || _PropsInfo.__FilteredIndex {
                 Result.Push({ LoopIndex: i, Id: 29, Line: A_LineNumber, PropsInfo: _PropsInfo })
             }
             _PropsInfo.FilterActivateFromCache('Test')
-            if ObjPtr(_PropsInfo.__InfoItems) !== PtrItems2 || ObjPtr(_PropsInfo.__InfoIndex) !== PtrIndex2 {
+            if ObjPtr(_PropsInfo.__FilteredItems) !== FilteredItemsPtr || ObjPtr(_PropsInfo.__FilteredIndex) !== FilteredIndexPtr {
                 Result.Push({ LoopIndex: i, Id: 30, Line: A_LineNumber, PropsInfo: _PropsInfo })
             }
             TestArray := _PropsInfo.ToArray()
@@ -516,6 +518,7 @@ class test_Inheritance {
                     }
                     O := O.Base
                 }
+                Master.Set('Base', ++i)
             }
         }
         return this.__GetProps_Master[n]

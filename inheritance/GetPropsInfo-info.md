@@ -18,13 +18,13 @@ Status: Complete
 
 While `PropsInfoObj.StringMode == 1`, calling `PropsInfoObj` in a `for` loop returns an enumerator that mimics `Array.Prototype.__Enum`. If called in 1-param mode, the variable receives the property name. If called in 2-param mode, the first variable receives the index and the second the property name. Also, `PropsInfo.Prototype.Get(Index)` and `PropsInfo.Prototype.__Item[Index]` both return a property name as string.
 
-While `PropsInfoObj.StringMode == 0`, calling `PropsInfoObj` in a `for` loop returns an enumerator that mimics `Map.Prototype.__Enum`. If called in 1-param mode, the variable receives the property name. If called in 2-param mode, the first variable receives the property name and the second the `PropsInfoItem` object associated with that property. `PropsInfo.Prototype.Get(Key)` and `PropsInfo.Prototype.__Item(Key)` accept a name as string to return the `PropsInfoItem` object. They both also accept an index, which map objects natively do not, but this functionality was trivial to add and does not interfere with anything so I figured why not.
+While `PropsInfoObj.StringMode == 0`, the behavior of `__Enum` depends on whether its called in 1-param mode or 2-param mode. 1-param mode returns an enumerator that sets the variable with the `PropsInfoItem` objects. If called in 2-param mode, the first variable receives the property name and the second the `PropsInfoItem` object associated with that property. `PropsInfo.Prototype.Get(Key)` and `PropsInfo.Prototype.__Item(Key)` accept a name as string to return the `PropsInfoItem` object. They both also accept an index.
 
-`PropsInfo` itself inherits from `Object`, and consequently would fail a type check if a function were to validate its type before calling `__Enum`. So to make it usable with such functions, `PropsInfo.Prototype.GetProxy` returns a `PropsInfo.Proxy_Array` or `PropsInfo.Proxy_Map` object that can be passed to the function instead. Be mindful to unambiguously label these objects as proxies; their class name is overwritten on the `Prototype.__Class` property so they will pass any `if Type(Obj) !== 'Array'` or `if Type(Obj) !== 'Map'` conditions. Do future you a favor and make it explicit that they are not instances of `Map` or `Array`, and don't even inherit from either.
+`PropsInfo` itself inherits from `Object`, and consequently would fail a Kind check if a function were to validate its Kind before calling `__Enum`. So to make it usable with such functions, `PropsInfo.Prototype.GetProxy` returns a `PropsInfo.Proxy_Array` or `PropsInfo.Proxy_Map` object that can be passed to the function instead. Be mindful to unambiguously label these objects as proxies; their class name is overwritten on the `Prototype.__Class` property so they will pass any `if Kind(Obj) !== 'Array'` or `if Kind(Obj) !== 'Map'` conditions. Do future you a favor and make it explicit that they are not instances of `Map` or `Array`.
 
 The proxies work by simply forwarding a number of methods / properties to the `PropsInfo` object. Some methods and properties were intentionally left out of the available set, and so if a function attempts to use one of the excluded properties AHK will throw an error. Your code would need to work around this limitation, probably by defining the property on the proxy to do some inert or otherwise necessary action.
 
-Filtering which properties to include / exclude is implemented in a way that is consistent and systematic. Filtering first occurs with the `GetPropsInfo` function call, defined by the `Exclude` parameter. This exclusion is absolute; if your code later needs access to an excluded property, it would need to call `GetPropsInfo` again or get the information in some other way. In addition to `Exclude`, `PropsInfo` objects have a number of methods for dynamically defining which properties to exclude. `PropsInfo.Prototype.AddFilter` is your entry-point to the feature. See the parameter hints for details.
+Filtering which properties to include / exclude is implemented in a way that is consistent and systematic. Filtering first occurs with the `GetPropsInfo` function call, defined by the `Exclude` parameter. This exclusion is absolute; if your code later needs access to an excluded property, it would need to call `GetPropsInfo` again or get the information in some other way. In addition to `Exclude`, `PropsInfo` objects have a number of methods for dynamically defining which properties to exclude. `PropsInfo.Prototype.FilterAdd` is your entry-point to the feature. See the parameter hints for details.
 
 ### Makes available the property descriptor object from `Object.Prototype.GetOwnPropDesc` so it can be encoded in the JSON if it's an own property, and if it's a value / dynamic / callable property.
 
@@ -38,11 +38,13 @@ Status: Complete
 
 For properties that have been overridden one or more times up the inheritance chain, we need to be able to identify which object owns the property from which the root object inherits. This is straightforward. If its an own property, then the `Index` property on the `PropsInfoItem` object is 0. Additionally, the top-level `PropsInfoItem` object will always be associated with the object from which the root object inherits that property, because the base objects are iterated in descending order. The `PropsInfoItem` objects on the `Alt` property array are all overridden, because they are from objects lower in the inheritance chain.
 
+I also added the `Count` property, which returns the number of objects which own a property by the same name as the property which produced the object.
+
 ### Reveals the object inheritance chain
 
 Status: Complete
 
-The function `GetBaseObjects` performs this task, and the value returned from `GetBaseObjects` is made accessible when calling `GetPropsInfo`.
+`PropsInfoItem.Prototype.GetOwner` and `PropsInfoItemObj.Count` does this.
 
 ### Conclusion
 
@@ -54,10 +56,10 @@ This section describes the details about how `PropsInfo` implements these functi
 
 ### Memory and processing time
 
-In the spirit of the class's objectives, `PropsInfo` makes use of AHK's object model to minimize repeated values, and to balance memory usage with performance overhead. For example, consider the `PropsInfoItem` class. Each instance has a `Type` property that returns what type of property the object is associated with. `Type` will return one of "Call", "Get", "Get_Set", "Set", "Value". This is hardly a convenience in many cases, because if we're programmatically responding to the object, then there's little difference between checking `if desc.HasOwnProp('Call')` and `if PropsInfoItemObj.Type == 'Call'`. But  there is value to be gained from the property. For example, we can now use a switch function:
+In the spirit of the class's objectives, `PropsInfo` makes use of AHK's object model to minimize repeated values, and to balance memory usage with performance overhead. For example, consider the `PropsInfoItem` class. Each instance has a `Kind` property that returns what Kind of property the object is associated with. `Kind` will return one of "Call", "Get", "Get_Set", "Set", "Value". This is hardly a convenience in many cases, because if we're programmatically responding to the object, then there's little difference between checking `if desc.HasOwnProp('Call')` and `if PropsInfoItemObj.Kind == 'Call'`. But there is value to be gained from the property. For example, we can now use a switch function:
 
 ```ahk
-switch PropsInfoItemObj.Type {
+switch PropsInfoItemObj.Kind {
     case 'Call':
     case 'Get':
     case 'Get_Set':
@@ -78,15 +80,13 @@ switch PropsInfoItemObj.KindIndex {
 }
 ```
 
-It would have been an expensive inclusion if, for each `PropsInfoItem` object, the `Type` property was set with the string value as a value property. That would have required significant memory and processing time. Instead, `PropsInfoItem.Prototype.__TypeNames` is an array of strings, so each of "Call", "Get", etc. are associated with an index number. When `PropsInfoItemObj.Type` is accessed the first time, it performs the same calculations that our external code would need to do to identify what type of descriptor object our code is working with, then caches the index on the `PropsInfoItemObj.KindIndex` property so the calculation only needs to be performed once. In this way, the processing time is only consumed if the property is accessed, and instead of caching the string, it caches an integer, minimizing memory usage.
+It would have been an expensive inclusion if, for each `PropsInfoItem` object, the `Kind` property was set with the string value as a value property. That would have required significant memory and processing time. Instead, `PropsInfoItem.Prototype.__KindNames` is an array of strings, so each of "Call", "Get", etc. are associated with an index number. When `PropsInfoItemObj.Kind` is accessed the first time, it performs the same calculations that our external code would need to do to identify what Kind of descriptor object our code is working with, then caches the index on the `PropsInfoItemObj.KindIndex` property so the calculation only needs to be performed once. In this way, the processing time is only consumed if the property is accessed, and instead of caching the string, it caches an integer, minimizing memory usage.
 
-I used a similar approach with the property names as well. For any property which is defined on multiple base objects, the `PropsInfoItem` objects all share a base object on which the `Name` property is defined, so there's no repeated strings. I also wanted to see if it were possible to do the same thing but with the `Index` property shared by the `PropsInfoItem` objects associated with a single base object. I concluded that it is not possible to do both in a single-inheritance object model. Either the `Index` property is defined on every object, allowing the `Name` property to be defined on the base, or vise-versa. I chose to delegate the name to the base, a decision made by guessing which approach requires less memory; I don't plan on spending the time to actually calculate it.
-
-I could have dynamically constructed an array of names and assigned indexes for the name, like how I did with `PropsInfoItem.Prototype.__TypeNames`. But... nah.
+I used a similar approach with the property names as well. For any property which is defined on multiple base objects, the `PropsInfoItem` objects all share a base object on which the `Name` and `Count` properties are defined, so they do not repeat. I also wanted to see if it were possible to do the same thing but with the `Index` property shared by the `PropsInfoItem` objects associated with a single base object. I concluded that it is not possible to do both in a single-inheritance object model. Either the `Index` property is defined on every object, allowing the `Name` property to be defined on the base, or vise-versa. I chose to delegate the name to the base.
 
 ### Filters
 
-The most expensive feature included is the filter. I see some opportunity to reduce processing time using features available only in Alpha, but with the tools available to the class in AHK's release version, I decided to keep it simple and implement the functionality as a linear process. This is how I reasoned through the decision:
+The most expensive feature included is the filter. This is how I reasoned through the filter system's design:
 
 - For convenience to the programmer, it would be helpful to have some built-in filters available that implement functionality that (I think) would be needed most often. I included five built-in filters. Using built-in filters necessarily increases processing time because filtering occurs as a piecemeal process. AHK has an enter and exit routine for every function call; performing 5 actions in 5 function calls is more expensive than performing the same actions in 1 function call. It should not be required to use any built-in filters; so as long as the class exposes a way for the programmer to define a single filter function and use that, then the choice to use built-ins can be left up to the programmer based on the needs of their application. Generally, performance costs at this level are only noticeable across tens of thousands or hundreds of thousands of iterations in my experiments.
 
@@ -114,7 +114,7 @@ class Example {
 }
 ```
 
-The above example class would actually return the wrong value for any index greater than 3. At input index 3, the object in the array index 5 gets returned. At input index 4, the correct object is array index 7, but we would still get the object at array index 4. To stick with this approach, we would have to iterate the entire array up to the correct value every time, or we would need to cache the starting offsets. But at this point, there's no value gained by using offsets; we could just cache the object references themselves. Since object references are essentially pointers, the memory consumed is much less than caching something like a string. Since filters are only created by external code, presumably if one is needed, there's no added overhead if a filter does not get used.
+The above example class would actually return the wrong value for any index greater than 3. At input index 3, the object in the array index 5 gets returned. At input index 4, the correct object is array index 7, but we would still get the object at array index 4. To stick with this approach, we would have to iterate the entire array up to the correct value every time, or we would need to cache the starting offsets. But at this point, there's no value gained by using offsets; we could just cache the object references themselves. Since object references are essentially pointers, the memory consumed is much less than caching something like a string.
 
 Conclusion: It is better to cache the filtered objects than to define the accessors to process objects through the filter when accessed.
 
@@ -124,6 +124,4 @@ The decision becomes how to expose the functionality. There's not much to consid
   2. When filter is activated, items are processed through the filter, adding valid objects to an array / map.
   3. Give external code access to new array / map.
 
-I left the decision up to the programmer whether to use the `PropsInfo` object's ability to emulate array / map behavior, or to just get a new array / map by calling `GetFilteredProps` and work with that. It's perfectly valid, and in some ways easier to understand from the point of view of someone reading the code, to get a filtered array / map and work with that. But I decided to also include `ActivateFilter` (which activates the emulation behavior) because I can envision circumstances when working with a single object can simplify code, compared to managing various filters and the objects created by the filters.
-
-For each `PropsInfoItem` object, up to `PropsInfoObj.Filter.Count` functions are called. The filters should be defined such that, if a function returns true, the object is skipped. This allows simple functions to short-circuit the process when the condition is expected to be met often. Define that first to maximize the benefit.
+I left the decision up to the programmer whether to use the `PropsInfo` object's ability to emulate array / map behavior, or to just get a new array / map by calling `GetFilteredProps`, `ToArray`, or `ToMap`, and work with that. It's perfectly valid, and in some ways easier to understand from the point of view of someone reading the code, to get a filtered array / map and work with that.

@@ -10,19 +10,36 @@
 #Include GetBaseObjects.ahk
 
 /**
- * @description - Constructs a list of properties and details about the properties for both
- * inherited and own properties for the input object. This function returns a `PropsInfo` object,
- * which is a flexible solution for cases when a project would benefit from being able to quickly
- * obtain a list of all of an object's properties, and/or filter those properties.
+ * @description - Constructs a `PropsInfo` object, which is a flexible solution for cases when a
+ * project would benefit from being able to quickly obtain a list of all of an object's properties,
+ * and/or filter those properties.
  *
  * In this documentation, an instance of `PropsInfo` is referred to as either "a `PropsInfo` object"
  * or `PropsInfoObj`. An instance of `PropsInfoItem` is referred to as either "a `PropsInfoItem` object"
- * or `InfoItemObj`.
+ * or `InfoItem`.
  *
- * See example-Inheritance.ahk for some examples and use cases.
+ * See example-Inheritance.ahk for a walkthrough on how to use the class.
+ *
+ * `PropsInfo` objects are designed to be a flexible solution for accessing and/or analyzing an
+ * object's properties, including inherited properties. Whereas `OwnProps` only iterates an objects'
+ * own properties, `PropsInfo` objects can perform these functions for both inherited and own
+ * properties:
+ * - Produce an array of property names.
+ * - Produce a `Map` where the key is the property name and the object is a `PropsInfoItem` object
+ * for each property.
+ * - Produce an array of `PropsInfoItem` objects.
+ * - Be passed to a function that expects an iterable object like any of the three above bullet points.
+ * - Filter the properties according to one or more conditions.
+ * - Get the function objects associated with the properties.
+ *
+ * `PropsInfoItem` objects are modified descriptor objects.
+ * @see {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}.
+ * After getting the descriptor object, `GetPropsInfo` changes the descriptor object's base, converting
+ * it to a `PropsInfoItem` object and exposing additional properties. See the parameter hints above
+ * each property for details.
  *
  * @param {Object} Obj - The object from which to get the properties.
- * @param {+Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
+ * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
  * You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If
  * GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs `GetPropsInfo` to
@@ -30,31 +47,20 @@
  * @see {@link GetBaseObjects} for full details about this parameter.
  * @param {String} [Exclude=''] - A comma-delimited, case-insensitive list of properties to exclude.
  * For example: "Length,Capacity,__Item".
+ * @param {Boolean} [IncludeBaseProp=true] - If true, the objects' `Base` property is included. If
+ * false, `Base` is excluded.
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
- * @returns {PropsInfo} - `PropsInfo` objects are designed to be a flexible solution for accessing
- * and/or analyzing an object's properties, including inherited properties. Whereas `OwnProps` only
- * iterates an objects' own properties, `PropsInfo` objects can perform these functions for both
- * inherited and own properties:
- * - Produce a list of all property names (array of strings).
- * - Produce a `Map` where the key is the property name and the object is a `PropsInfoItem` object
- * for each property.
- * - Produce an array of `PropsInfoItem` objects.
- * - Be passed to a function that expects an iterable object like any of the three above bullet points.
- * - Filter the properties according to any condition.
- *
- * `PropsInfoitem` objects are modified descriptor objects. See:
- * {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}.
- * After getting the descriptor object, `GetPropsInfo` changes the descriptor object's base, converting
- * it to a `PropsInfoItem` object and exposing additional properties. See the parameter hints above
- * each property for details.
+ * @returns {PropsInfo}
  */
 GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?) {
     OutBaseObjList := GetBaseObjects(Obj, StopAt)
     Container := Map()
     Container.Default := Container.CaseSense := false
-    for s in StrSplit(Exclude, ',') {
-        Container.Set(Trim(s, '`s`t'), -1)
+    for s in StrSplit(Exclude, ',', '`s`t') {
+        if (s) {
+            Container.Set(s, -1)
+        }
     }
 
     PropsInfoItemBase := PropsInfoItem(Obj)
@@ -72,8 +78,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
              */
                 Name: Prop
             /**
-             * `Count` gets incremented by one for each object which owns a property by the name
-             * `Name`.
+             * `Count` gets incremented by one for each object which owns a property by the same name.
              * @memberof PropsInfoItem
              * @instance
              */
@@ -118,29 +123,36 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
             BasePropItem.Base.Count++
         }
     }
-    for s in StrSplit(Exclude, ',') {
-        Container.Delete(Trim(s, '`s`t'))
+    for s in StrSplit(Exclude, ',', '`s`t') {
+        if (s) {
+            Container.Delete(s)
+        }
     }
     return PropsInfo(Container, PropsInfoItemBase)
 }
 
 /**
- * @class
- * @description - The return value for `GetPropsInfo`. See the parameter hint above `GetPropsInfo`
+ * @classdesc - The return value for `GetPropsInfo`. See the parameter hint above `GetPropsInfo`
  * for information.
  */
 class PropsInfo {
     static __New() {
         if this.Prototype.__Class == 'PropsInfo' {
-            this.Prototype.DefineProp('Filter', { Value: '' })
-            this.Prototype.DefineProp('FilterActive', { Value: 0 })
-            this.Prototype.DefineProp('__StringMode', { Value: 0 })
-            this.Prototype.DefineProp('Get', this.Prototype.GetOwnPropDesc('__ItemGet_Bitypic'))
+            Proto := this.Prototype
+            Proto.DefineProp('Filter', { Value: '' })
+            Proto.DefineProp('FilterActive', { Value: 0 })
+            Proto.DefineProp('__StringMode', { Value: '' })
+            Proto.DefineProp('Get', Proto.GetOwnPropDesc('__ItemGet_Bitypic'))
+            Proto.DefineProp('__OnFilterProperties', { Value: ['Has', 'ToArray', 'ToMap'
+            , 'Capacity', 'Count', 'Length'] })
+            Proto.DefineProp('__FilteredItems', { Value: '' })
+            Proto.DefineProp('__FilteredIndex', { Value: '' })
+            Proto.DefineProp('__FilterCache', { Value: '' })
         }
     }
 
     /**
-     * @classdesc - The constructor is intended to be called from `GetPropsInfo`.
+     * @class - The constructor is intended to be called from `GetPropsInfo`.
      * @param {Map} Container - The keys are property names and the values are `PropsInfoItem` objects.
      * @param {PropsInfoItem} PropsInfoItemBase - The base object shared by all instances of
      * `PropsInfoItem` associated with this `PropsInfo` object.
@@ -151,8 +163,8 @@ class PropsInfo {
         this.__InfoIndex.Default := this.__InfoIndex.CaseSense := false
         this.__InfoItems := []
         this.__InfoItems.Capacity := this.__InfoIndex.Capacity := Container.Count
-        for Prop, PropInfo in Container {
-            this.__InfoItems.Push(PropInfo)
+        for Prop, InfoItem in Container {
+            this.__InfoItems.Push(InfoItem)
             this.__InfoIndex.Set(Prop, A_Index)
         }
         this.__PropsInfoItemBase := PropsInfoItemBase
@@ -171,10 +183,12 @@ class PropsInfo {
         this.__PropsInfoItemBase.DeleteProp('Root')
         this.__InfoIndex.Clear()
         this.__InfoIndex.Capacity := this.__InfoItems.Capacity := 0
-        if this.HasOwnProp('__PrimaryContainers') {
-            this.__PrimaryContainers.Index.Clear()
-            this.__PrimaryContainers.Index.Capacity :=
-            this.__PrimaryContainers.Items.Capacity := 0
+        if this.__FilteredIndex {
+            this.__FilteredIndex.Capacity := 0
+        }
+        if this.__FilteredItems {
+            this.__FilteredItems.Clear()
+            this.__FilteredItems.Capacity := 0
         }
         if this.Filter is Map {
             this.Filter.Clear()
@@ -192,10 +206,11 @@ class PropsInfo {
 
     /**
      * @description - Activates the filter, setting property `PropsInfoObj.FilterActive := 1`. While
-     * `PropsInfoObj.FilterActive == 1`, the values returned by the object's methods and properties
-     * will be filtered. Note that `GetFilteredProps` does not adhere to `FilterActive` and always
-     * processes the original array.
-     * @param {String} [CacheName] - If set, the filtered containers will be cached under this name.
+     * `PropsInfoObj.FilterActive == 1`, the values returned by the following methods and properties
+     * will be filtered:
+     * __Enum, Get, GetFilteredProps (if a function object is not passed to it), Has, ToArray, ToMap,
+     * __item, Capacity, Count, Length
+     * @param {String|Number} [CacheName] - If set, the filtered containers will be cached under this name.
      * Else, the containers are not cached.
      * @throws {UnsetItemError} - If no filters have been added.
      */
@@ -203,43 +218,53 @@ class PropsInfo {
         if !this.Filter {
             throw UnsetItemError('No filters have been added.', -1)
         }
-        if !this.FilterActive {
-            this.__PrimaryContainers := { Index: this.__InfoIndex, Items: this.__InfoItems }
-        }
         Filter := this.Filter
-        this.__InfoIndex := Map()
-        this.__InfoItems := []
-        this.__InfoIndex.Capacity := this.__InfoItems.Capacity := this.__PrimaryContainers.Index.Count
-        if Filter is Map {
-            for PropInfo in this.__PrimaryContainers.Items {
+        this.DefineProp('__FilteredIndex', { Value: FilteredIndex := [] })
+        this.DefineProp('__FilteredItems', { Value: FilteredItems := Map() })
+        FilteredIndex.Capacity := FilteredItems.Capacity := this.__InfoItems.Length
+        ; If there's only one filter object in the collection, we can save a bit of processing
+        ; time by just getting a reference to the object and skipping the second loop.
+        if Filter.Count == 1 {
+            for FilterIndex, FilterObj in Filter {
+                Fn := FilterObj
+            }
+            for InfoItem in this.__InfoItems {
+                if Fn(InfoItem) {
+                    continue
+                }
+                FilteredItems.Set(A_Index, InfoItem)
+                FilteredIndex.Push(A_Index)
+            }
+        } else {
+            for InfoItem in this.__InfoItems {
                 for FilterIndex, FilterObj in Filter {
-                    if FilterObj(PropInfo) {
+                    if FilterObj(InfoItem) {
                         continue 2
                     }
                 }
-                this.__InfoItems.Push(PropInfo)
-                this.__InfoIndex.Set(PropInfo.Name, this.__InfoItems.Length)
+                FilteredItems.Set(A_Index, InfoItem)
+                FilteredIndex.Push(A_Index)
             }
         }
-        this.__InfoIndex.Capacity := this.__InfoItems.Capacity := this.__InfoItems.Length
+        FilteredIndex.Capacity := FilteredItems.Capacity := FilteredItems.Count
         this.DefineProp('FilterActive', { Value: 1 })
         if IsSet(CacheName) {
             this.FilterCache(CacheName)
         }
+        this.__FilterSwitchProps(1)
     }
 
     /**
      * @description - Activates a cached filter.
-     * @param {String} Name - The name of the filter to activate.
+     * @param {String|Number} Name - The name of the filter to activate.
      */
     FilterActivateFromCache(Name) {
         if !this.FilterActive {
             this.FilterActive := 1
-            this.__PrimaryContainers := { Index: this.__InfoIndex, Items: this.__InfoItems }
         }
-        O := this.__FilterCache.Get(Name)
-        this.__InfoIndex := O.Index
-        this.__InfoItems := O.Items
+        this.__FilteredItems := this.__FilterCache.Get(Name).Items
+        this.__FilteredIndex := this.__FilterCache.Get(Name).Index
+        this.__FilterSwitchProps(1)
     }
 
     /**
@@ -268,9 +293,12 @@ class PropsInfo {
      * callable object was added), the index that was assignedd to the filter. Indices begin from 5
      * and increment by 1 for each custom filter added. Once an index is used, it will never be used
      * by the `PropsInfo` object again. You can use the index to later delete a filter if needed.
+     * Saving the index isn't necessary; you can also delete a filter by passing the function object
+     * to `PropsInfo.Prototype.FilterDelete`.
      * The following built-in indices always refer to the same function:
      * - 0: The function which excludes by property name.
      * - 1 through 4: The other built-in filters described above.
+     * @throws {ValueError} - If the one of the values passed to `Filters` is invalid.
      */
     FilterAdd(Activate := true, Filters*) {
         if !this.Filter {
@@ -278,71 +306,103 @@ class PropsInfo {
             this.Filter.Exclude := ''
             this.__FilterIndex := 5
         }
-        for Item in Filters {
-            if IsObject(Item) {
-                if Item is Func || HasMethod(Item, 'Call') || HasMethod(Item, '__Call') {
-                    if !IsSet(Start) {
-                        Start := this.__FilterIndex
+        this.DefineProp('FilterAdd', { Call: _FilterAdd })
+        this.FilterAdd(Activate, Filters*)
+
+        _FilterAdd(Self, Activate := true, Filters*) {
+            Filter := Self.Filter
+            for InfoItem in Filters {
+                if IsObject(InfoItem) {
+                    if InfoItem is Func || HasMethod(InfoItem, 'Call') || HasMethod(InfoItem, '__Call') {
+                        if !IsSet(Start) {
+                            Start := Self.__FilterIndex
+                        }
+                        Filter.Set(Self.__FilterIndex, PropsInfo.Filter(InfoItem, Self.__FilterIndex++))
+                    } else {
+                        throw ValueError('A value passed to the ``Filters`` parameter is invalid.', -1
+                        , 'Type(Value): ' Type(InfoItem))
                     }
-                    this.Filter.Set(this.__FilterIndex, PropsInfo.Filter(Item, this.__FilterIndex++))
                 } else {
-                    _Throw()
-                }
-            } else {
-                switch Item, 0 {
-                    case '1', '2', '3', '4':
-                        this.Filter.Set(Item, PropsInfo.Filter(_Filter_%Item%, Item))
-                    default:
-                        this.Filter.Exclude .= ',' Item
-                        FlagExclude := true
+                    switch InfoItem, 0 {
+                        case '1', '2', '3', '4':
+                            Filter.Set(InfoItem, PropsInfo.Filter(_Filter_%InfoItem%, InfoItem))
+                        default:
+                            if SubStr(Filter.Exclude, -1, 1) == ',' {
+                                Filter.Exclude .= InfoItem
+                            } else {
+                                Filter.Exclude .= ',' InfoItem
+                            }
+                            Flag_Exclude := true
+                    }
                 }
             }
-        }
-        if IsSet(FlagExclude) {
-            ; Be ensuring every name has a comma on both sides, we can check the names by
-            ; using `InStr(Filter.Exclude, ',' Prop ',')` which should perform better than RegExMatch.
-            this.Filter.Exclude .= ','
-            this.Filter.Set(0, PropsInfo.Filter(_Exclude, 0))
-        }
+            if IsSet(Flag_Exclude) {
+                ; Be ensuring every name has a comma on both sides, we can check the names by
+                ; using `InStr(Filter.Exclude, ',' Prop ',')` which should perform better than RegExMatch.
+                Filter.Exclude .= ','
+                Filter.Set(0, PropsInfo.Filter(_Exclude, 0))
+            }
 
-        if Activate {
-            this.FilterActivate()
-        }
-        ; If a custom filter is added, return the start index so the caller function can keep track.
-        return Start ?? ''
+            if Activate {
+                Self.FilterActivate()
+            }
+            ; If a custom filter is added, return the start index so the caller function can keep track.
+            return Start ?? ''
 
-        _Exclude(PropInfo) {
-            return InStr(this.Filter.Exclude, PropInfo.Name ',')
-        }
-        _Filter_1(Item) => !Item.Index
-        _Filter_2(Item) => Item.Index
-        _Filter_3(Item) => Item.HasOwnProp('Alt')
-        _Filter_4(Item) => !Item.HasOwnProp('Alt')
-        _Throw() {
-            throw Error('The value passed to the ``Filter`` parameter is invalid.', -2
-            , IsObject(Item) ? 'Type(Filter): ' Type(Item) : 'Filter: ' Item)
+            _Exclude(InfoItem) {
+                return InStr(Filter.Exclude, ',' InfoItem.Name ',')
+            }
+            _Filter_1(InfoItem) => !InfoItem.Index
+            _Filter_2(InfoItem) => InfoItem.Index
+            _Filter_3(InfoItem) => InfoItem.HasOwnProp('Alt')
+            _Filter_4(InfoItem) => !InfoItem.HasOwnProp('Alt')
         }
     }
 
+    /**
+     * @description - Adds the currently active filter to the cache.
+     * @param {String|Number} Name - The value which will be the key that accesses the filter.
+     */
     FilterCache(Name) {
-        if !this.HasOwnProp('__FilterCache') {
+        if !this.__FilterCache {
             this.__FilterCache := Map()
         }
         this.DefineProp('FilterCache', { Call: _Set })
         this.FilterCache(Name)
-        _Set(Self, Name) => Self.__FilterCache.Set(Name, { Items: Self.__InfoItems, Index: Self.__InfoIndex })
+        _Set(Self, Name) => Self.__FilterCache.Set(Name, { Items: Self.__FilteredItems, Index: Self.__FilteredIndex })
     }
 
+    /**
+     * @description - Clears the filter.
+     * @throws {Error} - If the filter is empty.
+     */
     FilterClear() {
+        if !this.Filter {
+            throw Error('The filter is empty.', -1)
+        }
         this.Filter.Clear()
+        this.Filter.Capacity := 0
         this.Filter.Exclude := ''
     }
 
+    /**
+     * @description - Clears the filter cache.
+     * @throws {Error} - If the filter cache is empty.
+     */
     FilterClearCache() {
+        if !this.__FilterCache {
+            throw Error('The filter cache is empty.', -1)
+        }
         this.__FilterCache.Clear()
         this.__FilterCache.Capacity := 0
     }
 
+    /**
+     * @description - Deactivates the currently active filter.
+     * @param {String|Number} [CacheName] - If set, the filter is added to the cache with this name prior
+     * to being deactivated.
+     * @throws {Error} - If the filter is not currently active.
+     */
     FilterDeactivate(CacheName?) {
         if !this.FilterActive {
             throw Error('The filter is not currently active.', -1)
@@ -350,72 +410,167 @@ class PropsInfo {
         if IsSet(CacheName) {
             this.FilterCache(CacheName)
         }
-        this.__InfoIndex := this.__PrimaryContainers.Index
-        this.__InfoItems := this.__PrimaryContainers.Items
-        this.FilterActive := 0
+        this.DefineProp('FilterActive', { Value: 0 })
+        this.__FilteredItems := ''
+        this.__FilteredIndex := ''
+        this.__FilterSwitchProps(0)
     }
 
+    /**
+     * @description - Deletes an item from the filter.
+     * @param {Func|Integer|PropsInfo.Filter|String} Key - One of the following:
+     * - The function object.
+     * - The index assigned to the `PropsInfo.Filter` object.
+     * - The `PropsInfo.Filter` object.
+     * - The function object's name.
+     * @returns {PropsInfo.Filter} - The filter object that was just deleted.
+     * @throws {UnsetItemError} - If `Key` is a function object and the filter does not contain
+     * that function.
+     * @throws {UnsetItemError} - If `Key` is a string and the filter does not contain a function
+     * with that name.
+     */
     FilterDelete(Key) {
-        if IsObject(Key) {
+        local r
+        if Key is Func {
+            ptr := ObjPtr(Key)
+            for Index, FilterObj in this.Filter {
+                if ObjPtr(FilterObj.Function) == ptr {
+                    r := FilterObj
+                    break
+                }
+            }
+            if IsSet(r) {
+                this.Filter.Delete(r.Index)
+            } else {
+                throw UnsetItemError('The function passed to ``Key`` is not in the filter.', -1)
+            }
+        } else if IsObject(Key) {
             r := this.Filter.Get(Key.Index)
             this.Filter.Delete(Key.Index)
         } else if IsNumber(Key) {
             r := this.Filter.Get(Key)
             this.Filter.Delete(Key)
-        } else if SubStr(Key, 1, 2) = 'Ex' {
-            r := this.Filter.Exclude
-            this.Filter.Delete(0)
-            this.Filter.Exclude := ''
         } else {
-            throw ValueError('Unexpected input.', -1, Key)
+            for Fn in this.Filter {
+                if Fn.Name == Key {
+                    r := Fn
+                    break
+                }
+            }
+            if IsSet(r) {
+                this.Filter.Delete(r.Index)
+            } else {
+                throw UnsetItemError('The filter does not contain a function with that name.', -2, Key)
+            }
         }
         return r
     }
 
+    /**
+     * @description - Deletes a filter from the cache.
+     * @param {String|Integer} Name - The name assigned to the filter.
+     * @returns {Map} - The object containing the filter functions that were just deleted.
+     * @throws {Error} - If the filter cache is empty.
+     */
     FilterDeleteFromCache(Name) {
+        if !this.__FilterCache {
+            throw Error('The filter cache is empty.', -1)
+        }
+        r := this.__FilterCache.Get(Name)
         this.__FilterCache.Delete(Name)
+        return r
     }
 
+    /**
+     * @description - Removes one or more property names from the exclude list.
+     * @param {String} Name - The name to remove or a comma-delimited list of names to remove.
+     * @throws {Error} - If the filter is empty.
+     */
     FilterRemoveFromExclude(Name) {
         if !this.Filter {
-            throw UnsetItemError('No filters have been added.', -1)
+            throw Error('The filter is empty.', -1)
         }
         Filter := this.Filter
         for _name in StrSplit(Name, ',') {
-            Filter.Exclude := StrReplace(Filter.Exclude, ',' _name ',', '')
+            Filter.Exclude := RegExReplace(Filter.Exclude, ',' _name '(?=,)', '')
         }
     }
 
+    /**
+     * @description - Retrieves a `PropsInfoItem` object.
+     * @param {String|Integer} Key - While `PropsInfoObj.StringMode == true`, `Key` must be an
+     * integer index value. While `PropsInfoObj.StringMode == false`, `Key` can be either a string
+     * property name or an integer index value.
+     * @returns {PropsInfoItem}
+     * @throws {TypeError} - If `Key` is not a number and `PropsInfoObj.StringMode == true`.
+     */
     Get(Key) {
         ; This is overridden
     }
 
+    /**
+     * @description - Retrieves the index of a property.
+     * @param {String} Name - The name of the property.
+     * @returns {Integer} - The index of the property.
+     */
     GetIndex(Name) {
         return this.__InfoIndex.Get(Name)
     }
 
+    /**
+     * @description - Retrieves a proxy object.
+     * @param {String} ProxyType - The type of proxy to create. Valid values are:
+     * - 1: `PropsInfo.Proxy_Array`
+     * - 2: `PropsInfo.Proxy_Map`
+     * @returns {PropsInfo.Proxy_Array|PropsInfo.Proxy_Map}
+     * @throws {ValueError} - If `ProxyType` is not 1 or 2.
+     */
     GetProxy(ProxyType) {
         switch ProxyType, 0 {
             case '1': return PropsInfo.Proxy_Array(this)
             case '2': return PropsInfo.Proxy_Map(this)
         }
-        throw Error('The input ``ProxyType`` must be ``1`` or ``2``.', -1
-        , IsObject(ProxyType) ? 'Type(ProxyType) == '  Type(ProxyType) : ProxyType)
+        throw ValueError('The input ``ProxyType`` must be ``1`` or ``2``.', -1
+        , IsObject(ProxyType) ? 'Type(ProxyType) == ' Type(ProxyType) : ProxyType)
     }
 
+    /**
+     * @description - Iterates the `PropsInfo` object, adding the `PropsInfoItem` objects to
+     * a container.
+     * @param {*} [Container] - The container to add the filtered `PropsInfoItem` objects to. If set,
+     * the object must inherit from either `Map` or `Array`.
+     * - If `Container` inherits from `Array`, the `PropsInfoItem` objects are added to the array using
+     * `Push`.
+     * - If `Container` inherits from `Map`, the `PropsInfoItem` objects are added to the map using
+     * `Set`, with the property name as the key. The map's `CaseSense` property must be set to
+     * "Off".
+     * - If `Container` is unset, `GetFilteredProps` returns a new `PropsInfo` object.
+     * @param {Function} [Function] -
+     * - If set, a function object that accepts a `PropsInfoItem` object as its only parameter. The
+     * function should return a nonzero value to exclude the property. Any currently active filters
+     * are ignored.
+     * - If unset, `GetFilteredProps` uses the filters that are currently active. The difference
+     * between `GetFilteredProps` and either `ToMap` or `ToArray` in this case is that you can
+     * supply your own container, or get a new `PropsInfo` object.
+     * @returns {PropsInfo|Array|Map} - The container with the filtered `PropsInfoItem` objects.
+     * If `Container` is unset, a new `PropsInfo` object is returned.
+     * @throws {TypeError} - If `Container` is not an `Array` or `Map`.
+     * @throws {Error} - If `Container` is a `Map` and its `CaseSense` property is not set to "Off".
+     * @throws {Error} - If the filter is empty.
+     */
     GetFilteredProps(Container?, Function?) {
         if IsSet(Container) {
             if Container is Array {
                 Set := _Set_Array
                 GetCount := () => Container.Length
             } else if Container is Map {
-                if Container.CaseSense != 'Off' {
-                    throw Error('CaseSense must be set to ``false``.', -1)
+                if Container.CaseSense !== 'Off' {
+                    throw Error('CaseSense must be set to "Off".', -1)
                 }
                 Set := _Set_Map
                 GetCount := () => Container.Count
             } else {
-                throw Error('Unexpected container type.', -1, 'Type(Container) == ' Type(Container))
+                throw TypeError('Unexpected container type.', -1, 'Type(Container) == ' Type(Container))
             }
         } else {
             Container := Map()
@@ -424,44 +579,61 @@ class PropsInfo {
             GetCount := () => Container.Count
             Flag_MakePropsInfo := true
         }
-        Source := this.FilterActive ? this.__PrimaryContainers.Items : this.__InfoItems
-        Container.Capacity := Source.Length
-        if IsSet(Function) || ((Function := this.Filter) && Function is Func) {
-            for PropInfo in Source {
-                if Function(PropInfo) {
+        InfoItems := this.__InfoItems
+        Container.Capacity := InfoItems.Length
+        if IsSet(Function)  {
+            for InfoItem in InfoItems {
+                if Function(InfoItem) {
                     continue
                 }
-                Set(PropInfo)
+                Set(InfoItem)
             }
         } else if this.Filter {
-            if this.Filter.Exclude {
-                this.Filter.Set(0, _Exclude)
-            }
-            for PropInfo in Source {
-                for FilterIndex, FilterObj in this.Filter {
-                    if FilterObj(PropInfo) {
+            Filter := this.Filter
+            if Filter.Count == 1 {
+                for FilterIndex, FilterObj in Filter {
+                    Fn := FilterObj
+                }
+                for InfoItem in InfoItems {
+                    if Fn(InfoItem) {
                         continue
                     }
+                    Set(InfoItem)
                 }
-                Set(PropInfo)
+            } else {
+                for InfoItem in Infoitems {
+                    for FilterIndex, FilterObj in Filter {
+                        if FilterObj(InfoItem) {
+                            continue 2
+                        }
+                    }
+                    Set(InfoItem)
+                }
             }
         } else {
-            throw UnsetItemError('No Filters have been added.', -1)
+            throw Error('The filter is empty.', -1)
         }
         Container.Capacity := GetCount()
-        return IsSet(Flag_MakePropsInfo) ? PropsInfo(Container) : Container
+        return IsSet(Flag_MakePropsInfo) ? PropsInfo(Container, this.__PropsInfoItemBase) : Container
 
-        _Exclude(PropInfo) {
-            return InStr(this.Filter.Exclude, ',' PropInfo.Name ',')
-        }
-        _Set_Array(PropInfo) => Container.Push(PropInfo)
-        _Set_Map(PropInfo) => Container.Set(PropInfo.Name, PropInfo)
+        _Set_Array(InfoItem) => Container.Push(InfoItem)
+        _Set_Map(InfoItem) => Container.Set(InfoItem.Name, InfoItem)
     }
 
+    /**
+     * @description - Checks if a property exists in the `PropsInfo` object.
+     */
     Has(Key) {
         return IsNumber(Key) ? this.__InfoItems.Has(Key) : this.__InfoIndex.Has(Key)
     }
 
+    /**
+     * @description - Iterates the `PropsInfo` object, adding the `PropsInfoItem` objects to an array,
+     * or adding the property names to an array.
+     * @param {Boolean} [NamesOnly=false] - If true, the property names are added to the array. If
+     * false, the `PropsInfoItem` objects are added to the array.
+     * @returns {Array} - The array of property names or `PropsInfoItem` objects.
+     */
     ToArray(NamesOnly := false) {
         Result := []
         Result.Capacity := this.__InfoItems.Length
@@ -477,30 +649,79 @@ class PropsInfo {
         return Result
     }
 
+    /**
+     * @description - Iterates the `PropsInfo` object, adding the `PropsInfoItem` objects to a map.
+     * The keys are the property names.
+     * @returns {Map} - The map of property names and `PropsInfoItem` objects.
+     */
     ToMap() {
         Result := Map()
         Result.Capacity := this.__InfoItems.Length
-        for Item in this.__InfoItems {
-            Result.Set(Item.Name, Item)
+        for InfoItem in this.__InfoItems {
+            Result.Set(InfoItem.Name, InfoItem)
         }
         return Result
     }
 
-    Capacity => this.__PropNameIndex.Capacity
-    CaseSense => this.__PropNameIndex.CaseSense
-    Count => this.__PropNameIndex.Count
-    Default => this.__PropNameIndex.Default
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
+    Capacity => this.__InfoIndex.Capacity
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
+    CaseSense => this.__InfoIndex.CaseSense
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
+    Count => this.__InfoIndex.Count
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
+    Default => this.__InfoIndex.Default
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
     Length => this.__InfoItems.Length
 
+    /**
+     * Set to a nonzero value to activate string mode. Set to a falsy value to deactivate.
+     * While string mode is active, the `PropsInfo` object emulates the behavior of an array of
+     * strings. The following properties and methods are influenced by string mode:
+     * __Enum, Get, __Item
+     * By extension, the proxies are also affected.
+     * @memberof PropsInfo
+     * @instance
+     */
     StringMode {
         Get => this.__StringMode
         Set {
-            if Value {
-                this.DefineProp('__StringMode', { Value: 1 })
-                this.DefineProp('Get', { Call: this.__ItemGet_StringMode })
+            if this.FilterActive {
+                if Value {
+                    this.DefineProp('__StringMode', { Value: 1 })
+                    this.DefineProp('Get', { Call: this.__FilteredGet_StringMode })
+                } else {
+                    this.DefineProp('__StringMode', { Value: 0 })
+                    this.DefineProp('Get', { Call: this.__FilteredGet_Bitypic })
+                }
             } else {
-                this.DefineProp('__StringMode', { Value: 0 })
-                this.DefineProp('Get', { Call: this.__ItemGet_Bitypic })
+                if Value {
+                    this.DefineProp('__StringMode', { Value: 1 })
+                    this.DefineProp('Get', { Call: this.__ItemGet_StringMode })
+                } else {
+                    this.DefineProp('__StringMode', { Value: 0 })
+                    this.DefineProp('Get', { Call: this.__ItemGet_Bitypic })
+                }
             }
         }
     }
@@ -509,57 +730,185 @@ class PropsInfo {
         this.Dispose()
     }
 
+    /**
+     * @description - `__Enum` is influenced by both string mode and any active filters. It can
+     * be called in either 1-param mode or 2-param mode.
+     */
     __Enum(VarCount) {
         i := 0
-        return this.__StringMode ? _Enum_StringMode_%VarCount% : _Enum_%VarCount%
+        if this.FilterActive {
+            Index := this.__FilteredIndex
+            FilteredItems := this.__FilteredItems
+            return this.__StringMode ? _Filtered_Enum_StringMode_%VarCount% : _Filtered_Enum_%VarCount%
+        } else {
+            InfoItems := this.__InfoItems
+            return this.__StringMode ? _Enum_StringMode_%VarCount% : _Enum_%VarCount%
+        }
 
-        _Enum_1(&PropInfo) {
-            if ++i > this.__InfoItems.Length {
+        _Enum_1(&InfoItem) {
+            if ++i > InfoItems.Length {
                 return 0
             }
-            PropInfo := this.__InfoItems[i]
+            InfoItem := InfoItems[i]
             return 1
         }
-        _Enum_2(&Prop, &PropInfo) {
-            if ++i > this.__InfoItems.Length {
+        _Enum_2(&Prop, &InfoItem) {
+            if ++i > InfoItems.Length {
                 return 0
             }
-            PropInfo := this.__InfoItems[i]
-            Prop := PropInfo.Name
+            InfoItem := InfoItems[i]
+            Prop := InfoItem.Name
             return 1
         }
         _Enum_StringMode_1(&Prop) {
-            if ++i > this.__InfoItems.Length {
+            if ++i > InfoItems.Length {
                 return 0
             }
-            Prop := this.__InfoItems[i].Name
+            Prop := InfoItems[i].Name
             return 1
         }
         _Enum_StringMode_2(&Index, &Prop) {
-            if ++i > this.__InfoItems.Length {
+            if ++i > InfoItems.Length {
                 return 0
             }
             Index := i
-            Prop := this.__InfoItems[i].Name
+            Prop := InfoItems[i].Name
+            return 1
+        }
+
+        _Filtered_Enum_1(&InfoItem) {
+            if ++i > Index.Length {
+                return 0
+            }
+            InfoItem := FilteredItems[Index[i]]
+            return 1
+        }
+        _Filtered_Enum_2(&Prop, &InfoItem) {
+            if ++i > Index.Length {
+                return 0
+            }
+            InfoItem := FilteredItems[Index[i]]
+            Prop := InfoItem.Name
+            return 1
+        }
+        _Filtered_Enum_StringMode_1(&Prop) {
+            if ++i > Index.Length {
+                return 0
+            }
+            Prop := FilteredItems[Index[i]]
+            return 1
+        }
+        _Filtered_Enum_StringMode_2(&Index, &Prop) {
+            if ++i > Index.Length {
+                return 0
+            }
+            Index := i
+            Prop := FilteredItems[Index[i]]
             return 1
         }
     }
 
+    /**
+     * @description - Allows access to the `PropsInfoItem` objects using `Obj[Key]` syntax. Forwards
+     * the `Key` to the `Get` method. {@link PropsInfo#Get}.
+     */
     __Item[Key] => this.Get(Key)
 
-    __ItemGet_StringMode(Key) {
-        if !IsNumber(Key) {
-            ; Because if you already have the property name, there's no reason to find it in the array.
-            throw TypeError('Invalid input. While the ``PropsInfo`` object is in string mode,'
-            ' items can only be accessed using numeric indices.', -1)
+    __ItemGet_StringMode(Index) {
+        if !IsNumber(Index) {
+            this.__ThrowTypeError()
         }
-        return this.__InfoItems[Key].Name
+        return this.__InfoItems[Index].Name
     }
 
     __ItemGet_Bitypic(Key) {
         return this.__InfoItems[IsNumber(Key) ? Key : this.__InfoIndex.Get(Key)]
     }
 
+    __FilteredGet_StringMode(Index) {
+        if !IsNumber(Index) {
+            this.__ThrowTypeError()
+        }
+        return this.__InfoItems[this.__FilteredIndex[Index]].Name
+    }
+
+    __FilteredGet_Bitypic(Key) {
+        if IsNumber(Key) {
+            return this.__InfoItems[this.__FilteredIndex[Key]]
+        } else {
+            return this.__FilteredItems.Get(this.__InfoIndex.Get(Key))
+        }
+    }
+
+    __FilteredHas(Key) {
+        if IsNumber(Key) {
+            return this.__FilteredItems.Has(this.__InfoIndex.Get(this.__InfoItems[Key].Name))
+        } else {
+            return this.__FilteredItems.Has(this.__InfoIndex.Get(Key))
+        }
+    }
+
+    __FilteredToArray(NamesOnly := false) {
+        Result := []
+        Result.Capacity := this.__FilteredItems.Count
+        if NamesOnly {
+            for i, InfoItem in this.__FilteredItems {
+                Result.Push(InfoItem.Name)
+            }
+        } else {
+            for i, InfoItem in this.__FilteredItems {
+                Result.Push(InfoItem)
+            }
+        }
+        return Result
+    }
+
+    __FilteredToMap(NamesOnly := false) {
+        Result := Map()
+        Result.Capacity := this.__FilteredItems.Count
+        for i, InfoItem in this.__FilteredItems {
+            Result.Set(InfoItem.Name, InfoItem)
+        }
+        return Result
+    }
+
+    __FilterSwitchProps(Value) {
+        Proto := PropsInfo.Prototype
+        if Value {
+            for Name in this.__OnFilterProperties {
+                this.DefineProp(Name, Proto.GetOwnPropDesc('__Filtered' Name))
+            }
+            this.DefineProp('Get', Proto.GetOwnPropDesc(this.__StringMode ? '__FilteredGet_StringMode' : '__FilteredGet_Bitypic'))
+        } else {
+            for Name in this.__OnFilterProperties {
+                this.DefineProp(Name, Proto.GetOwnPropDesc(Name))
+            }
+            this.DefineProp('Get', Proto.GetOwnPropDesc(this.__StringMode ? '__ItemGet_StringMode' : '__ItemGet_Bitypic'))
+        }
+    }
+
+    __ThrowTypeError() {
+        ; To aid in debugging; if `StringMode == true`, then the object is supposed to behave
+        ; like an array of strings, and so accessing an item by name is invalid and represents
+        ; an error in the code.
+        throw TypeError('Invalid input. While the ``PropsInfo`` object is in string mode,'
+        ' items can only be accessed using numeric indices.', -2)
+    }
+
+    __FilteredCapacity => this.__FilteredItems.Capacity
+    __FilteredCount => this.__FilteredItems.Count
+    __FilteredLength => this.__FilteredItems.Count
+
+    /**
+     * `PropsInfo.Filter` constructs the filter objects when a filter is added using
+     * `PropsInfo.Prototype.FilterAdd`. Filter objects have four properties:
+     * - Index: The object's index which can be used to access or delete the object from the filter.
+     * - Function: The function object.
+     * - Call: The `Call` method which redirects the input parameter to the function and returns
+     * the return value.
+     * - Name: Returns the function's built-in name.
+     * @classdesc
+     */
     class Filter {
         __New(Function, Index) {
             this.DefineProp('Call', { Call: _Filter })
@@ -574,6 +923,15 @@ class PropsInfo {
         Name => this.Function.Name
     }
 
+    /**
+     * `PropsInfo.Proxy_Array` constructs a proxy that can be passed to an external function as an
+     * iterable object. Use `PropsInfo.Proxy_Array` when an external function expects an iterable Array
+     * object. Using a proxy is slightly more performant than calling `PropsInfo.Prototype.ToArray` in
+     * cases where the object will only be iterated once.
+     * The function should not try to set or change the items in the collection. If this is necessary,
+     * use `PropsInfo.Prototype.ToArray`.
+     * @classdesc
+     */
     class Proxy_Array extends Array {
         static __New() {
             if this.Prototype.__Class == 'PropsInfo.Proxy_Array' {
@@ -600,7 +958,8 @@ class PropsInfo {
         }
         __Item[Index] {
             Get => this.Client.__Item[Index]
-            Set => this.Client.__Item[Index] := Value
+            ; `PropsInfo` is not compatible with addint new items to the collection.
+            ; Set => this.Client.__Item[Index] := Value
         }
         __Get(Name, Params) {
             if Params.Length {
@@ -625,6 +984,15 @@ class PropsInfo {
         }
     }
 
+    /**
+     * `PropsInfo.Proxy_Map` constructs a proxy that can be passed to an external function as an
+     * iterable object. Use `PropsInfo.Proxy_Map` when an external function expects an iterable Map
+     * object. Using a proxy is slightly more performant than calling `PropsInfo.Prototype.ToMap` in
+     * cases where the object will only be iterated once.
+     * The function should not try to set or change the items in the collection. If this is necessary,
+     * use `PropsInfo.Prototype.ToMap`.
+     * @classdesc
+     */
     class Proxy_Map extends Map {
         static __New() {
             if this.Prototype.__Class == 'PropsInfo.Proxy_Map' {
@@ -635,21 +1003,22 @@ class PropsInfo {
             this.DefineProp('Client', { Value: Client })
         }
         Get(Key) => this.Client.Get(Key)
-        Has(Key) => this.Client.__PropNameIndex.Has(Key)
+        Has(Key) => this.Client.__InfoIndex.Has(Key)
         __Enum(VarCount) => this.Client.__Enum(VarCount)
         Capacity {
-            Get => this.Client.__PropNameIndex.Capacity
-            Set => this.Client.___PropNameIndex.Capacity := Value
+            Get => this.Client.__InfoIndex.Capacity
+            Set => this.Client.___InfoIndex.Capacity := Value
         }
-        CaseSense => this.Client.__PropNameIndex.CaseSense
-        Count => this.Client.__PropNameIndex.Count
+        CaseSense => this.Client.__InfoIndex.CaseSense
+        Count => this.Client.__InfoIndex.Count
         Default {
-            Get => this.Client.__PropNameIndex.Default
-            Set => this.Client.__PropNameIndex.Default := Value
+            Get => this.Client.__InfoIndex.Default
+            Set => this.Client.__InfoIndex.Default := Value
         }
         __Item[Key] {
             Get => this.Client.__Item[Key]
-            Set => this.Client.__Item[Key] := Value
+            ; `PropsInfo` is not compatible with addint new items to the collection.
+            ; Set => this.Client.__Item[Key] := Value
         }
         __Get(Name, Params) {
             if Params.Length {
@@ -676,10 +1045,9 @@ class PropsInfo {
 }
 
 /**
- * For each base object in the input object's inheritance chain (up to the stopping point), the base
- * object's own properties are iterated, generating a `PropsInfoItem` object for each property
- * (unless the property is excluded).
- * @class
+ * @classdesc - For each base object in the input object's inheritance chain (up to the stopping
+ * point), the base object's own properties are iterated, generating a `PropsInfoItem` object for
+ * each property (unless the property is excluded).
  */
 class PropsInfoItem {
     static __New() {
@@ -696,6 +1064,7 @@ class PropsInfoItem {
      * `PropsInfoItem.Prototype.__New` is not intended to be called directly.
      * @param {Object} - The objecet that was passed to `GetPropsInfo`.
      * @returns {PropsInfoItem} - The `PropsInfoItem` instance.
+     * @class
      */
     __New(Root) {
         this.Root := Root
@@ -714,6 +1083,7 @@ class PropsInfoItem {
      * - 2: The owner of the property that produced this `PropsInfoItem` object is bound to the
      * function object(s).
      * @returns {Func|BoundFunc} - The function object.
+     * @throws {ValueError} - If `Flag_Bind` is not 0, 1, or 2.
      */
     GetFunc(&OutSet?, Flag_Bind := 0) {
         switch Flag_Bind, 0 {
@@ -748,7 +1118,7 @@ class PropsInfoItem {
 
     /**
      * @description - Returns the owner of the property which produced this `PropsInfoItem` object.
-     * @returns {Object}
+     * @returns {*} - The owner of the property.
      */
     GetOwner() {
         b := this.Root
@@ -761,7 +1131,7 @@ class PropsInfoItem {
     /**
      * @description - If this is associated with a value property, provides the value that the property
      * had at the time this `PropsInfoItem` object was created. If this is associated with a dynamic
-     * property with a `Get` accessor, attempts to provides the value.
+     * property with a `Get` accessor, attempts to access and provide the value.
      * @param {VarRef} OutValue - Because `GetValue` is expected to sometimes fail, the property's
      * value is set to the `OutValue` variable, and a status code is returned by the function.
      * @param {Boolean} [FromOwner=false] - When true, the object that produced this `PropsInfoItem`
@@ -838,6 +1208,7 @@ class PropsInfoItem {
 
     /**
      * Returns the owner of the property which produced this `PropsInfoItem` object.
+     * @memberof PropsInfoItem
      * @instance
      */
     Owner => this.GetOwner()
@@ -849,6 +1220,7 @@ class PropsInfoItem {
      * - Get_Set
      * - Set
      * - Value
+     * @memberof PropsInfoItem
      * @instance
      */
     Kind => this.__KindNames[this.KindIndex]
@@ -860,6 +1232,7 @@ class PropsInfoItem {
      * - 3: Dynamic property with both a getter and setter
      * - 4: Dynamic property with only a setter
      * - 5: Value property
+     * @memberof PropsInfoItem
      * @instance
      */
     KindIndex => this.__DefineKindIndex()
