@@ -38,7 +38,7 @@
  * it to a `PropsInfoItem` object and exposing additional properties. See the parameter hints above
  * each property for details.
  *
- * @param {Object} Obj - The object from which to get the properties.
+ * @param {*} Obj - The object from which to get the properties.
  * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
  * You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If
@@ -47,7 +47,7 @@
  * @see {@link GetBaseObjects} for full details about this parameter.
  * @param {String} [Exclude=''] - A comma-delimited, case-insensitive list of properties to exclude.
  * For example: "Length,Capacity,__Item".
- * @param {Boolean} [IncludeBaseProp=true] - If true, the objects' `Base` property is included. If
+ * @param {Boolean} [IncludeBaseProp=true] - If true, the object's `Base` property is included. If
  * false, `Base` is excluded.
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
@@ -140,7 +140,7 @@ class PropsInfo {
         if this.Prototype.__Class == 'PropsInfo' {
             Proto := this.Prototype
             Proto.DefineProp('Filter', { Value: '' })
-            Proto.DefineProp('FilterActive', { Value: 0 })
+            Proto.DefineProp('__FilterActive', { Value: 0 })
             Proto.DefineProp('__StringMode', { Value: '' })
             Proto.DefineProp('Get', Proto.GetOwnPropDesc('__ItemGet_Bitypic'))
             Proto.DefineProp('__OnFilterProperties', { Value: ['Has', 'ToArray', 'ToMap'
@@ -168,6 +168,7 @@ class PropsInfo {
             this.__InfoIndex.Set(Prop, A_Index)
         }
         this.__PropsInfoItemBase := PropsInfoItemBase
+        this.__FilterActive := 0
     }
 
     /**
@@ -247,7 +248,7 @@ class PropsInfo {
             }
         }
         FilteredIndex.Capacity := FilteredItems.Capacity := FilteredItems.Count
-        this.DefineProp('FilterActive', { Value: 1 })
+        this.__FilterActive := 1
         if IsSet(CacheName) {
             this.FilterCache(CacheName)
         }
@@ -259,9 +260,7 @@ class PropsInfo {
      * @param {String|Number} Name - The name of the filter to activate.
      */
     FilterActivateFromCache(Name) {
-        if !this.FilterActive {
-            this.FilterActive := 1
-        }
+        this.__FilterActive := 1
         this.__FilteredItems := this.__FilterCache.Get(Name).Items
         this.__FilteredIndex := this.__FilterCache.Get(Name).Index
         this.__FilterSwitchProps(1)
@@ -404,13 +403,13 @@ class PropsInfo {
      * @throws {Error} - If the filter is not currently active.
      */
     FilterDeactivate(CacheName?) {
-        if !this.FilterActive {
+        if !this.__FilterActive {
             throw Error('The filter is not currently active.', -1)
         }
         if IsSet(CacheName) {
             this.FilterCache(CacheName)
         }
-        this.DefineProp('FilterActive', { Value: 0 })
+        this.__FilterActive := 0
         this.__FilteredItems := ''
         this.__FilteredIndex := ''
         this.__FilterSwitchProps(0)
@@ -695,6 +694,25 @@ class PropsInfo {
     Length => this.__InfoItems.Length
 
     /**
+     * Set to a nonzero value to activate the current filter. Set to a falsy value to deactivate.
+     * While a filter is active, the values retured by the `PropsInfo` object's methods and properties
+     * will be filtered. See the parameter hint above `PropsInfo.Prototype.FilterActivate` for
+     * additional details.
+     * @memberof PropsInfo
+     * @instance
+     */
+    FilterActive {
+        Get => this.__FilterActive
+        Set {
+            if Value {
+                this.FilterActivate()
+            } else {
+                this.FilterDeactivate()
+            }
+        }
+    }
+
+    /**
      * Set to a nonzero value to activate string mode. Set to a falsy value to deactivate.
      * While string mode is active, the `PropsInfo` object emulates the behavior of an array of
      * strings. The following properties and methods are influenced by string mode:
@@ -706,7 +724,7 @@ class PropsInfo {
     StringMode {
         Get => this.__StringMode
         Set {
-            if this.FilterActive {
+            if this.__FilterActive {
                 if Value {
                     this.DefineProp('__StringMode', { Value: 1 })
                     this.DefineProp('Get', { Call: this.__FilteredGet_StringMode })
@@ -736,7 +754,7 @@ class PropsInfo {
      */
     __Enum(VarCount) {
         i := 0
-        if this.FilterActive {
+        if this.__FilterActive {
             Index := this.__FilteredIndex
             FilteredItems := this.__FilteredItems
             return this.__StringMode ? _Filtered_Enum_StringMode_%VarCount% : _Filtered_Enum_%VarCount%

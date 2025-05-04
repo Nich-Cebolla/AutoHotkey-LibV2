@@ -114,7 +114,7 @@ class Example {
 }
 ```
 
-The above example class would actually return the wrong value for any index greater than 3. At input index 3, the object in the array index 5 gets returned. At input index 4, the correct object is array index 7, but we would still get the object at array index 4. To stick with this approach, we would have to iterate the entire array up to the correct value every time, or we would need to cache the starting offsets. But at this point, there's no value gained by using offsets; we could just cache the object references themselves. Since object references are essentially pointers, the memory consumed is much less than caching something like a string.
+The above example class would actually return the wrong value for any index greater than 3. At input index 3, the object in the array index 5 gets returned. At input index 4, the correct object is array index 7, but we would still get the object at array index 5. To stick with this approach, we would have to iterate the entire array up to the correct value every time, or we would need to cache the starting offsets. But at this point, there's no value gained by using offsets; we could just cache the object references themselves. Since object references are essentially pointers, the memory consumed is much less than caching something like a string.
 
 Conclusion: It is better to cache the filtered objects than to define the accessors to process objects through the filter when accessed.
 

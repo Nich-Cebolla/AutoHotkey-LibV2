@@ -1,0 +1,321 @@
+[color=#800000][size=165][b]Inheritance[/b][/size][/color]
+[color=#800000][size=145][b]Table of Contents[/b][/size][/color]
+[color=#000000][size=100]
+I. Introduction
+II. GetPropsInfo
+III. PropsInfo class
+----A. PropsInfo - instance methods
+----B. PropsInfo - instance properties
+----C. PropsInfo - accessing items by index
+----D. PropsInfo.Filter
+----E. PropsInfo.Proxy_Array
+----F. PropsInfo.Proxy_Map
+IV. PropsInfoItem class
+----A. PropsInfoItem - instance methods
+----B. PropsInfoItem - instance properties
+V. ClassFactory
+VI. GetBaseObjects
+VII. GetPropDesc
+VIII. For Learners
+IX. Included Files
+[/size][/color]
+
+[color=#800000][size=145][b]Introduction[/b][/size][/color]
+[color=#000000][size=100]Inheritance is a library containing four functions to aid working with AHK's object inheritance model.[/size][/color]
+
+Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inheritance[/url]
+
+[list][*][color=#000000][size=100]GetPropsInfo - The most robust function of the library, [c]GetPropsInfo[/c] returns a [c]PropsInfo[/c] object exposing various details about the input object's own and inherited properties.[/size][/color]
+[*][color=#000000][size=100]ClassFactory - [c]ClassFactory[/c] is a short function that creates a class constructor out of some input object. There are occasions when it is beneficial to create a class constructor dynamically. That's what this function does.[/size][/color]
+[*][color=#000000][size=100]GetBaseObjects - A simple function that returns an array containing references to base objects in an object's inheritance chain, up to a given stopping point.[/size][/color]
+[*][color=#000000][size=100]GetPropDesc - Returns the property descriptor object from the first object in the input object's inheritance chain that owns a given property.[/size][/color][/list]
+
+[color=#800000][size=145][b]GetPropsInfo[/b][/size][/color]
+[color=#000000][size=100]Constructs a [c]PropsInfo[/c] object, which is a flexible solution for cases when a project would benefit from being able to quickly obtain a list of all of an object's properties, and/or filter those properties.[/size][/color]
+
+[color=#000000][size=100]In this documentation, an instance of [c]PropsInfo[/c] is referred to as either "a [c]PropsInfo[/c] object" or [c]PropsInfoObj[/c]. An instance of [c]PropsInfoItem[/c] is referred to as either "a [c]PropsInfoItem[/c] object" or [c]InfoItem[/c].[/size][/color]
+
+[color=#000000][size=100]See example-Inheritance.ahk for a walkthrough on how to use the class.[/size][/color]
+
+[color=#000000][size=100][c]PropsInfo[/c] objects are designed to be a flexible solution for accessing and/or analyzing an object's properties, including inherited properties. Whereas [c]OwnProps[/c] only iterates an objects' own properties, [c]PropsInfo[/c] objects can perform these functions for both inherited and own properties:[/size][/color]
+
+[list][*][color=#000000][size=100]Produce an array of property names.[/size][/color]
+[*][color=#000000][size=100]Produce a [c]Map[/c] where the key is the property name and the object is a [c]PropsInfoItem[/c] object for each property.[/size][/color]
+[*][color=#000000][size=100]Produce an array of [c]PropsInfoItem[/c] objects.[/size][/color]
+[*][color=#000000][size=100]Be passed to a function that expects an iterable object like any of the three above bullet points.[/size][/color]
+[*][color=#000000][size=100]Filter the properties according to one or more conditions.[/size][/color]
+[*][color=#000000][size=100]Get the function objects associated with the properties.[/size][/color][/list]
+
+[color=#000000][size=100][c]PropsInfoItem[/c] objects are modified descriptor objects. After getting the descriptor object, [c]GetPropsInfo[/c] changes the descriptor object's base exposing additional properties. See the parameter hints above each property for details. See [url]https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc.[/url][/size][/color]
+
+[color=#800000][size=125][b]Parameters[/b][/size][/color]
+[list][*][size=100][color=#008000][b]{*}[/color] Obj[/b] - The object from which to get the properties.[/size]
+[*][size=100][color=#008000][b]{Integer|String}[/color] [StopAt=GPI_STOP_AT_DEFAULT[/b] ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable [c]GPI_STOP_AT_DEFAULT[/c] to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs [c]GetPropsInfo[/c] to include properties owned by objects up to but not including [c]Object.Prototype[/c]. See <a href="#getbaseobjects">GetBaseObjects</a> for full details about this parameter.[/size]
+[*][size=100][color=#008000][b]{String}[/color] [Exclude=''][/b] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".[/size]
+[*][size=100][color=#008000][b]{Boolean}[/color] [IncludeBaseProp=true][/b] - If true, the object's [c]Base[/c] property is included. If false, [c]Base[/c] is excluded.[/size]
+[*][size=100][color=#008000][b]{VarRef}[/color] [OutBaseObjList][/b] - A variable that will receive a reference to the array of base objects that is generated during the function call.[/size][/list]
+
+[color=#800000][size=125][b]Returns[/b][/size][/color]
+[color=#000000][size=100]Returns an instance of [c]PropsInfo[/c].[/size][/color]
+
+[color=#800000][size=145][b]PropsInfo class[/b][/size][/color]
+[color=#000000][size=100]This is a list and brief description of the properties and methods available from the [c]PropsInfo[/c] class. For parameters and further details, see the inline documentation within the code file "GetPropsInfo.ahk".[/size][/color]
+
+[color=#000000][size=100]Each [c]PropsInfo[/c] object is a container for one or more [c]PropsInfoItem[/c] object references. It is through the [c]PropsInfo[/c] object that our code can access the details about any specific property. See the example file "example-Inheritance.ahk" for a walkthrough of what [c]PropsInfo[/c] objects can be used for.[/size][/color]
+
+[color=#800000][size=125][b]PropsInfo - instance methods[/b][/size][/color]
+[list][*][color=#000000][size=100]__New - The class constructor. This is not intended to be called directly, and instead instances should be created by calling the function [c]GetPropsInfo[/c].[/size][/color]
+[*][color=#000000][size=100]__Enum - The enumerator. When calling a [c]PropsInfo[/c] object from a [c]for[/c] loop, [c]PropsInfoObj.__Enum[/c]'s behavior varies depending on the [c]PropsInfoObj.StringMode[/c] and [c]PropsInfoObj.FilterActive[/c] property values.[/size][/color]
+[*][color=#000000][size=100]Dispose - Call this every time your code is finished using a [c]PropsInfo[/c] object. If you do not, you risk a reference cycle preventing some resources from being freed.[/size][/color]
+[*][color=#000000][size=100]FilterActivate - Activates the current filter on the object. The following is a brief description of filters in general. [c]PropsInfo[/c] objects have a built-in filter system that allows us to exclude certain properties from being accessed via the object. This is useful for situations when our code must respond to or interact with some properties but not others.[/size][/color]
+[*][color=#000000][size=100]FilterActivateFromCache - Activates a cached filter.[/size][/color]
+[*][color=#000000][size=100]FilterAdd - Adds a function to the filter.[/size][/color]
+[*][color=#000000][size=100]FilterCache - Caches the current filter.[/size][/color]
+[*][color=#000000][size=100]FilterClear - Clears the current filter (does not change cached filters).[/size][/color]
+[*][color=#000000][size=100]FilterClearCache - Clears the cached filters (does not change the current filter).[/size][/color]
+[*][color=#000000][size=100]FilterDeactivate - Deactivates the currently active filter. When called, all properties that were previously excluded by the filter become available again.[/size][/color]
+[*][color=#000000][size=100]FilterDelete - Deletes a filter object from the currently active filter.[/size][/color]
+[*][color=#000000][size=100]FilterDeleteFromCache - Deletes a cached filter.[/size][/color]
+[*][color=#000000][size=100]FilterRemoveFromExclude - Removes a property name from the string list of properties to exclude.[/size][/color]
+[*][color=#000000][size=100]Get - Returns a [c]PropsInfoItem[/c] object using a string name or integer index as the key. Note that the object's current value of [c]PropsInfoObj.StringMode[/c] infleunces this method's behavior. See the section below "Accessing items by index".[/size][/color]
+[*][color=#000000][size=100]GetIndex - Accepts a property name as string as input and returns the index value of the associated [c]PropsInfoItem[/c] object.[/size][/color]
+[*][color=#000000][size=100]GetProxy - Returns a proxy that can be passed to a function that expects an array or map.[/size][/color]
+[*][color=#000000][size=100]GetFilteredProps - Returns a container object that has been populated with references to [c]PropsInfoItem[/c] objects that have been processed through a filter.[/size][/color]
+[*][color=#000000][size=100]Has - Returns nonzero if an item exists in the [c]PropsInfo[/c] object's internal collection.[/size][/color]
+[*][color=#000000][size=100]ToArray - Returns an array of property names as string, or [c]PropsInfoItem[/c] objects.[/size][/color]
+[*][color=#000000][size=100]ToMap - Returns a map with keys that are property names and values that are [c]PropsInfoItem[/c] objects.[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfo - instance properties[/b][/size][/color]
+[list][*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
+[*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
+[*][color=#000000][size=100]StringMode - Initially [c]0[/c]. If you set [c]PropsInfoObj.StringMode := <nonzero value>[/c], "string mode" becomes active on the [c]PropsInfo[/c] object. While [c]PropsInfoObj.StringMode == 1[/c], the [c]PropsInfo[/c] object behaves like an array of property names as string. The following are influenced by string mode: [c]__Enum[/c], [c]Get[/c], [c]__Item[/c]. By extension, the proxies are also influenced by string mode, though not directly.[/size][/color][/list]
+
+[color=#000000][size=100]The following properties are read-only, and are included to prevent an error when passing a [c]PropsInfo[/c] object to a function that expects an array or map.[/size][/color]
+
+[list][*][color=#000000][size=100]Capacity, Count, Length - Returns the current item count of one of the [c]PropsInfo[/c] object's internal containers. [c]PropsInfo[/c] objects contain multiple internal containers, and so [c]PropsInfoObj.Capacity[/c] should not be interpreted in terms of memory usage. [c]PropsInfoObj.Capacity[/c], [c]PropsInfoObj.Count[/c], and [c]PropsInfoObj.Length[/c] will always be the same value.[/size][/color]
+[*][color=#000000][size=100]CaseSense - Returns [c]PropsInfoObj.__InfoIndex.CaseSense[/c], which will always be "Off".[/size][/color]
+[*][color=#000000][size=100]Default - Returns [c]PropsInfoObj.__InfoIndex.Default[/c], which will always be "0".[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfo - accessing items by index[/b][/size][/color]
+[color=#000000][size=100]Accessing items by index is mostly used internally, but I exposed the functionality to prevent errors when passing a [c]PropsInfo[/c] object to a function that expects an array. In general you probably won't need this information, and I include it for completeness:[/size][/color]
+
+[list][*][color=#000000][size=100]When [c]GetPropsInfo[/c] iterates an object's properties and the object's base objects' properties, an item is added to a [c]Map[/c] object for each unique property name. That [c]Map[/c] object is passed to the [c]PropsInfo[/c] constructor, which then iterates the [c]Map[/c] object, constructing the [c]PropsInfo[/c] object's internal containers. This carries the consequence of the containers being ordered alphabetically according to the sorting used by the [c]Map[/c] object's enumerator. Since it is unlikely that any given code is going to have prepared a function to calculate the index values from this approach, you will likely never directly access an item by index. While you can get an item's index value by calling [c]PropsInfoObj.GetIndex(name)[/c], there is no reason to do this because your code already has the name, and can get an item that way, except if [c]PropsInfoObj.StringMode == 1[/c].[/size][/color]
+[*][color=#000000][size=100]When [c]PropsInfoObj.StringMode == 1[/c], your code loses the ability to access items by calling [c]PropsInfoObj.Get(name)[/c] or accessing [c]PropsInfoObj[name][/c]. When using string mode the object is supposed to emulate the behavior of an array of strings. Accessing an item by name is invalid in this context; throwing an error if the code attempts to access an item by name while using string mode will aid in debugging. Your code can, however, access specific items by index by calling [c]PropsInfoObj.Get(index)[/c] or accessing [c]PropsInfoObj[index][/c].[/size][/color]
+[*][color=#000000][size=100]While [c]PropsInfoObj.FilterActive == 1[/c], the indices that are associated with a specific [c]PropsInfoItem[/c] object are correctly shifted to be true to the filtered list. Valid index values begin at 1 and increment by 1 for each item included in the filtered list, though any item's actual position in the [c]PropsInfo[/c] object's internal container may not be the same.[/size][/color]
+[*][color=#000000][size=100]Writing the class with the characteristics described in this section was all to enable passing a [c]PropsInfo[/c] object to a function that expects an array. [c]GetPropsInfo[/c] should be completely backward-compatible in this respect; old code should not have a problem working with [c]PropsInfo[/c] objects.[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfo.Filter[/b][/size][/color]
+[color=#000000][size=100]When a function is added to the filter, it gets added as a [c]PropsInfo.Filter[/c] object. [c]PropsInfo.Filter[/c] objects have the following properties:[/size][/color]
+
+[list][*][color=#000000][size=100]Name - Returns the function's built-in name, "the function" meaning the function object that was added to [c]PropsInfoObj.Filter[/c] by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
+[*][color=#000000][size=100]Index - The index associated with the [c]PropsInfo.Filter[/c] object. The built-in filters have indices 0-4. When one or more custom filters are added using [c]PropsInfoObj.FilterAdd[/c], [c]PropsInfoObj.FilterAdd[/c] returns the index of the first [c]PropsInfo.Filter[/c] object added to [c]PropsInfoObj.Filter[/c]; your code would need to calculate the rest (by adding 1 for each additional custom filter added). Saving the index is not necessary because you can simply pass the function object to [c]PropsInfoObj.FilterDelete[/c] to delete its associated [c]PropsInfo.Filter[/c] object.[/size][/color]
+[*][color=#000000][size=100]Function - A reference to the function object.[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfo.Proxy_Array[/b][/size][/color]
+[color=#000000][size=100]When calling [c]PropsInfoObj.GetProxy(1)[/c], the return value is a [c]PropsInfo.Proxy_Array[/c] object. The [c]PropsInfo.Proxy_Array[/c] object forwards all property accessors and method calls to the [c]PropsInfo[/c] object. A [c]PropsInfo.Proxy_Array[/c] object has these characteristics:[/size][/color]
+
+[code]
+
+proxy_array := PropsInfoObj.GetProxy(1)
+MsgBox(Type(proxy_array)) ; Array
+MsgBox(proxy_array is Array) ; 1
+MsgBox(proxy_array.__Class) ; Array
+
+[/code]
+
+[color=#800000][size=125][b]PropsInfo.Proxy_Map[/b][/size][/color]
+[color=#000000][size=100]When calling [c]PropsInfoObj.GetProxy(2)[/c], the return value is a [c]PropsInfo.Proxy_Map[/c] object. The [c]PropsInfo.Proxy_Map[/c] object forwards all property accessors and method calls to the [c]PropsInfo[/c] object. A [c]PropsInfo.Proxy_Map[/c] object has these characteristics:[/size][/color]
+
+[code]
+
+proxy_map := PropsInfoObj.GetProxy(2)
+MsgBox(Type(proxy_map)) ; Map
+MsgBox(proxy_map is Map) ; 1
+MsgBox(proxy_map.__Class) ; Map
+
+[/code]
+
+[color=#800000][size=145][b]PropsInfoItem class[/b][/size][/color]
+[color=#000000][size=100]This is a list and brief description of the properties and methods available from the [c]PropsInfoItem[/c] class. For parameters and further details, see the inline documentation within the code file "GetPropsInfo.ahk".[/size][/color]
+
+[color=#000000][size=100]A [c]PropsInfoItem[/c] object is a modified descriptor object, exposing additional properties.[/size][/color]
+
+[color=#800000][size=125][b]PropsInfoItem - instance methods[/b][/size][/color]
+[color=#000000][size=100]In these descriptions, the phrase "the property" means "the object's property that was used to create this [c]PropsInfoItem[/c] object."[/size][/color]
+
+[list][*][color=#000000][size=100]__New - The class constructor. This is not intended to be called directly. When [c]GetPropsInfo[/c] is called, the process calls [c]PropsInfoItem.Prototype.__New[/c] only once. The object returned from that call is then used as the base object for all of the other [c]PropsInfoItem[/c] objects added to the [c]PropsInfo[/c] object's internal containers.[/size][/color]
+[*][color=#000000][size=100]GetFunc - Returns the function object associated with the property.[/size][/color]
+[*][color=#000000][size=100]GetOwner - Returns the object that owns the property.[/size][/color]
+[*][color=#000000][size=100]GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a [c]VarRef[/c] parameter and the function returns 0. If unsuccessful, the error object is assigned to the [c]VarRef[/c] parameter and the function returns 1. If the property is not a value property nor does it have a [c]Get[/c] accessor, the function returns 2 and the [c]VarRef[/c] parameter remains unchanged.[/size][/color]
+[*][color=#000000][size=100]Refresh - Calls [c]GetOwnPropDesc[/c] from the object that owns the property, updating the [c]PropsInfoItem[/c] object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the [c]PropsInfoItem[/c] object was created or the last time [c]Refresh[/c] was called.[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfoItem - instance properties[/b][/size][/color]
+[color=#000000][size=100]In these descriptions, the phrase "the property" means "the object's property that was used to create this [c]PropsInfoItem[/c] object."[/size][/color]
+
+[list][*][color=#000000][size=100]Alt - For properties that share a name with other properties in an inheritance chain, the [c]PropsInfoItem[/c] object directly accessible from the [c]PropsInfo[/c] object will have an [c]Alt[/c] property. The [c]Alt[/c] property will return an array containing references to the other [c]PropsInfoItem[/c] objects. I find this concept challenging to convey using words, and so if this is confusing, the section "E. \[c]PropsInfoItem\[/c] objects - \[c]InfoItem.GetFunc\[/c]" within the file "example-Inheritance.ahk" contains code that illustrates what I am trying to convey here. The "Alt" property is only available if the following are both true:[/size][/color]
+[*][indent=2][color=#000000][size=100]The [c]PropsInfoItem[/c] object's [c]Count[/c] property is greater than 1 (see below).[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]One of the following are true:[/size][/color][/indent]
+[*][indent=4][color=#000000][size=100]The [c]PropsInfoItem[/c] object is associated with an own property of the object that was passed to [c]GetPropsInfo[/c].[/size][/color][/indent]
+[*][indent=4][color=#000000][size=100]The [c]PropsInfoItem[/c] object is associated with an inherited property of the object that was passed to [c]GetPropsInfo[/c].[/size][/color][/indent]
+[*][color=#000000][size=100]Count - Returns the number of objects that own a property by the same name within the inheritance chain of the object that was passed to [c]GetPropsInfo[/c] that produced the [c]PropsInfoItem[/c] object.[/size][/color]
+[*][color=#000000][size=100]Kind - Returns a string representation of the kind of property. These are the values:[/size][/color]
+[*][indent=2][color=#000000][size=100]"Call"[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]"Get"[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]"Get_Set"[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]"Set"[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]"Value"[/size][/color][/indent]
+[*][color=#000000][size=100]KindIndex - Returns an integer that specifies the kind of property. These are the values:[/size][/color]
+[*][indent=2][color=#000000][size=100]1: Callable property (what we call a "method")[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]2: Dynamic property with only a getter[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]3: Dynamic property with both a getter and setter[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]4: Dynamic property with only a setter[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]5: Value property[/size][/color][/indent]
+[*][color=#000000][size=100]Name - Returns the name of the property.[/size][/color]
+[*][color=#000000][size=100]Owner - Returns the value returned by [c]PropsInfoItem.Prototype.GetOwner[/c].[/size][/color][/list]
+
+[color=#800000][size=145][b]ClassFactory[/b][/size][/color]
+[color=#000000][size=100][c]ClassFactory[/c] returns an instance of [c]Class[/c] that is created using the input values. The purpose of [c]ClassFactory[/c] is to handle the boilerplate part of creating a class constructor. Your code needs only to provide the Prototype object. Optionally you can provide a class name and/or a constructor function.[/size][/color]
+
+Example using just a base object:
+[code]
+
+; Assume we have a parent object that we want to be accessible from a number of other objects that will not always share the same scope.
+MyBaseObj := { Parent: { Id: 1 } }
+MyClassFactory := ClassFactory(MyBaseObj)
+
+NewObj := MyClassFactory()
+MsgBox(NewObj.Parent.Id) ; 1
+
+[/code]
+
+Example using a constructor function:
+[code]
+
+MyBaseObj := { Type: 'mach 1', specs: GetSpecsFromUser() }
+Constructor(obj) {
+    if obj.specs == '1200hp' {
+        obj.decal := 'purple-trim'
+    } else if obj.specs == '1350hp' {
+        obj.decal := 'red-trim'
+    }
+}
+Mach1Factory := ClassFactory(MyBaseObj, 'Mach1', Constructor)
+
+NewMach1 := Mach1Factory()
+
+MsgBox(Type(NewMach1)) ; Mach1
+MsgBox(NewMach1.specs) ; 1200hp
+MsgBox(NewMach1.decal) ; purple-trim
+
+GetSpecsFromuser() {
+    return '1200hp'
+}
+
+[/code]
+
+Example using an object that inherits from something other than [c]Object[/c]:
+[code]
+
+class MapEx extends Map {
+    instanceproperty {
+        get => this.__containerproperty
+        set => this.__containerproperty := value
+    }
+
+    instancemethod() {
+        return 'some value'
+    }
+}
+MyMapEx := MapEx()
+; Say I have some other function that I want only accessible to a subset of `MapEx` objects,
+; but I don't know which function to use until I get some input from the user.
+HelperFunc1(*) {
+    return 'do something'
+}
+HelperFunc2(*) {
+    return 'don`'t do something'
+}
+if GetUserInput() == 1 {
+    MyMapEx.DefineProp('Helper', { Call: HelperFunc1 })
+} else {
+    MyMapEx.DefineProp('Helper', { Call: HelperFunc2 })
+}
+MapExHelperConstructor := ClassFactory(MyMapEx, 'MapExHelper')
+newMapExHelper := MapExHelperConstructor()
+MsgBox(newMapExHelper.Helper()) ; do something
+newMapEx := MapEx()
+MsgBox(newMapEx.Helper()) ; Error: This value of type "MapEx" has no method named "Helper".
+
+GetUserInput() => 1
+
+[/code]
+
+[color=#800000][size=125][b]Parameters[/b][/size][/color]
+[list][*][size=100][color=#008000][b]{*}[/color] Prototype[/b] - The object to use as the new class's prototype.[/size]
+[*][size=100][color=#008000][b]{String}[/color] [Name][/b] - The name of the new class. This gets assigned to [c]Prototype.__Class[/c].[/size]
+[*][size=100][color=#008000][b]{Function}[/color] [Constructor][/b] - An optional constructor function that is assigned to [c]NewClassObj.Prototype.__New[/c]. When set, this function is called for each new instance. When unset, the constructor function associated with [c]Prototype.__Class[/c] is called.[/size][/list]
+
+[color=#800000][size=125][b]Returns[/b][/size][/color]
+[color=#000000][size=100]{Class} - The new class object. The object will have a [c]Prototype[/c] property. Instances of the class can be created by calling the object.[/size][/color]
+
+[color=#800000][size=145][b]GetBaseObjects[/b][/size][/color]
+[color=#000000][size=100][c]GetBaseObjects[/c] returns an array of references to objects in the input object's inheritance chain.[/size][/color]
+
+[color=#800000][size=125][b]Parameters[/b][/size][/color]
+[list][*][size=100][color=#008000][b]{Object}[/color] Obj[/b] - The object from which to get the base objects.[/size]
+[*][size=100][color=#008000][b]{+Integer|String}[/color] [StopAt=GBO_STOP_AT_DEFAULT[/b] ?? '-Any'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the class to stop at. If falsy, the function will traverse the entire inheritance chain up to but not including [c]Any[/c].[/size][/list]
+
+[color=#000000][size=100]
+If you define global variable [c]GBO_STOP_AT_DEFAULT[/c] with a value somewhere in your code, that value will be used as the default for the function call. Otherwise, '-Any' is used.
+
+There are two ways to modify the function's interpretation of this value:[/size][/color]
+[list][*][indent=2][color=#000000][size=100]Stop before or after the class: The default is to stop after the class, such that the base object associated with the class is included in the result array. To change this, include a hyphen "-" anywhere in the value and [c]GetBaseObjects[/c] will not include the last iterated object in the result array.[/size][/color][/indent]
+[*][indent=2][color=#000000][size=100]The type of object which will be stopped at: This only applies to [c]StopAt[/c] values which are strings. In the code snippets below, [c]b[/c] is the object being evaluated.[/size][/color][/indent]
+[*][indent=4][color=#000000][size=100]Stop at a prototype object (default): [c]GetBaseObjects[/c] will stop at the first prototype object with a [c]__Class[/c] property equal to [c]StopAt[/c]. This is the literal condition used: [c]Type(b) == 'Prototype' && (b.__Class = 'Any' || b.__Class = StopAt)[/c].[/size][/color][/indent]
+[*][indent=4][color=#000000][size=100]Stop at a class object: To direct [c]GetBaseObjects[/c] to stop at a class object tby he name [c]StopAt[/c], include ":C" at the end of [c]StopAt[/c], e.g. [c]StopAt := "MyClass:C"[/c]. This is the literal condition used: [c]Type(b) == 'Class' && ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt[/c].[/size][/color][/indent]
+[*][indent=4][color=#000000][size=100]Stop at an instance object: To direct [c]GetBaseObjects[/c] to stop at an instance object of type [c]StopAt[/c], incluide ":I" at the end of [c]StopAt[/c], e.g. [c]StopAt := "MyClass:I"[/c]. This is the literal condition used: [c]Type(b) = StopAt[/c].[/size][/color][/indent][/list]
+
+[color=#800000][size=145][b]GetPropDesc[/b][/size][/color]
+[color=#000000][size=100][c]GetPropDesc[/c] returns the descriptor object from the first object in the input object's inheritance chain that owns a given property.[/size][/color]
+
+[color=#800000][size=125][b]Parameters[/b][/size][/color]
+[list][*][size=100][color=#008000][b]{Object}[/color] Obj[/b] - The object from which to get the property descriptor.[/size]
+[*][size=100][color=#008000][b]{String}[/color] Prop[/b] - The name of the property.[/size]
+[*][size=100][color=#008000][b]{VarRef}[/color] [OutObj][/b] - A variable that will receive a reference to the object which owns the property.[/size]
+[*][size=100][color=#008000][b]{VarRef}[/color] [OutIndex][/b] - A variable that will receive the index position of the object which owns the property in the inheritance chain.[/size][/list]
+
+[color=#800000][size=125][b]Returns[/b][/size][/color]
+[color=#000000][size=100]{Object} - If the property exists, the property descriptor object. Else, an empty string.[/size][/color]
+
+[color=#800000][size=145][b]For Learners[/b][/size][/color]
+[color=#000000][size=100]AutoHotkey attracts a lot of new and amateur programmers, and learning how to work with classes and object inheritance is one the things I found most challenging when I was getting started. With this in mind, I wrote the inline documentation to be descriptive and explanatory in the hopes that it may help others grow in this area. The file "example-Inheritance.ahk" is a walkthrough that will take you step by step through the primary methods available from a [c]PropsInfo[/c] object and its child [c]PropsInfoItem[/c] objects.[/size][/color]
+
+[color=#000000][size=100]That said, I do not explain fundamental concepts that one might need to know to understand or contextualize some of the explanations. If your goal is to learn, you should have at least skimmed the following pages to know what is available there before getting started, so you can refer back to them later if something is not making sense:[/size][/color]
+
+[list][*][color=#000000][size=100][url]https://www.autohotkey.com/docs/v2/Concepts.htm#objects[/url][/size][/color]
+[*][color=#000000][size=100][url]https://www.autohotkey.com/docs/v2/Concepts.htm#object-protocol[/url][/size][/color]
+[*][color=#000000][size=100][url]https://www.autohotkey.com/docs/v2/lib/Object.htm[/url][/size][/color]
+[*][color=#000000][size=100][url]https://www.autohotkey.com/docs/v2/Objects.htm[/url][/size][/color][/list]
+
+[color=#000000][size=100]These are the general concepts that [c]Inheritance[/c] builds from:[/size][/color]
+
+[list][*][color=#000000][size=100]What is an object, a property, and a method[/size][/color]
+[*][color=#000000][size=100]What is a function object ([c]Func[/c])[/size][/color]
+[*][color=#000000][size=100]How to access and change a base object[/size][/color]
+[*][color=#000000][size=100]The difference between an own and inherited property[/size][/color]
+[*][color=#000000][size=100]How overriding a property works[/size][/color]
+[*][color=#000000][size=100]What is a [c]Class[/c] in AHK's object model[/size][/color][/list]
+
+[color=#800000][size=145][b]Included files[/b][/size][/color]
+[list][*][color=#000000][size=100]ClassFactory.ahk - Contains [c]ClassFactory[/c].[/size][/color]
+[*][color=#000000][size=100]example-Inheritance.ahk - Contains a walkthrough demonstrating the usage of [c]GetPropsInfo[/c] and a [c]PropsInfo[/c] object.[/size][/color]
+[*][color=#000000][size=100]GetBaseObjects.ahk - Contains [c]GetBaseObjects[/c].[/size][/color]
+[*][color=#000000][size=100]GetPropDesc.ahk - Contains [c]GetPropDesc[/c].[/size][/color]
+[*][color=#000000][size=100]GetPropsInfo-info.md - Contains some ramblings about why I wrote [c]GetPropsInfo[/c] and other details.[/size][/color]
+[*][color=#000000][size=100]GetPropsInfo.ahk - Contains [c]GetPropsInfo[/c], [c]PropsInfo[/c], and [c]PropsInfoItem[/c].[/size][/color]
+[*][color=#000000][size=100]Inheritance_Shared.ahk - Contains one line of code that is needed by most of the functions: [c]ObjGetOwnPropDesc := Object.Prototype.GetOwnPropDesc[/c][/size][/color]
+[*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
+
+[color=#800000][size=145]Changelog[/size][/color]
+[color=#000000][size=100][b]2025-05-03[/b][/size][/color]
+[list][*][color=#000000][size=100]Finalized some details and uploaded to the AutoHotkey forums.[/size][/color][/list]

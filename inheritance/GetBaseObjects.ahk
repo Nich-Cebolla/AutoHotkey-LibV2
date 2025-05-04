@@ -10,7 +10,7 @@
 /**
  * @description - Traverses an object's inheritance chain and returns the base objects.
  * @param {Object} Obj - The object from which to get the base objects.
- * @param {+Integer|String} [StopAt=GBO_STOP_AT_DEFAULT ?? '-Any'] - If an integer, the number of
+ * @param {Integer|String} [StopAt=GBO_STOP_AT_DEFAULT ?? '-Any'] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the
  * class to stop at. If falsy, the function will traverse the entire inheritance chain up to
  * but not including `Any`.
@@ -26,7 +26,7 @@
  * result array.
  *
  * - The type of object which will be stopped at: This only applies to `StopAt` values which are
- * strings. In the code snippets below, `b` is the base object being evaluated.
+ * strings. In the code snippets below, `b` is the object being evaluated.
  *
  *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
  * with a `__Class` property equal to `StopAt`. This is the literal condition used:

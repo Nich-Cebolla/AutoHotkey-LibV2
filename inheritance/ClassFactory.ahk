@@ -86,24 +86,36 @@
 
 /**
  * @description - Constructs a new class based off an existing class and prototype.
- * @param {Object} Base - The base object to use as the new class's prototype.
- * @param {Object} BaseClass - The class to use as the base class for the new class. This needs
- * to be the correct type, or else the new class won't work. For example, if the instances are to
- * inherit from `Map`, then this should be `Map`.
- * @param {String} [Name] - The name of the new class. If unset, it uses the name of the base class.
+ * @param {*} Prototype - The object to use as the new class's prototype.
+ * @param {String} [Name] - The name of the new class. This gets assigned to `Prototype.__Class`.
  * @param {Function} [Constructor] - An optional constructor function that is assigned to
- * `NewClassObj.Prototype.__New`. The function will be called instead of `BaseClass.Call` when
- * creating new instances.
+ * `NewClassObj.Prototype.__New`. When set, this function is called for each new instance. When
+ * unset, the constructor function associated with `Prototype.__Class` is called.
  */
-ClassFactory(Base, BaseClass, Name?, Constructor?) {
+ClassFactory(Prototype, Name?, Constructor?) {
     Cls := Class()
-    Cls.Base := BaseClass
-    Cls.Prototype := Base
+    Cls.Base := GetObjectFromString(Base.__Class)
+    Cls.Prototype := Prototype
     if IsSet(Name) {
-        Base.__Class := Name
+        Prototype.__Class := Name
     }
     if IsSet(Constructor) {
         Cls.Prototype.DefineProp('__New', { Call: Constructor })
     }
     return Cls
+
+    GetObjectFromString(Path) {
+        Split := StrSplit(Path, '.')
+        if !IsSet(%Split[1]%)
+            return
+        OutObj := %Split[1]%
+        i := 1
+        while ++i <= Split.Length {
+            if !OutObj.HasOwnProp(Split[i])
+                return
+            OutObj := OutObj.%Split[i]%
+        }
+        return OutObj
+    }
+
 }
