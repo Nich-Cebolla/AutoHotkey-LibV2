@@ -25,6 +25,7 @@ IX. Included Files
 
 Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inheritance[/url]
 
+
 [list][*][color=#000000][size=100]GetPropsInfo - The most robust function of the library, [c]GetPropsInfo[/c] returns a [c]PropsInfo[/c] object exposing various details about the input object's own and inherited properties.[/size][/color]
 [*][color=#000000][size=100]ClassFactory - [c]ClassFactory[/c] is a short function that creates a class constructor out of some input object. There are occasions when it is beneficial to create a class constructor dynamically. That's what this function does.[/size][/color]
 [*][color=#000000][size=100]GetBaseObjects - A simple function that returns an array containing references to base objects in an object's inheritance chain, up to a given stopping point.[/size][/color]
@@ -50,7 +51,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 
 [color=#800000][size=125][b]Parameters[/b][/size][/color]
 [list][*][size=100][color=#008000][b]{*}[/color] Obj[/b] - The object from which to get the properties.[/size]
-[*][size=100][color=#008000][b]{Integer|String}[/color] [StopAt=GPI_STOP_AT_DEFAULT[/b] ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable [c]GPI_STOP_AT_DEFAULT[/c] to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs [c]GetPropsInfo[/c] to include properties owned by objects up to but not including [c]Object.Prototype[/c]. See <a href="#getbaseobjects">GetBaseObjects</a> for full details about this parameter.[/size]
+[*][size=100][color=#008000][b]{Integer|String}[/color] [StopAt=GPI_STOP_AT_DEFAULT[/b] ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable [c]GPI_STOP_AT_DEFAULT[/c] to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs [c]GetPropsInfo[/c] to include properties owned by objects up to but not including [c]Object.Prototype[/c]. See the section [c]GetBaseObjects[/c] for full details about this parameter.[/size]
 [*][size=100][color=#008000][b]{String}[/color] [Exclude=''][/b] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".[/size]
 [*][size=100][color=#008000][b]{Boolean}[/color] [IncludeBaseProp=true][/b] - If true, the object's [c]Base[/c] property is included. If false, [c]Base[/c] is excluded.[/size]
 [*][size=100][color=#008000][b]{VarRef}[/color] [OutBaseObjList][/b] - A variable that will receive a reference to the array of base objects that is generated during the function call.[/size][/list]
@@ -87,7 +88,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 
 [color=#800000][size=125][b]PropsInfo - instance properties[/b][/size][/color]
 [list][*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
-[*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
+[*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] and if [c]<nonzero value>[/c] is the name of a cached filter, it will call [c]PropsInfoObj.FilterActivateFromCache(Value)[/c]; else it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
 [*][color=#000000][size=100]StringMode - Initially [c]0[/c]. If you set [c]PropsInfoObj.StringMode := <nonzero value>[/c], "string mode" becomes active on the [c]PropsInfo[/c] object. While [c]PropsInfoObj.StringMode == 1[/c], the [c]PropsInfo[/c] object behaves like an array of property names as string. The following are influenced by string mode: [c]__Enum[/c], [c]Get[/c], [c]__Item[/c]. By extension, the proxies are also influenced by string mode, though not directly.[/size][/color][/list]
 
 [color=#000000][size=100]The following properties are read-only, and are included to prevent an error when passing a [c]PropsInfo[/c] object to a function that expects an array or map.[/size][/color]

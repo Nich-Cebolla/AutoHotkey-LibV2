@@ -94,7 +94,7 @@
  */
 ClassFactory(Prototype, Name?, Constructor?) {
     Cls := Class()
-    Cls.Base := GetObjectFromString(Base.__Class)
+    Cls.Base := GetObjectFromString(Prototype.__Class)
     Cls.Prototype := Prototype
     if IsSet(Name) {
         Prototype.__Class := Name

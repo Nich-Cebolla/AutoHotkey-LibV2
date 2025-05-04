@@ -705,7 +705,11 @@ class PropsInfo {
         Get => this.__FilterActive
         Set {
             if Value {
-                this.FilterActivate()
+                if this.__FilterCache.Has(Value) {
+                    this.FilterActivateFromCache(Value)
+                } else {
+                    this.FilterActivate()
+                }
             } else {
                 this.FilterDeactivate()
             }

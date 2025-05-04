@@ -102,7 +102,7 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 ### PropsInfo - instance properties
 
 - Filter - A `Map` object where the key is an index as integer and the value is the `PropsInfo.Filter` object created by calling `PropsInfoObj.FilterAdd`.
-- FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
+- FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` and if `<nonzero value>` is the name of a cached filter, it will call `PropsInfoObj.FilterActivateFromCache(Value)`; else it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
 - StringMode - Initially `0`. If you set `PropsInfoObj.StringMode := <nonzero value>`, "string mode" becomes active on the `PropsInfo` object. While `PropsInfoObj.StringMode == 1`, the `PropsInfo` object behaves like an array of property names as string. The following are influenced by string mode: `__Enum`, `Get`, `__Item`. By extension, the proxies are also influenced by string mode, though not directly.
 
 The following properties are read-only, and are included to prevent an error when passing a `PropsInfo` object to a function that expects an array or map.
