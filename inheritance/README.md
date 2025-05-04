@@ -163,7 +163,7 @@ In these descriptions, the phrase "the property" means "the object's property th
 - __New - The class constructor. This is not intended to be called directly. When `GetPropsInfo` is called, the process calls `PropsInfoItem.Prototype.__New` only once. The object returned from that call is then used as the base object for all of the other `PropsInfoItem` objects added to the `PropsInfo` object's internal containers.
 - GetFunc - Returns the function object associated with the property.
 - GetOwner - Returns the object that owns the property.
-- GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a `VarRef` parameter and the function returns 0. If unsuccessful, the error object is assigned to the `VarRef` parameter and the function returns 1. If the property is not a value property nor does it have a `Get` accessor, the function returns 2 and the `VarRef` parameter remains unchanged.
+- GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a `VarRef` parameter and the function returns 0. If the property is not a value property nor does it have a `Get` accessor, the function returns 1 and the `VarRef` parameter remains unchanged. If unsuccessful, the error object is assigned to the `VarRef` parameter and the function returns 2.
 - Refresh - Calls `GetOwnPropDesc` from the object that owns the property, updating the `PropsInfoItem` object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the `PropsInfoItem` object was created or the last time `Refresh` was called.
 
 ### PropsInfoItem - instance properties
