@@ -61,7 +61,7 @@ See example-Inheritance.ahk for a walkthrough on how to use the class.
 ### Parameters
 
 - {*} Obj - The object from which to get the properties.
-- {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs `GetPropsInfo` to include properties owned by objects up to but not including `Object.Prototype`. See <a href="#getbaseobjects">GetBaseObjects</a> for full details about this parameter.
+- {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs `GetPropsInfo` to include properties owned by objects up to but not including `Object.Prototype`. See the parameter hint above `GetBaseObjects` within the code file "GetPropsInfo.ahk" for full details about this parameter.
 - {String} [Exclude=''] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".
 - {Boolean} [IncludeBaseProp=true] - If true, the object's `Base` property is included. If false, `Base` is excluded.
 - {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of base objects that is generated during the function call.
