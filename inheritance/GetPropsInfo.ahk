@@ -141,7 +141,7 @@ class PropsInfo {
             Proto := this.Prototype
             Proto.DefineProp('Filter', { Value: '' })
             Proto.DefineProp('__FilterActive', { Value: 0 })
-            Proto.DefineProp('__StringMode', { Value: '' })
+            Proto.DefineProp('__StringMode', { Value: 0 })
             Proto.DefineProp('Get', Proto.GetOwnPropDesc('__ItemGet_Bitypic'))
             Proto.DefineProp('__OnFilterProperties', { Value: ['Has', 'ToArray', 'ToMap'
             , 'Capacity', 'Count', 'Length'] })

@@ -264,12 +264,7 @@ GetUserInput() => 1
 
 [color=#800000][size=125][b]Parameters[/b][/size][/color]
 [list][*][size=100][color=#008000][b]{Object}[/color] Obj[/b] - The object from which to get the base objects.[/size]
-[*][size=100][color=#008000][b]{+Integer|String}[/color] [StopAt=GBO_STOP_AT_DEFAULT[/b] ?? '-Any'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the class to stop at. If falsy, the function will traverse the entire inheritance chain up to but not including [c]Any[/c].[/size][/list]
-
-[color=#000000][size=100]
-If you define global variable [c]GBO_STOP_AT_DEFAULT[/c] with a value somewhere in your code, that value will be used as the default for the function call. Otherwise, '-Any' is used.
-
-There are two ways to modify the function's interpretation of this value:[/size][/color]
+[*][size=100][color=#008000][b]{+Integer|String}[/color] [StopAt=GBO_STOP_AT_DEFAULT[/b] ?? '-Any'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the class to stop at. If falsy, the function will traverse the entire inheritance chain up to but not including [c]Any[/c]. If you define global variable [c]GBO_STOP_AT_DEFAULT[/c] with a value somewhere in your code, that value will be used as the default for the function call. Otherwise, '-Any' is used. There are two ways to modify the function's interpretation of this value:[/size][/list]
 [list][*][indent=2][color=#000000][size=100]Stop before or after the class: The default is to stop after the class, such that the base object associated with the class is included in the result array. To change this, include a hyphen "-" anywhere in the value and [c]GetBaseObjects[/c] will not include the last iterated object in the result array.[/size][/color][/indent]
 [*][indent=2][color=#000000][size=100]The type of object which will be stopped at: This only applies to [c]StopAt[/c] values which are strings. In the code snippets below, [c]b[/c] is the object being evaluated.[/size][/color][/indent]
 [*][indent=4][color=#000000][size=100]Stop at a prototype object (default): [c]GetBaseObjects[/c] will stop at the first prototype object with a [c]__Class[/c] property equal to [c]StopAt[/c]. This is the literal condition used: [c]Type(b) == 'Prototype' && (b.__Class = 'Any' || b.__Class = StopAt)[/c].[/size][/color][/indent]
