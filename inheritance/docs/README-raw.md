@@ -32,7 +32,7 @@
 
 Inheritance is a library containing four functions to aid working with AHK's object inheritance model.
 
-AHK forum post: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=137065&p=603092#p603092
+AHK forum post:
 
 - GetPropsInfo - The most robust function of the library, `GetPropsInfo` returns a `PropsInfo` object exposing various details about the input object's own and inherited properties.
 - ClassFactory - `ClassFactory` is a short function that creates a class constructor out of some input object. There are occasions when it is beneficial to create a class constructor dynamically. That's what this function does.
@@ -61,7 +61,7 @@ See example-Inheritance.ahk for a walkthrough on how to use the class.
 ### Parameters
 
 - {*} Obj - The object from which to get the properties.
-- {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs `GetPropsInfo` to include properties owned by objects up to but not including `Object.Prototype`. See <a href="#getbaseobjects">GetBaseObjects</a> for full details about this parameter.
+- {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs `GetPropsInfo` to include properties owned by objects up to but not including `Object.Prototype`. See the parameter hint above `GetBaseObjects` within the code file "GetPropsInfo.ahk" for full details about this parameter.
 - {String} [Exclude=''] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".
 - {Boolean} [IncludeBaseProp=true] - If true, the object's `Base` property is included. If false, `Base` is excluded.
 - {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of base objects that is generated during the function call.
@@ -102,7 +102,7 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 ### PropsInfo - instance properties
 
 - Filter - A `Map` object where the key is an index as integer and the value is the `PropsInfo.Filter` object created by calling `PropsInfoObj.FilterAdd`.
-- FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` and if `<nonzero value>` is the name of a cached filter, it will call `PropsInfoObj.FilterActivateFromCache(Value)`; else it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
+- FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
 - StringMode - Initially `0`. If you set `PropsInfoObj.StringMode := <nonzero value>`, "string mode" becomes active on the `PropsInfo` object. While `PropsInfoObj.StringMode == 1`, the `PropsInfo` object behaves like an array of property names as string. The following are influenced by string mode: `__Enum`, `Get`, `__Item`. By extension, the proxies are also influenced by string mode, though not directly.
 
 The following properties are read-only, and are included to prevent an error when passing a `PropsInfo` object to a function that expects an array or map.
@@ -163,7 +163,7 @@ In these descriptions, the phrase "the property" means "the object's property th
 - __New - The class constructor. This is not intended to be called directly. When `GetPropsInfo` is called, the process calls `PropsInfoItem.Prototype.__New` only once. The object returned from that call is then used as the base object for all of the other `PropsInfoItem` objects added to the `PropsInfo` object's internal containers.
 - GetFunc - Returns the function object associated with the property.
 - GetOwner - Returns the object that owns the property.
-- GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a `VarRef` parameter and the function returns 0. If unsuccessful, the error object is assigned to the `VarRef` parameter and the function returns 1. If the property is not a value property nor does it have a `Get` accessor, the function returns 2 and the `VarRef` parameter remains unchanged.
+- GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a `VarRef` parameter and the function returns 0. If the property is not a value property nor does it have a `Get` accessor, the function returns 1 and the `VarRef` parameter remains unchanged. If unsuccessful, the error object is assigned to the `VarRef` parameter and the function returns 2.
 - Refresh - Calls `GetOwnPropDesc` from the object that owns the property, updating the `PropsInfoItem` object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the `PropsInfoItem` object was created or the last time `Refresh` was called.
 
 ### PropsInfoItem - instance properties
