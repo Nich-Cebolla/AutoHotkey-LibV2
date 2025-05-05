@@ -138,7 +138,9 @@ InfoItem_Method_Func := InfoItem_Method.GetFunc()
 
 ; Something needs to be passed to the first parameter of the function. Normally that would be the
 ; object itself, i.e. the hidden `this` parameter discussed on this page:
-/** {@link https://www.autohotkey.com/docs/v2/Objects.htm#Custom_Classes_method} */
+/**
+ * {@link https://www.autohotkey.com/docs/v2/Objects.htm#Custom_Classes_method}
+ */
 ; `Object.Prototype.GetOwnPropDesc` exposes the hidden `this` parameter. An error will be thrown
 ; if the function is called without it. Here, we simply pass the owner object to the first parameter.
 OutputDebug('`n' A_LineNumber ': ' InfoItem_Method_Func(InfoItem_Method.GetOwner())) ; Alpha return value
