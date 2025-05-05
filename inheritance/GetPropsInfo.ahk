@@ -1371,22 +1371,3 @@ class PropsInfoItem {
         this.DefineProp('__SetAlt', { Call: (Self, Item) => Self.Alt.Push(Item) })
     }
 }
-
-class a {
-__SomeProp := 0
-SomeProp => this.__SomeProp
-}
-class b extends a {
-
-}
-class c {
-__SomeOtherProp := 1
-SomeProp => this.__SomeOtherProp
-}
-Obj := b()
-PropsInfoObj := GetPropsInfo(Obj)
-InfoItem := PropsInfoObj.Get('SomeProp')
-OriginalOwner := InfoItem.GetOwner()
-Obj.Base.Base := c.Prototype
-NewOwner := InfoItem.GetOwner()
-MsgBox(ObjPtr(OriginalOwner) == ObjPtr(NewOwner)) ; 0
