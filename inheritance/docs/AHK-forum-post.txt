@@ -313,5 +313,8 @@ GetUserInput() => 1
 [*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
 
 [color=#800000][size=145]Changelog[/size][/color]
+[color=#000000][size=100][b]2025-05-05[/b][/size][/color]
+[list][*][color=#000000][size=100]Fixed an issue with `PropsInfoItem.Prototype.GetOwner`. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.[/size][/color][/list]
+
 [color=#000000][size=100][b]2025-05-03[/b][/size][/color]
 [list][*][color=#000000][size=100]Finalized some details and uploaded to the AutoHotkey forums.[/size][/color][/list]

@@ -1140,14 +1140,48 @@ class PropsInfoItem {
 
     /**
      * @description - Returns the owner of the property which produced this `PropsInfoItem` object.
+     * It is possible for this method to return an unexpected value. This is an illustration of how
+     * this is possible:
+     * @example
+     *  class a {
+     *      __SomeProp := 0
+     *      SomeProp => this.__SomeProp
+     *  }
+     *  class b extends a {
+     *
+     *  }
+     *  class c {
+     *      __SomeOtherProp := 1
+     *      SomeProp => this.__SomeOtherProp
+     *  }
+     *  Obj := b()
+     *  PropsInfoObj := GetPropsInfo(Obj)
+     *  InfoItem := PropsInfoObj.Get('SomeProp')
+     *  OriginalOwner := InfoItem.GetOwner()
+     *  Obj.Base.Base := c.Prototype
+     *  NewOwner := InfoItem.GetOwner()
+     *  MsgBox(ObjPtr(OriginalOwner) == ObjPtr(NewOwner)) ; 0
+     * @
+     * What the example conveys is that, if one or more of the input object's base objects are altered
+     * with an object that owns a property by the same name as the `PropsInfoItem` object, then
+     * `PropsInfoItem.Prototype.GetOwner` will return a value that is not the original owner of
+     * the property.
      * @returns {*} - The owner of the property.
+     * @throws {Error} - The error reads "Unable to retrieve the property's owner." If you get this
+     * error, it means the object inheritance chain has been altered since the time the `PropsInfoItem`
+     * object was created. The `PropsInfoItem` objects should be considered invalid and you should
+     * call `GetPropsInfo` again to get a new `PropsInfo` object.
      */
     GetOwner() {
         b := this.Root
         loop this.Index {
             b := b.Base
         }
-        return b
+        if b.HasOwnProp(this.Name) {
+            return b
+        } else {
+            throw Error('Unable to retrieve the property`'s owner.', -1)
+        }
     }
 
     /**
@@ -1337,3 +1371,22 @@ class PropsInfoItem {
         this.DefineProp('__SetAlt', { Call: (Self, Item) => Self.Alt.Push(Item) })
     }
 }
+
+class a {
+__SomeProp := 0
+SomeProp => this.__SomeProp
+}
+class b extends a {
+
+}
+class c {
+__SomeOtherProp := 1
+SomeProp => this.__SomeOtherProp
+}
+Obj := b()
+PropsInfoObj := GetPropsInfo(Obj)
+InfoItem := PropsInfoObj.Get('SomeProp')
+OriginalOwner := InfoItem.GetOwner()
+Obj.Base.Base := c.Prototype
+NewOwner := InfoItem.GetOwner()
+MsgBox(ObjPtr(OriginalOwner) == ObjPtr(NewOwner)) ; 0
