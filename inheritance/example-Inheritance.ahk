@@ -104,7 +104,9 @@ OutputDebug('`n' A_LineNumber ': ' Alpha.base.Prototype.HasOwnProp(InfoItem_Meth
 
 ; When the `InfoItem` is created, it originally is the descriptor object returned from
 ; `Obj.GetOwnPropDesc(PropName)`.
-/** {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc} */
+/**
+ * {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}
+ */
 
 ; `InfoItem.Kind` tells us what kind of property it is.
 OutputDebug('`n' A_LineNumber ': ' InfoItem_Method.Kind) ; Call
