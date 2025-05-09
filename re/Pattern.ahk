@@ -1,5 +1,5 @@
 
-class Patterns {
+class Pattern {
 
     /**
      * @property {String} BracketCurly
@@ -17,19 +17,19 @@ class Patterns {
      * - full - The bracketed text, including open and close brackets.
      * - inner - The bracketed text, without the open and close brackets.
      * @example
-        Text := '
-        (
-            Arr := [
-                1,
-                { Prop: 'Val' },
-                [ 1, 2, [3, 4, 5], 6 ],
-                (1 + 2 + 3 + 4)
-            ]
-        )'
-        RegExMatch(Text, '(?<var>\w+) := ' Re.Pattern.BracketSquare, &Match)
-        MsgBox(Match['var']) ; Arr
-        MsgBox(Match['full']) ; [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
-        MsgBox(Match[0]) ; Arr := [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
+     *  Text := '
+     *  (
+     *      Arr := [
+     *          1,
+     *          { Prop: 'Val' },
+     *          [ 1, 2, [3, 4, 5], 6 ],
+     *          (1 + 2 + 3 + 4)
+     *      ]
+     *  )'
+     *  RegExMatch(Text, '(?<var>\w+) := ' Re.Pattern.BracketSquare, &Match)
+     *  MsgBox(Match['var']) ; Arr
+     *  MsgBox(Match['full']) ; [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
+     *  MsgBox(Match[0]) ; Arr := [`n    1,`n    { Prop: 'Val' },`n    [ 1, 2, [3, 4, 5], 6 ],`n    (1 + 2 + 3 + 4)`n]
      * @
      * One creative way to use this pattern is to include a callout next to the open bracket or
      * close bracket, or both, so that every time an open bracket or close bracket is encountered,
@@ -72,13 +72,13 @@ class Patterns {
      * using the backtick. There's one subcapture groups available:
      * - content - The content of the continuation section.
      * For the example, assume a Kapital.js file:
-        const dasKapital = `The wealth of those societies in which the capitalist mode of
-        production prevails, presents itself as “an immense accumulation of commodities,”[1] its
-        unit being a single commodity. Our investigation must therefore begin with the analysis
-        of a commodity.`
+     *  const dasKapital = `The wealth of those societies in which the capitalist mode of
+     *  production prevails, presents itself as “an immense accumulation of commodities,”[1] its
+     *  unit being a single commodity. Our investigation must therefore begin with the analysis
+     *  of a commodity.`
      * @example
-        RegExMatch(FileRead('Kapital.js'), Re.Pattern.ContinuationSectionJs, &Match)
-        MsgBox(Match['content']) ; The wealth of those societies... analysis of a commodity.
+     *  RegExMatch(FileRead('Kapital.js'), Re.Pattern.ContinuationSectionJs, &Match)
+     *  MsgBox(Match['content']) ; The wealth of those societies... analysis of a commodity.
      * @
      */
     static ContinuationSectionJs := 's)(?<!\\)(?:\\\\)*+``(?<content>.*?)(?<!\\)(?:\\\\)*+``'
@@ -92,12 +92,12 @@ class Patterns {
      * - file - The file name.
      * - ext - The file extension.
      * @example
-        RegExMatch(A_LineFile, Re.Pattern.RootPath, &Match)
-        MsgBox(Match['drive']) ; C
-        MsgBox(Match['dir']) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re
-        MsgBox(Match['file']) ; Pattern
-        MsgBox(Match['ext']) ; ahk
-        MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re\Pattern.ahk
+     *  RegExMatch(A_LineFile, Re.Pattern.RootPath, &Match)
+     *  MsgBox(Match['drive']) ; C
+     *  MsgBox(Match['dir']) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re
+     *  MsgBox(Match['file']) ; Pattern
+     *  MsgBox(Match['ext']) ; ahk
+     *  MsgBox(Match[0]) ; C:\Users\MyName\My Documents\AutoHotkey\Lib\re\Pattern.ahk
      * @
      */
     static RootPath := '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
@@ -122,11 +122,11 @@ class Patterns {
      * There is one subcapture group available:
      * - text - The content of the quoted string.
      * @example
-        Pattern := Re.Pattern.GetQuotedString('\', '"', false)
-        Text := 'Variable := "Some Json field with \"escaped quotes\""'
-        RegExMatch(Text, Pattern, &Match)
-        MsgBox(Match['text']) ; Some Json field with "escaped quotes"
-        MsgBox(Match[0]) ; "Some Json field with \"escaped quotes\""
+     *  Pattern := Re.Pattern.GetQuotedString('\', '"', false)
+     *  Text := 'Variable := "Some Json field with \"escaped quotes\""'
+     *  RegExMatch(Text, Pattern, &Match)
+     *  MsgBox(Match['text']) ; Some Json field with "escaped quotes"
+     *  MsgBox(Match[0]) ; "Some Json field with \"escaped quotes\""
      * @
      * @param {String} [EscapeChar='``'] - The escape character.
      * @param {String} [QuoteChars='"`''] - The quote characters. If the strings will only
@@ -155,12 +155,12 @@ class Patterns {
      * access them with this subcapture group.
      * - str - The character or substring without preceding escape characters.
      * @example
-        Text := 'Some text with\nbackslash escapes like\n\\n and \\t.'
-        RegExMatch(Text, Re.Pattern.GetUnescapedStr('n', '\\'), &Match)
-        MsgBox(Match['escape']) ; \\
-        MsgBox(Match['str']) ; n
-        MsgBox(Match.Pos) ; 41
-        MsgBox(Match[0]) ; \\n
+     *  Text := 'Some text with\nbackslash escapes like\n\\n and \\t.'
+     *  RegExMatch(Text, Re.Pattern.GetUnescapedStr('n', '\\'), &Match)
+     *  MsgBox(Match['escape']) ; \\
+     *  MsgBox(Match['str']) ; n
+     *  MsgBox(Match.Pos) ; 41
+     *  MsgBox(Match[0]) ; \\n
      * @
      * @param {String} Pattern - Pattern to match.
      * @param {String} [EscapeChar='``'] - The escape character.
@@ -186,10 +186,10 @@ class Patterns {
      * There is one subcapture group available:
      * - comment - The comment text.
      * @example
-        Text := 'Some text before the comment. // This is a comment.'
-        RegExMatch(Text, Re.Pattern.GetSinglelineComment('//'), &Match)
-        MsgBox(Match['comment']) ; This is a comment.
-        MsgBox(Match[0]) ; // This is a comment.
+     *  Text := 'Some text before the comment. // This is a comment.'
+     *  RegExMatch(Text, Re.Pattern.GetSinglelineComment('//'), &Match)
+     *  MsgBox(Match['comment']) ; This is a comment.
+     *  MsgBox(Match[0]) ; // This is a comment.
      * @param {String} CommentChar - The character that indicates the beginning of a comment.
      * @returns {String} - The regular expression pattern.
      */
@@ -202,11 +202,11 @@ class Patterns {
      * available:
      * - content - The text between the two substrings.
      * @example
-        ; We can capture all of the comments in this code file thusly:
-        Result := Re.Loop(FileRead(A_ScriptFullPath), Re.Pattern.GetTextBetweenSubstrings('/\*\*', '\*/'), &Match)
-        for Match in Result {
-            MsgBox(Match['content'])
-        }
+     *  ; We can capture all of the comments in this code file thusly:
+     *  Result := Re.Loop(FileRead(A_ScriptFullPath), Re.Pattern.GetTextBetweenSubstrings('/\*\*', '\*/'), &Match)
+     *  for Match in Result {
+     *      MsgBox(Match['content'])
+     *  }
      * @
      * @param {String} OpenSubstring - The opening substring.
      * @param {String} CloseSubstring - The closing substring.
@@ -220,18 +220,18 @@ class Patterns {
      * allowing for any number of nested escaped parentheses which do not affect the match, and
      * requires an even number of not-escaped parentheses for the match to succeed.
      * @example
-        Str := '[a-z]+(?<somegroup>.+\(.+?\))'
-        p := Pattern.Parentheses
-        RegExMatch(Str, p, &Match1)
-        MsgBox(Match1[0]) ; [a-z]+(?<somegroup>.+\(.+?\))
-        ; Escape the last character so now there's an odd number of unescaped parentheses
-        Str := '[a-z]+(?<somegroup>.+\(.+?\)\)'
-        RegExMatch(Str, p, &Match2)
-        MsgBox(Match2 ? Match2[0] : '') ; ''
-        ; Escape the first
-        Str := '[a-z]+\(?<somegroup>.+\(.+?\))'
-        RegExMatch(Str, p, &Match3)
-        MsgBox(Match3 ? Match3[0] : '') ; ''
+     *  Str := '[a-z]+(?<somegroup>.+\(.+?\))'
+     *  p := Pattern.Parentheses
+     *  RegExMatch(Str, p, &Match1)
+     *  MsgBox(Match1[0]) ; [a-z]+(?<somegroup>.+\(.+?\))
+     *  ; Escape the last character so now there's an odd number of unescaped parentheses
+     *  Str := '[a-z]+(?<somegroup>.+\(.+?\)\)'
+     *  RegExMatch(Str, p, &Match2)
+     *  MsgBox(Match2 ? Match2[0] : '') ; ''
+     *  ; Escape the first
+     *  Str := '[a-z]+\(?<somegroup>.+\(.+?\))'
+     *  RegExMatch(Str, p, &Match3)
+     *  MsgBox(Match3 ? Match3[0] : '') ; ''
      * @
      *
      */
@@ -294,3 +294,4 @@ class Patterns {
 
 
 
+a_clipboard := pattern.GetUnescapedStr('\[', '\')
