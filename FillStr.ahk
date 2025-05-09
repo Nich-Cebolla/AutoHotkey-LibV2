@@ -28,7 +28,7 @@ class FillStr {
         this.S := FillStr(' ')
     }
     static __Item[Qty] {
-        Get => this.S[Qty]
+        Get => Qty ? this.S[Qty] : ''
         Set => this.S.Cache.Set(Qty, value)
     }
 
