@@ -87,7 +87,15 @@ class ItemScroller {
             return Params
         }
     }
-
+    /**
+     * @class -
+     * Instructions:
+     * Define the `Params` object with at leaast the `Array` and `Callback` properties.
+     * Also commonly used params would be `StartX` and `StartY`.
+     * `Array` should be the array containing the items to scroll.
+     * `Callback` should be a function that is called when the scroll index is changed.
+     * The first parameter is the new index, and the second is the ItemScroller object.
+     */
     __New(GuiObj, Params?) {
         Params := this.Params := ItemScroller.Params(Params ?? {})
         this.DefineProp('Index', { Value: 1 })
@@ -223,23 +231,14 @@ class ItemScroller {
 
         HClickButtonBack(Ctrl, *) {
             this.IncIndex(-1)
-            if cb := this.Params.Callback {
-                return cb(this.Index, this)
-            }
         }
 
         HClickButtonNext(Ctrl, *) {
             this.IncIndex(1)
-            if cb := this.Params.Callback {
-                return cb(this.Index, this)
-            }
         }
 
         HClickButtonJump(Ctrl, *) {
             this.SetIndex(this.EditCtrl.Text)
-            if cb := this.Params.Callback {
-                return cb(this.Index, this)
-            }
         }
 
         _GetParam(Obj, Prop) {
@@ -267,6 +266,9 @@ class ItemScroller {
         }
         this.EditCtrl.Text := this.Index
         this.TxtTotal.Text := this.__Item.Length
+        if cb := this.Params.Callback {
+            return cb(this.Index, this)
+        }
     }
 
     IncIndex(N) {
