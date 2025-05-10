@@ -47,6 +47,25 @@ class MapEx extends Map {
         return this.Get(Key)
     }
 
+    AddToCategoryEx(Key, &Name, Value) {
+        if !this.Has(Key) {
+            this.Set(Key, MapEx())
+        }
+        M := this.Get(Key)
+        if M.Has(Name) {
+            temp := Name '-'
+            i := 1
+            while M.Has(temp A_Index) {
+                i := A_Index
+            }
+            M.Set(temp i, Value)
+            Name := temp i
+            return 1
+        } else {
+            M.Set(Name, Value)
+        }
+    }
+
     /**
      * @description - Creates a nested Array object with the given key if one does not exist for
      * that key, then adds the item to the nested object.
