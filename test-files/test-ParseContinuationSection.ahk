@@ -1,37 +1,58 @@
-
-#Include <HandleContinuation>
+﻿
+#Include ..\ParseContinuationSection.ahk
 Process()
 
 Test(&Text) {
-    static PatternStatement := (
+    PatternStatement := (
         'iJm)'
         '^(?<indent>[ \t]*)'
-        '(?<static>static\s+)?'
-        '(?<name>[a-zA-Z0-9_]+)'
-        '(?:'
-            '(?<params>\(([^()]++|(?&params))*\))(*MARK:func)'
+        '(?<text>'
+            '(?<static>static\s+)?'
+            '(?<name>[a-zA-Z0-9_]+)'
+            '(?:'
+                '(?<params>\((?<inner>([^()]++|(?&params))*)\))'
+                '(*MARK:func)'
             '|'
-            '(?<params>\[(?:[^\][]++|(?&params))*\])?'
+                '(?<params>\[(?<inner>(?:[^\][]++|(?&params))*)\])?'
+            ')'
+            '\s*'
+            '(?:'
+                '(?<body>\{([^{}]++|(?&body))*\})'
+            '|'
+                '(?:'
+                    '(?<assign>:=)'
+                '|'
+                    '(?<arrow>=>)'
+                ')'
+                '(?<body>.+)'
+            ')'
         ')'
-        '\s*'
-        '(?<arrow>=>)'
-        '(?<body>.+)'
     )
     List := []
-    while RegExMatch(Text, PatternStatement, &MatchStatement, Pos ?? 1) {
-        List.Push(HandleContinuation(&Text, MatchStatement, '=>', , &Pos, &Len, &Body, &LenBody))
+    while RegExMatch(Text, PatternStatement, &Match, Pos ?? 1) {
+        ParseContinuationSection(&Text, Match.Pos['indent'], Match['arrow'] ? '=>' : ':=', &PosEnd, &Body, &LenBody, &FullStatement, &LenFullStatement)
+        List.Push({ PosEnd: PosEnd, Body: Body, LenBody: LenBody, FullStatement: FullStatement, LenFullStatement: LenFullStatement })
+        Pos := Match.Pos + Match.Len
     }
     return List
 }
 
 Process() {
     V := Validation()
-    Text := FileRead('test_content_HandleContinuation.ahk')
+    Text := FileRead('test-content-ParseContinuationSection.ahk')
     List := Test(&Text)
     Str := FormatTime(A_Now, 'yyyy-MM-dd HH:mm:ss')
-    for l in List {
-        if V[A_Index] !== l {
-            msgbox(A_Index '`r`n`r`n' l)
+    for o in List {
+        if V[A_Index] !== o.FullStatement {
+            OutputDebug(
+                '`nIndex: ' A_Index
+                '`nExpected:'
+                '`n' V[A_Index]
+                '`nResult:'
+                '`n' o.FullStatement
+                '`nExpected len: ' StrLen(V[A_Index]) '; Result len: ' o.LenFullStatement
+                '`nDiff: ' (StrLen(V[A_Index]) - o.LenFullStatement)
+            )
         }
         ; Str .= '`r`n`r`n`r`n' l
     }
@@ -53,7 +74,7 @@ Validation() => [
 
         , prop4: FunctionCall(Param1, param2, ParamWithDefault := 'value'
         , param?)
-    
+
     })
 )',
     ; 2
@@ -67,7 +88,7 @@ Validation() => [
     `)
 
     .
-    
+
     'Just a little more string'
 )',
     ; 3
@@ -82,7 +103,7 @@ Validation() => [
         '``r``nmore string continuation '  mymap.Get('otherkey') FunctionCall('GetString')
         '``r``nstring continuation section'
     `) .
-    
+
     'Just a little more string'
 )',
 
@@ -129,7 +150,7 @@ Validation() => [
     '
 ( LTrim0 Rtrim0
     static ArrowProp3[params?] => FuncCall(Param1, param2, param3?, param4 := 'default'
-    
+
     ,
 
 
