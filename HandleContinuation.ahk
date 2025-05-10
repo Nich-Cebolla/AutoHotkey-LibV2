@@ -48,39 +48,39 @@
  * Also included is a `Mark` which you can use to determine if a property was matched or if a
  * class method / function was matched. Example: `if Match.Mark == 'func'`.
  * @example
-    PatternStatement := (
-        'iJm)'
-        '^(?<indent>[ \t]*)'
-        '(?<static>static\s+)?'
-        '(?<name>[a-zA-Z0-9_]+)'
-        '(?:'
-            '(?<params>\(([^()]++|(?&params))*\))(*MARK:func)'
-            '|'
-            '(?<params>\[(?:[^\][]++|(?&params))*\])?'
-        ')'
-        '\s*'
-        '(?<arrow>=>)'
-        '(?<body>.+)'
-    )
-* @
-* @param {String} [Operator] - The initial operator used, i.e. an assignment operator or an arrow
-* function operator (=>). When provided, this allows the function to combine the body text with
-* the preceding text included in the input match. When not provided, the function only returns
-* the body text, in which case `OutBody` is the same as the return value, and `OutLen` receives
-* the same value as `OutLenBody`.
-* @param {String} [Subgroup='body'] - The name of the subgroup that captures the line of text with
-* the continuation operator, as described in the description and in the parameter hint for `Match`.
-* @param {VarRef} [OutPosEnd] - A variable that will receive the ending position of the match
-* relative to Text.
-* @param {VarRef} [OutLen] - If `Operator` is defined, this will receive the length of the entire
-* content string including input match and the result of this function. If `Operator` is not defined,
-* this will receive the length of the result of this function, which will be the same as `OutLenBody`.
-* @param {VarRef} [OutBody] - A variable that will receive the portion of text that occurs
-* after the initial operator, beginning with the text contained in the input match's subgroup.
-* If `Operator` is not defined, this is the same as the return value.
-* @param {VarRef} [OutLenBody] - A variable that will receive the length of `OutBody`.
-* @returns {String} - The complete statement.
-*/
+ *  PatternStatement := (
+ *      'iJm)'
+ *      '^(?<indent>[ \t]*)'
+ *      '(?<static>static\s+)?'
+ *      '(?<name>[a-zA-Z0-9_]+)'
+ *      '(?:'
+ *          '(?<params>\(([^()]++|(?&params))*\))(*MARK:func)'
+ *          '|'
+ *          '(?<params>\[(?:[^\][]++|(?&params))*\])?'
+ *      ')'
+ *      '\s*'
+ *      '(?<arrow>=>)'
+ *      '(?<body>.+)'
+ *  )
+ * @
+ * @param {String} [Operator] - The initial operator used, i.e. an assignment operator or an arrow
+ * function operator (=>). When provided, this allows the function to combine the body text with
+ * the preceding text included in the input match. When not provided, the function only returns
+ * the body text, in which case `OutBody` is the same as the return value, and `OutLen` receives
+ * the same value as `OutLenBody`.
+ * @param {String} [Subgroup='body'] - The name of the subgroup that captures the line of text with
+ * the continuation operator, as described in the description and in the parameter hint for `Match`.
+ * @param {VarRef} [OutPosEnd] - A variable that will receive the ending position of the match
+ * relative to Text.
+ * @param {VarRef} [OutLen] - If `Operator` is defined, this will receive the length of the entire
+ * content string including input match and the result of this function. If `Operator` is not defined,
+ * this will receive the length of the result of this function, which will be the same as `OutLenBody`.
+ * @param {VarRef} [OutBody] - A variable that will receive the portion of text that occurs
+ * after the initial operator, beginning with the text contained in the input match's subgroup.
+ * If `Operator` is not defined, this is the same as the return value.
+ * @param {VarRef} [OutLenBody] - A variable that will receive the length of `OutBody`.
+ * @returns {String} - The complete statement.
+ */
 HandleContinuation(&Text, Match, Operator?, SubGroup := 'body', &OutPosEnd?, &OutLen?, &OutBody?, &OutLenBody?) {
     static Brackets := ['[', ']', '(', ')', '{', '}']
     static PatternContinuation := (
