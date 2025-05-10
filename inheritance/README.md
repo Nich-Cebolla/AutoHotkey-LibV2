@@ -263,6 +263,50 @@ MsgBox(newMapEx.Helper()) ; Error: This value of type "MapEx" has no method name
 GetUserInput() => 1
 ```
 
+This is how I typically use `ClassFactory`.
+```ahk
+class Parent {
+    __New() {
+        this.Value := 'Parent'
+        B := this.__ChildBase := { Parent: this }
+        ObjSetBase(B, Child.Prototype)
+        this.ChildConstructor := ClassFactory(B)
+        this.__Item := []
+    }
+    AddChild(Params) {
+        Constructor := this.ChildConstructor
+        this.__Item.Push(Constructor(Params))
+        return this.__Item[-1]
+    }
+    Dispose() {
+        ; To break the reference cycle, we only need to delete the `Parent` property from the
+        ; base object. Much better than keeping track of all of the child objects and breaking
+        ; the reference cycle for each one individually.
+        this.__ChildBase.DeleteProp('Parent')
+        ; Deleting these to force an error if they are accessed since they are no longer valid.
+        this.DeleteProp('__ChildBase')
+        this.DeleteProp('ChildConstructor')
+        this.DeleteProp('__Item')
+    }
+}
+
+class Child {
+    __New(Params) {
+        for Prop, Val in Params.OwnProps() {
+            this.Prop := Val
+        }
+    }
+    ; Some class definition
+}
+
+_parent := Parent()
+_child := _parent.AddChild({ Prop: 'Val' })
+MsgBox(_child.Prop) ; Val
+MsgBox(_child.Parent.Value) ; Parent
+_parent.Dispose()
+MsgBox(_child.Parent.Value) ; Error: This value of type "Child" has no property named "Parent".
+```
+
 ### Parameters
 
 - {*} Prototype - The object to use as the new class's prototype.
