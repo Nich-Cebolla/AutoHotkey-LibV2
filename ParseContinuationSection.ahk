@@ -73,11 +73,11 @@ ParseContinuationSection(&Text, Pos, Operator?, &OutPosEnd?, &OutBody?, &OutLenB
         ')'
         '(?<tail>.*)$'
     )
-    if !RegExMatch(Text, '[\w\W]*?' Operator '.*', &Match, Pos) {
+    if !RegExMatch(Text, '[\w\W]*?' Operator '(.*)', &Match, Pos) {
         throw ValueError('Failed to find the operator within the input content.', -1)
     }
-    OutBody := Match[0]
-    OutPosEnd := Pos
+    OutBody := Match[1]
+    Pos := Match.Pos[1]
     loop 100 {
         ; Every time one function adds a line, we have to check the other function again.
         if _LoopBrackets() {
