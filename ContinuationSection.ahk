@@ -43,7 +43,8 @@
  * "Text", or "Body". It is designed this way to mirror a `RegExMatchInfo` object. So to get either
  * length, you use `ContinuationSectionObj.Len["Text"]` or `ContinuationSectionObj.Len["Body"]`.
  * @property ContinuationSectionObj.Pos - Similar to the above, use either
- * `ContinuationSectionObj.Pos["Text"]` or `ContinuationSectionObj.Pos["Body"]`.
+ * `ContinuationSectionObj.Pos["Text"]` or `ContinuationSectionObj.Pos["Body"]`. Accessing `Pos` without
+ * a parameter returns the character position of the start of the line.
  * @property ContinuationSectionObj.PosEnd - Returns `this.Pos['Body'] + StrLen(this.Body)`, which
  * is the end position of the statement relative to the input text.
  * @property ContinuationSectionObj.__Item - Also to mirror a `RegExMatchInfo` object. Accessing
@@ -92,9 +93,9 @@ class ContinuationSection {
             throw ValueError('Failed to find the operator within the input content.', -1)
         }
         this.Body := Match[1]
-        this.Pos := Map()
-        this.Pos.CaseSense := false
-        this.Pos.Set('Text', Pos, 'Body', Match.Pos[1])
+        this.PosStart := Pos
+        this.PosBody := Match.Pos[1] + Pos
+        this.PosLineStart := RegExMatch(StrGet(StringPtr, Pos - 1), '.*$')
         Pos := Match.Pos[1]
         loop 90000 { ; 90000 is arbitrary and is just to prevent an infinite loop
             ; Every time one function adds a line, we have to check the other function again.
@@ -106,10 +107,9 @@ class ContinuationSection {
                 _LoopExpressionOperators()
             }
         }
-        this.Text := SubStr(this.Text, 1, this.Pos['Body'] + StrLen(this.Body) - 1)
+        this.Text := SubStr(this.Text, 1, InStr(this.Text, this.Body) + StrLen(this.Body) - 1)
 
         _LoopExpressionOperators() {
-            local Len := StrLen(this.Body)
             ; `Body` contains what we've captured of the body this far. We begin
             ; searching `Text` from the start of the last line of `Body`. The extra context helps to
             ; ensure that the content that is matched belongs to this code block.
@@ -118,7 +118,7 @@ class ContinuationSection {
             ; A match can be probable depending on how much text is covered by `Text`, but not every
             ; match is valid. We validate the match by comparing the position.
             || Match.Pos !== _Pos + Pos {
-                return Len == StrLen(this.Body)
+                return 1
             }
             this.Body := SubStr(this.Body, 1, _Pos) Match[0]
         }
@@ -161,6 +161,19 @@ class ContinuationSection {
     }
 
     Len[Name] => StrLen(this.%Name%)
+    Pos[Name?] {
+        Get {
+            if !IsSet(Name) {
+                return this.PosLineStart
+            }
+            if Name = 'Text' {
+                return this.PosStart
+            }
+            if Name = 'Body' {
+                return this.PosBody
+            }
+        }
+    }
     PosEnd => this.Pos['Body'] + StrLen(this.Body)
     __Item[Name] => this.%Name%
 }
