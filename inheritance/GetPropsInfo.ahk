@@ -124,7 +124,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
         }
     }
     for s in StrSplit(Exclude, ',', '`s`t') {
-        if (s) {
+        if s {
             Container.Delete(s)
         }
     }
