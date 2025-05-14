@@ -1,6 +1,5 @@
 ﻿
 #Include ..\ContinuationSection.ahk
-#include <Stringify>
 
 PathOut := A_MyDocuments '\test-output-ContinuationSection.json'
 Text := FileRead('test-content-ParseContinuationSection.ahk')
@@ -64,7 +63,10 @@ Process() {
     OutputDebug('`n`nDone. Problems: ' Problems.Length)
 
     f := FileOpen(PathOut, 'w')
-    f.Write(Stringify(Problems))
+    for P in Problems {
+        s .= P '`n`n'
+    }
+    f.Write(s)
     f.Close()
 }
 
