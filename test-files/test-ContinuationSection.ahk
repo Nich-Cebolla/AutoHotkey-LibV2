@@ -61,11 +61,11 @@ Process() {
         }
     }
     OutputDebug('`n`nDone. Problems: ' Problems.Length)
-
-    f := FileOpen(PathOut, 'w')
+    s := ''
     for P in Problems {
         s .= P '`n`n'
     }
+    f := FileOpen(PathOut, 'w')
     f.Write(s)
     f.Close()
 }
