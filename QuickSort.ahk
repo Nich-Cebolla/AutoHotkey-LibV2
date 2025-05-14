@@ -18,7 +18,6 @@ QuickSort(Arr, CompareFn := (a, b) => a - b, ArrSizeThreshold := 17, PivotCandid
         return Arr
     }
     if PivotCandidates > 1 && Arr.Length > PivotCandidates {
-        CompareFn.Count += 2 ; to account for the above two comparisons
         Candidates := [], Candidates.Length := PivotCandidates
         Loop PivotCandidates
             Candidates[A_Index] := Random(1, Arr.Length)
