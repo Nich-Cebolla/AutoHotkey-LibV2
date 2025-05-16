@@ -1,4 +1,10 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
 /**
  * @classdesc -
  * Displays a the outline of a rectangle, and has methods for manipulating the rectangle.
