@@ -1,14 +1,15 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Align.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.1.0
     License: MIT
 */
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
 #include RectHighlight.ahk
 
+
 class Align {
-    static DPI_AWARENESS_CONTEXT := -4
+    static DPI_AWARENESS_CONTEXT := -3
 
     /**
      * @description - Centers the Subject window horizontally with respect to the Target window.
@@ -76,12 +77,12 @@ class Align {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
         List[-1].GetPos(&L, &Y, &W)
-        Params := [{ Y: Y, M: W / 2, Hwnd: List[-1].Hwnd }]
+        Params := [{ Y: Y, M: W / 2, hWnd: List[-1].hWnd }]
         Params.Capacity := List.Length
         R := L + W
         loop List.Length - 1 {
             List[A_Index].GetPos(&X, &Y, &W)
-            Params.Push({ Y: Y, M: W / 2, Hwnd: List[A_Index].Hwnd })
+            Params.Push({ Y: Y, M: W / 2, hWnd: List[A_Index].hWnd })
             if X < L
                 L := X
             if X + W > R
@@ -91,7 +92,7 @@ class Align {
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', Center - ps.M
                 , 'int', ps.Y
@@ -121,12 +122,12 @@ class Align {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
         List[-1].GetPos(&X, &T, , &H)
-        Params := [{ X: X, M: H / 2, Hwnd: List[-1].Hwnd }]
+        Params := [{ X: X, M: H / 2, hWnd: List[-1].hWnd }]
         Params.Capacity := List.Length
         B := T + H
         loop List.Length - 1 {
             List[A_Index].GetPos(&X, &Y, , &H)
-            Params.Push({ X: X, M: H / 2, Hwnd: List[A_Index].Hwnd })
+            Params.Push({ X: X, M: H / 2, hWnd: List[A_Index].hWnd })
             if Y < T
                 T := Y
             if Y + H > B
@@ -136,7 +137,7 @@ class Align {
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', ps.X
                 , 'int', Center - ps.M
@@ -164,18 +165,18 @@ class Align {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
         List[-1].GetPos(, , &GW, &H)
-        Params := [{ H: H, Hwnd: List[-1].Hwnd }]
+        Params := [{ H: H, hWnd: List[-1].hWnd }]
         Params.Capacity := List.Length
         loop List.Length - 1 {
             List[A_Index].GetPos(, , &W, &H)
-            Params.Push({ H: H, Hwnd: List[A_Index].Hwnd })
+            Params.Push({ H: H, hWnd: List[A_Index].hWnd })
             if W > GW
                 GW := W
         }
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', 0
                 , 'int', 0
@@ -203,14 +204,14 @@ class Align {
         for Ctrl in G {
             Ctrl.GetPos(, , &W, &H)
             if Callback(&GW, W, Ctrl) {
-                Params.Push({ H: H, Hwnd: Ctrl.Hwnd })
+                Params.Push({ H: H, hWnd: Ctrl.hWnd })
                 break
             }
         }
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', 0
                 , 'int', 0
@@ -238,18 +239,18 @@ class Align {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
         List[-1].GetPos(, , &W, &GH)
-        Params := [{ W: W, Hwnd: List[-1].Hwnd }]
+        Params := [{ W: W, hWnd: List[-1].hWnd }]
         Params.Capacity := List.Length
         loop List.Length - 1 {
             List[A_Index].GetPos(, , &W, &H)
-            Params.Push({ W: W, Hwnd: List[A_Index].Hwnd })
+            Params.Push({ W: W, hWnd: List[A_Index].hWnd })
             if H > GH
                 GH := H
         }
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', 0
                 , 'int', 0
@@ -277,14 +278,14 @@ class Align {
         for Ctrl in G {
             Ctrl.GetPos(, , &W, &H)
             if Callback(&GH, H, Ctrl) {
-                Params.Push({ W: W, Hwnd: Ctrl.Hwnd })
+                Params.Push({ W: W, hWnd: Ctrl.hWnd })
                 break
             }
         }
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
                 , 'ptr', hDwp
-                , 'ptr', ps.Hwnd
+                , 'ptr', ps.hWnd
                 , 'ptr', 0
                 , 'int', 0
                 , 'int', 0
@@ -341,7 +342,7 @@ class Align {
      * description. Set to zero or an empty string to skip moving `Subject` if no viable space is found.
      * @param {Number} DefaultY - The Y coordinate to move `Subject` to if no viable space is found.
      * @returns {Integer} - Returns `1` if no viable space is found, or the return value of the callable object
-     * if one is provided.
+     * if one is provided. Returns an empty string if the function is successful.
      */
     static MoveAdjacent(Subject, Target, PaddingX := 20, PaddingY := 20, DefaultX := 100, DefaultY := 100) {
         if hMon := DllCall('User32.dll\MonitorFromWindow', 'ptr', Target.hWnd, 'int', 0, 'ptr') {
@@ -420,95 +421,33 @@ class Align {
 
     /**
      * @description - Creates a proxy for non-AHK windows.
-     * @param {HWND} Hwnd - The handle of the window to be proxied.
+     * @param {hWnd} hWnd - The handle of the window to be proxied.
      */
-    __New(Hwnd) {
-        this.Hwnd := Hwnd
+    __New(hWnd) {
+        this.hWnd := hWnd
     }
 
     GetPos(&X?, &Y?, &W?, &H?) {
-        WinGetPos(&X, &Y, &W, &H, this.Hwnd)
+        WinGetPos(&X, &Y, &W, &H, this.hWnd)
     }
+
     Move(X?, Y?, W?, H?) {
-        WinMove(X ?? unset, Y ?? unset, W ?? unset, H ?? unset, this.Hwnd)
+        WinMove(X ?? unset, Y ?? unset, W ?? unset, H ?? unset, this.hWnd)
     }
 
-    ; class GridRow extends Align.GridBase {
-
-    ; }
-    ; class GridColumn extends Align.GridBase {
-
-    ; }
-    ; class GridBase extends Array {
-    ;     __New(List, StartX, EndX, StartY?, PaddingX?, PaddingY?) {
-    ;         if !IsSet(PaddingX) {
-    ;             PaddingX := List[1].Gui.MarginX
-    ;         }
-    ;         if !IsSet(PaddingY) {
-    ;             PaddingY := List[1].Gui.MarginY
-    ;         }
-    ;         if !IsSet(StartY) {
-    ;             List[1].GetPos(, &StartY)
-    ;         }
-    ;         Total := Width := Height := Padding := 0
-    ;         Range := EndX - StartX
-    ;         Rows := [[]]
-    ;         Rows.StartX := StartX
-    ;         Rows.StartY := StartY
-    ;         Rows.EndX := EndX
-    ;         Rows.PaddingX := PaddingX
-    ;         Rows.PaddingY := PaddingY
-    ;         Rows.List := List
-    ;         Rows[-1].Y := StartY
-    ;         i := 0
-    ;         loop {
-    ;             if ++i > List.Length {
-    ;                 break
-    ;             }
-    ;             Ctrl := List[i]
-    ;             Ctrl.GetPos(, , &w, &h)
-    ;             if Width + w + Padding + PaddingX > Range {
-    ;                 Rows[-1].Width := Width
-    ;                 Rows[-1].Padding := Padding
-    ;                 Rows[-1].Height := Height
-    ;                 Rows[-1].TotalWidth := Width + Padding
-    ;                 Total += Width
-    ;                 if w > Range {
-    ;                     _Throw(Ctrl.Name)
-    ;                 }
-    ;                 Rows.Push([Ctrl])
-    ;                 Rows[-1].Y := Rows[-2].Y + Rows[-2].Height + PaddingY
-    ;                 Width := Height := Padding := 0
-    ;                 while w >= Range - PaddingX {
-    ;                     Rows[-1].Push(Ctrl)
-    ;                     Rows[-1].Width := w
-    ;                     Rows[-1].Padding := 0
-    ;                     Rows[-1].Height := h
-    ;                     Total += w
-    ;                     if ++i > List.Length {
-    ;                         break 2
-    ;                     }
-    ;                     Ctrl := List[i]
-    ;                     Ctrl.GetPos(, , &w, &h)
-    ;                     if w > Range {
-    ;                         _Throw(Ctrl.Name)
-    ;                     }
-    ;                     Rows.Push([Ctrl])
-    ;                     Rows[-1].Y := Rows[-2].Y + Rows[-2].Height + PaddingY
-    ;                 }
-    ;             } else {
-    ;                 Rows[-1].Push(Ctrl)
-    ;             }
-    ;             Height := Max(Height, h)
-    ;             Width += w
-    ;             Padding += PaddingX
-    ;         }
-
-    ;         _Throw(Extra?, n := -2) {
-    ;             throw Error('The width of a control exceeds the allotted range.', n, Extra ?? '')
-    ;         }
-    ;     }
-    ; }
+    __Call(Name, Params) {
+        Split := StrSplit(Name, '_')
+        if this.HasMethod(Split[1]) && Split[2] = 'S' {
+            DllCall('SetThreadDpiAwarenessContext', 'ptr', Align.DPI_AWARENESS_CONTEXT, 'ptr')
+            if Params.Length {
+                return this.%Split[1]%(Params*)
+            } else {
+                return this.%Split[1]%()
+            }
+        } else {
+            throw PropertyError('Property not found.', -1, Name)
+        }
+    }
 }
 
 /**
