@@ -61,8 +61,10 @@ class ItemScroller {
           , PaddingY: 10
           , BtnFontOpt: ''
           , BtnFontFamily: ''
+          , EditBackgroundColor: ''
           , EditFontOpt: ''
           , EditFontFamily: ''
+          , TextBackgroundColor: ''
           , TextFontOpt: ''
           , TextFontFamily: ''
           , DisableTooltips: false
@@ -108,19 +110,23 @@ class ItemScroller {
         GreatestW := 0
         for Name, Obj in Params.Controls.OwnProps() {
             ; Set the font first so it is reflected in the width.
+            GuiObj.SetFont()
             switch Obj.Type, 0 {
                 case 'Button':
-                    if Params.BtnFontOpt || Params.BtnFontFamily {
-                        GuiObj.SetFont(Params.BtnFontOpt || unset, Params.BtnFontFamily || unset)
+                    if Params.BtnFontOpt {
+                        GuiObj.SetFont(Params.BtnFontOpt)
                     }
+                    _SetFontFamily(Params.BtnFontFamily)
                 case 'Edit':
-                    if Params.EditFontOpt || Params.EditFontFamily {
-                        GuiObj.SetFont(Params.EditFontOpt || unset, Params.EditFontFamily || unset)
+                    if Params.EditFontOpt {
+                        GuiObj.SetFont(Params.EditFontOpt)
                     }
+                    _SetFontFamily(Params.EditFontFamily)
                 case 'Text':
-                    if Params.TextFontOpt || Params.TextFontFamily {
-                        GuiObj.SetFont(Params.TextFontOpt || unset, Params.TextFontFamily || unset)
+                    if Params.TextFontOpt {
+                        GuiObj.SetFont(Params.TextFontOpt)
                     }
+                    _SetFontFamily(Params.TextFontFamily)
             }
             List[Obj.Index] := GuiObj.Add(
                 Obj.Type
@@ -139,7 +145,6 @@ class ItemScroller {
         X := Params.StartX
         Y := Params.StartY
         ButtonHeight := ch
-        Flag := 0
         if Params.Horizontal {
             for Ctrl in List {
                 Obj := Ctrl.Params
@@ -148,20 +153,20 @@ class ItemScroller {
                     case 'Button':
                         BtnIndex := Obj.Index
                         Ctrl.OnEvent('Click', HClickButton%Obj.Name%)
+                        this.CtrlBtn%Obj.Name% := Ctrl
                         if Params.NormalizeButtonWidths {
                             Ctrl.Move(X, Y, GreatestW)
                             X += GreatestW + Params.PaddingX
                             continue
                         }
                     case 'Edit':
-                        this.EditCtrl := Ctrl
+                        this.CtrlEdit := Ctrl
                         Ctrl.OnEvent('Change', HChangeEdit%Obj.Name%)
                     case 'Text':
-                        if !Flag {
-                            this.TxtOf := Ctrl
-                            Flag := 1
+                        if this.HasOwnProp('CtrlTxtOf') {
+                            this.CtrlTxtTotal := Ctrl
                         } else {
-                            this.TxtTotal := Ctrl
+                            this.CtrlTxtOf := Ctrl
                         }
                 }
                 Ctrl.Move(X, Y)
@@ -180,21 +185,21 @@ class ItemScroller {
                 switch Ctrl.Type, 0 {
                     case 'Button':
                         BtnIndex := Obj.Index
-                        Ctrl.OnEvent('Click', HClick%Obj.Name%)
+                        Ctrl.OnEvent('Click', HClickButton%Obj.Name%)
+                        this.CtrlBtn%Obj.Name% := Ctrl
                         if Params.NormalizeButtonWidths {
                             Ctrl.Move(X, Y, GreatestW)
                             Y += Buttonheight + Params.PaddingY
                             continue
                         }
                     case 'Edit':
-                        this.EditCtrl := Ctrl
-                        Ctrl.OnEvent('Change', HChange%Obj.Name%)
+                        this.CtrlEdit := Ctrl
+                        Ctrl.OnEvent('Change', HChangeEdit%Obj.Name%)
                     case 'Text':
-                        if !Flag {
-                            this.TxtOf := Ctrl
-                            Flag := 1
+                        if this.HasOwnProp('CtrlTxtOf') {
+                            this.CtrlTxtTotal := Ctrl
                         } else {
-                            this.TxtTotal := Ctrl
+                            this.CtrlTxtOf := Ctrl
                         }
                 }
                 Ctrl.Move(X, Y)
@@ -221,6 +226,13 @@ class ItemScroller {
         }
         this.Right := GreatestX
         this.Bottom := GreatestY
+        if StrLen(Params.EditBackgroundColor) {
+            this.CtrlEdit.Opt('Background' Params.EditBackgroundColor)
+        }
+        if StrLen(Params.TextBackgroundColor) {
+            this.CtrlTxtOf.Opt('Background' Params.TextBackgroundColor)
+            this.CtrlTxtTotal.Opt('Background' Params.TextBackgroundColor)
+        }
 
         return
 
@@ -238,7 +250,7 @@ class ItemScroller {
         }
 
         HClickButtonJump(Ctrl, *) {
-            this.SetIndex(this.EditCtrl.Text)
+            this.SetIndex(this.CtrlEdit.Text)
         }
 
         _GetParam(Obj, Prop) {
@@ -247,6 +259,13 @@ class ItemScroller {
                 return fn(Obj, List, GuiObj, this)
             }
             return Obj.%Prop%
+        }
+        _SetFontFamily(Params) {
+            for s in StrSplit(Params, ',') {
+                if s {
+                    GuiObj.SetFont(, s)
+                }
+            }
         }
     }
 
@@ -264,8 +283,8 @@ class ItemScroller {
         } else if Value {
             this.Index := Value
         }
-        this.EditCtrl.Text := this.Index
-        this.TxtTotal.Text := this.__Item.Length
+        this.CtrlEdit.Text := this.Index
+        this.CtrlTxtTotal.Text := this.__Item.Length
         if cb := this.Params.Callback {
             return cb(this.Index, this)
         }
