@@ -406,7 +406,11 @@ class QuickStrings extends Map {
           , EditBackgroundColor: O.ScrollerEditBackground
           , EditFontOpt: O.ScrollerEditFontOpt || O.ConsoleFontOpt
           , EditFontFamily: O.ScrollerEditFontFamily || O.ConsoleFontFamily
-          , Horizontal: false
+          , Orientation: '
+          (
+                Back Next Jump
+                Index TxtOf TxtTotal
+          )'
           , StartX: btnx
           , StartY: btny + btnh + G.MarginY
           , TextBackgroundColor: O.ScrollerTextBackground

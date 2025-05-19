@@ -141,7 +141,7 @@ class ItemScroller {
             }
             List[Obj.Index] := GuiObj.Add(
                 Obj.Type
-              , _GetParam(Obj, 'Opt') || unset
+              , 'x10 y10 ' _GetParam(Obj, 'Opt') || unset
               , _GetParam(Obj, 'Text') || unset
             )
             List[Obj.Index].Name := Obj.Name
@@ -223,22 +223,51 @@ class ItemScroller {
                 }
             }
         } else {
+            for Ctrl in List {
+                Obj := Ctrl.Params
+                Ctrl.DeleteProp('Params')
+                switch Ctrl.Type, 0 {
+                    case 'Button':
+                        Ctrl.OnEvent('Click', HClickButton%Obj.Name%)
+                        this.CtrlBtn%Obj.Name% := Ctrl
+                        if Params.NormalizeButtonWidths {
+                            Ctrl.Move(, , GreatestW)
+                            continue
+                        }
+                    case 'Edit':
+                        this.CtrlEdit := Ctrl
+                        Ctrl.OnEvent('Change', HChangeEdit%Obj.Name%)
+                    case 'Text':
+                        if this.HasOwnProp('CtrlTxtOf') {
+                            this.CtrlTxtTotal := Ctrl
+                        } else {
+                            this.CtrlTxtOf := Ctrl
+                        }
+                }
+            }
             this.Diagram := Align.Diagram(GuiObj, Params.Orientation, Params.StartX, Params.StartY, Params.PaddingX, Params.PaddingY)
         }
-        this.Left := Params.StartX
-        this.Top := Params.StartY
-        GreatestX := GreatestY := 0
-        for Ctrl in List {
-            Ctrl.GetPos(&cx, &cy, &cw, &ch)
-            if cx + cw > GreatestX {
-                GreatestX := cx + cw
+        if StrLen(Params.Orientation) == 1 {
+            this.Left := Params.StartX
+            this.Top := Params.StartY
+            GreatestX := GreatestY := 0
+            for Ctrl in List {
+                Ctrl.GetPos(&cx, &cy, &cw, &ch)
+                if cx + cw > GreatestX {
+                    GreatestX := cx + cw
+                }
+                if cy + ch > GreatestY {
+                    GreatestY := cy + ch
+                }
             }
-            if cy + ch > GreatestY {
-                GreatestY := cy + ch
-            }
+            this.Right := GreatestX
+            this.Bottom := GreatestY
+        } else {
+            this.Left := this.Diagram.Left
+            this.Top := this.Diagram.Top
+            this.Right := this.Diagram.Right
+            this.Bottom := this.Diagram.bottom
         }
-        this.Right := GreatestX
-        this.Bottom := GreatestY
         if StrLen(Params.EditBackgroundColor) {
             this.CtrlEdit.Opt('Background' Params.EditBackgroundColor)
         }
