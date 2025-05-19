@@ -1,26 +1,37 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ItemScroller.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.1.0
     License: MIT
-
-    Status: Core functionality has been tested and is working, but not all of the options are tested.
 */
 
+; This is necessary to use the diagram option.
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Align.ahk
+#include *i <Align>
+
 /**
- * @class
- * @description - This adds a content scroller to a Gui window. There's 6 elements included by default:
- * - Back button
- * - An edit control that shows / changes the current item index
- * - A text control that says "Of"
- * - A text control that displayss the number of items in the container array
- * - Jump button - when clicked, the current item index is changed to whatever number is in the edit control
- * - Next button
+ * @classdesc - This adds a content scroller to a Gui window. There's 6 elements included, each set
+ * to a property on the instance object:
+ * - `ItemScrollerObj.CtrlBtnback` - Back button
+ * - `ItemScrollerObj.CtrlEdit` - An edit control that shows / changes the current item index
+ * - `ItemScrollerObj.CtrlTxtOf` - A text control that says "Of"
+ * - `ItemScrollerObj.CtrlTxtTotal` - A text control that displayss the number of items in the
+ * container array
+ * - `ItemScrollerObj.CtrlBtnJump` - Jump button - when clicked, the current item index is changed to
+ * whatever number is in the edit control
+ * - `ItemScrollerObj.CtrlBtnNext` - Next button
  *
- * I attempted to write this in a way that permits a degree of customization, but its limited because
- * portions of the code expect the default control names, so you are effectively tied to the default
- * controls. While you can't change the controls' type or names, you can change the options, text,
- * and order, along with the other various options listed in the ItemScroller.Params class.
+ * ### Orientation
+ *
+ * The `Orientation` parameter can be defined in three ways.
+ * - "H" for horizontal orientation. The order is: Back, Edit, Of, Total, Jump, Next
+ * - "V" for vertical orientation. The order is the same as horizontal.
+ * - Diagram: You can customize the relative position of the controls by creating a string diagram.
+ * See the documentation for {@link Align.Diagram} for details. The names of the controls are:
+ * "Back" (button), "Index" (edit), 'TxtOf" (text), "TxtTotal" (text), "Jump" (button), and "Next"
+ * (button). This return object from `Align.Diagram` is set to the property `ItemScrollerObj.Diagram`.
+ * @
+ *
  */
 class ItemScroller {
 
@@ -52,9 +63,9 @@ class ItemScroller {
           , Array: ''
           , StartX: 10
           , StartY: 10
-          ; I wrote the code for vertical alingment (horizontal = false) but I've been procrastinating
-          ; testing it, so it may not work as expected.
-          , Horizontal: true
+          ; Orientation can be "H" for horizontal, "V" for vertical, or it can be a diagrammatic
+          ; representation of the arrangement as described in the description of this class.
+          , Orientation: 'H'
           , ButtonStep: 1
           , NormalizeButtonWidths: true
           , PaddingX: 10
@@ -145,7 +156,7 @@ class ItemScroller {
         X := Params.StartX
         Y := Params.StartY
         ButtonHeight := ch
-        if Params.Horizontal {
+        if Params.Orientation = 'H' {
             for Ctrl in List {
                 Obj := Ctrl.Params
                 Ctrl.DeleteProp('Params')
@@ -178,7 +189,7 @@ class ItemScroller {
                     ItemScroller.AlignV(Ctrl, List[BtnIndex])
                 }
             }
-        } else {
+        } else if Params.Orientation = 'V' {
             for Ctrl in List {
                 Obj := Ctrl.Params
                 Ctrl.DeleteProp('Params')
@@ -211,6 +222,8 @@ class ItemScroller {
                     ItemScroller.AlignH(Ctrl, List[BtnIndex])
                 }
             }
+        } else {
+            this.Diagram := Align.Diagram(GuiObj, Params.Orientation, Params.StartX, Params.StartY, Params.PaddingX, Params.PaddingY)
         }
         this.Left := Params.StartX
         this.Top := Params.StartY

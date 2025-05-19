@@ -294,10 +294,7 @@ class Pattern {
 
 
 ; if A_LineFile == A_ScriptFullpath {
-;     A_Clipboard := Pattern.Escape['\']
-;     msgbox(A_Clipboard)
+;     A_Clipboard := Pattern.GetEscapedStr('[rn"]', '\')
+;     MsgBox('done')
 ; }
 
-
-
-a_clipboard := pattern.GetUnescapedStr('\[', '\')
