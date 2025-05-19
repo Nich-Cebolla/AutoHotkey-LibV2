@@ -156,6 +156,321 @@ class Align {
     }
 
     /**
+     * @description - Arranges controls using a string diagram.
+     * - Rows are separated by newline characters.
+     * - Columns are separated by spaces or tabs.
+     *
+     * - Use controls' names to represent their relative position.
+     *   - If a control's name contains spaces or tabs, or if a control's name is completely numeric,
+     * enclose the name in double quotes.
+     *   - If a control's name contains carriage returns, line feeds, double quotes, or a backslash,
+     * escape them with a backslash (e.g. \r \n \" \\).
+     *   - If the names of the controls in the `Gui` object's collection are long or otherwise cause
+     * arranging them by name to be problematic or hard to read, `Align.DiagramFromSymbols` might be
+     * a better alternative.
+     *
+     * - By default, the distance between the controls will be the value of `PaddingX` and `PaddingY`
+     * for their respective dimensions.
+     *   - You can add additional space in-between controls along the X axis by including a number
+     * that represents the number of pixels to add to the padding.
+     *   - You can add additional space in-between rows of controls by including a single number
+     * in-between two diagram rows.
+     *
+     * In the below example, the top-left coordinates of `BtnGo` are (60, 100). The distance between
+     * the bottom of `EdtInput` and the top of `LVData` is `MyGui.MarginY + 5`.
+     * @example
+     *  Diagram := '
+     *  (
+     *     10 BtnGo 10 BtnExit
+     *     EdtInput
+     *     5
+     *     30 LVData
+     *  )'
+     *  ; Assume `MyGui` is already created
+     *  Align.Diagram(MyGui, Diagram, 50, 100)
+     * @
+     * @param {Gui} GuiObj - The `Gui` object that contains the controls to be arranged.
+     * @param {String} Diagram - The string diagram that describes the arrangement of the controls.
+     * @param {Number} [StartX] - The X coordinate used for the beginning of each row. If unset,
+     * the X coordinate of the first control in the first row will be used.
+     * @param {Number} [StartY] - The Y coordinate used for the controls in the top row. If unset,
+     * the Y coordinate of the first control in the first row will be used.
+     * @param {Number} [PaddingX] - The amount of padding to leave between controls on the X-axis.
+     * If unset, the value of `GuiObj.MarginX` will be used.
+     * @param {Number} [PaddingY] - The amount of padding to leave between controls on the Y-axis.
+     * If unset, the value of `GuiObj.MarginY` will be used.
+     * @return {Object} - An object with the following properties:
+     * - **Left**: The leftmost X coordinate of the arranged controls.
+     * - **Top**: The topmost Y coordinate of the arranged controls.
+     * - **Right**: The rightmost X coordinate of the arranged controls.
+     * - **Bottom**: The bottommost Y coordinate of the arranged controls.
+     * - **Rows**: An array of objects representing each row in the diagram. Each object has the following properties:
+     *   - **Left**: The leftmost X coordinate of the row.
+     *   - **Top**: The topmost Y coordinate of the row.
+     *   - **Right**: The rightmost X coordinate of the row.
+     *   - **Bottom**: The bottommost Y coordinate of the row.
+     *   - **Controls**: An array of controls in the row.
+     * @throws {ValueError} - If the diagram string is invalid.
+     */
+    static Diagram(GuiObj, Diagram, StartX?, StartY?, PaddingX?, PaddingY?) {
+        rci := 0xFFFD ; Replacment character
+        ch := Chr(rci)
+        while InStr(Diagram, ch) {
+            ch := Chr(--rci)
+        }
+        if InStr(Diagram, '"') {
+            Names := Map()
+            Index := 0
+            Pos := 1
+            loop {
+                if !RegExMatch(Diagram, '(?<=\s|^)"(?<text>.*?)(?<!\\)(?:\\\\)*+"', &Match, Pos) {
+                    break
+                }
+                Pos := Match.Pos
+                Names.Set(ch (++Index) ch, Match)
+                Diagram := StrReplace(Diagram, Match[0], ch Index ch)
+            }
+        }
+        Rows := StrSplit(RegExReplace(RegExReplace(Trim(Diagram, '`s`t`r`n'), '\R+', '`n'), '[`s`t]+', '`s'), '`n')
+        loop Rows.Length {
+            Rows[A_Index] := StrSplit(Trim(Rows[A_Index], '`s'), '`s')
+        }
+        if !IsSet(StartX) || !IsSet(StartY) {
+            for Row in Rows {
+                i := A_Index
+                for Value in Row {
+                    k := A_Index
+                    if !IsNumber(Value) {
+                        Name := Value
+                        break 2
+                    }
+                }
+            }
+            if !IsSet(Name) {
+                throw ValueError('Invalid diagram string input.', -1)
+            }
+            if i > 1 {
+                throw ValueError('The first row in the diagram cannot contain only numbers.', -1)
+            }
+            _ProcValue(&Name)
+            GuiObj[Name].GetPos(&cx, &cy)
+            if !IsSet(StartX) {
+                if k > 1 {
+                    throw ValueError('The input diagram options does not include a ``StartX`` value,'
+                    ' and the diagram string includes leading numbers on the top row, which is invalid.', -1)
+                }
+                StartX := cx
+            }
+            if !IsSet(StartY) {
+                StartY := cy
+            }
+        }
+        if !IsSet(PaddingX) {
+            PaddingX := GuiObj.MarginX
+        }
+        if !IsSet(PaddingY) {
+            PaddingY := GuiObj.MarginY
+        }
+        Output := { Left: X := StartX, Top: Y := StartY, Right: 0, Bottom: 0, Rows: _rows := [] }
+        Right := 0
+        for Row in Rows {
+            if IsNumber(Row[1]) && Row.Length == 1 {
+                Y += Row[1]
+                continue
+            }
+            X := StartX
+            while IsNumber(Row[1]) {
+                X += Row.RemoveAt(1)
+                if !Row.Length {
+                    throw ValueError('It is invalid for a row to contain only numbers if the row contains'
+                    ' more than one number.', -1)
+                }
+            }
+            _rows.Push(row_info := { Left: X, Top: Y, Right: 0, Bottom: 0, Controls: [] })
+            Height := 0
+            for Value in Row {
+                if IsNumber(Value) {
+                    X += Value
+                } else {
+                    _ProcValue(&Value)
+                    Ctrl := GuiObj[Value]
+                    Ctrl.Move(X, Y)
+                    Ctrl.GetPos(&ctrlx, , &ctrlw, &ctrlh)
+                    X += ctrlw + PaddingX
+                    Height := Max(Height, ctrlh)
+                    row_info.Controls.Push(Ctrl)
+                }
+            }
+            Right := Max(row_info.Right := ctrlx + ctrlw, Right)
+            row_info.Bottom := row_info.Top + Height
+            Y += Height + PaddingY
+        }
+        Output.Right := Right
+        Output.Bottom := row_info.Bottom
+
+        return Output
+
+        _ProcValue(&Value) {
+            if InStr(Value, ch) {
+                Value := Names.Get(Value)['text']
+            }
+            Value := StrReplace(StrReplace(StrReplace(StrReplace(Value, '\\', '\')
+                , '\r', '`r'), '\n', '`n'), '\"', '"')
+        }
+    }
+
+    /**
+     * @description - Arranges controls using a string diagram. You can use arbitrary symbols to
+     * indicate a control in the diagram. Associate the symbols with the correct control using
+     * a `Map` object.
+     * - Rows are separated by newline characters.
+     * - Columns are separated by spaces or tabs.
+     * - Symbols cannot contain space, tab, carriage return, or line feed characters.
+     * - Symbols cannot be completely numeric.
+     * @example
+     *  G := Gui()
+     *  Symbols := Map()
+     *  for Text in ['Back', 'Forward', 'Stop', 'Exit'] {
+     *      btn := G.Add('Button', (A_Index == 1 ? 'Section' : 'ys'), Text)
+     *      btn.Name := GetArbitraryName()
+     *      Symbols.Set('@' A_Index, btn)
+     *  }
+     *  Diagram := '
+     *  (
+     *      @1 50 @2
+     *      @2 50 @4
+     *  )'
+     *  Result := Align.DiagramFromSymbols(G, Diagram, Symbols)
+     *  G.Show()
+     *  ; account for non-client area
+     *  G.GetPos(, , &w1, &h1)
+     *  G.GetClientPos(, , &w2, &h2)
+     *  G.Move(, , Result.Right + w1 - w2, Result.Bottom + h1 - h2)
+     *
+     *  GetArbitraryName() {
+     *      s := ''
+     *      loop 100 {
+     *          s .= Chr(Random(1,1000))
+     *      }
+     *      return s
+     *  }
+     * @
+     * @param {Gui} GuiObj - The `Gui` object that contains the controls to be arranged.
+     * @param {String} Diagram - The string diagram that describes the arrangement of the controls.
+     * @param {Map} Symbols - A `Map` object that associates symbols with controls. The values
+     * should be `Gui.Control` objects (not control names).
+     * @param {Number} [StartX] - The X coordinate used for the beginning of each row. If unset,
+     * the X coordinate of the first control in the first row will be used.
+     * @param {Number} [StartY] - The Y coordinate used for the controls in the top row. If unset,
+     * the Y coordinate of the first control in the first row will be used.
+     * @param {Number} [PaddingX] - The amount of padding to leave between controls on the X-axis.
+     * If unset, the value of `GuiObj.MarginX` will be used.
+     * @param {Number} [PaddingY] - The amount of padding to leave between controls on the Y-axis.
+     * If unset, the value of `GuiObj.MarginY` will be used.
+     * @return {Object} - An object with the following properties:
+     * - **Left**: The leftmost X coordinate of the arranged controls.
+     * - **Top**: The topmost Y coordinate of the arranged controls.
+     * - **Right**: The rightmost X coordinate of the arranged controls.
+     * - **Bottom**: The bottommost Y coordinate of the arranged controls.
+     * - **Rows**: An array of objects representing each row in the diagram. Each object has the following properties:
+     *   - **Left**: The leftmost X coordinate of the row.
+     *   - **Top**: The topmost Y coordinate of the row.
+     *   - **Right**: The rightmost X coordinate of the row.
+     *   - **Bottom**: The bottommost Y coordinate of the row.
+     *   - **Controls**: An array of controls in the row.
+     * @throws {ValueError} - If the diagram string is invalid.
+     */
+    static DiagramFromSymbols(GuiObj, Diagram, Symbols, StartX?, StartY?, PaddingX?, PaddingY?) {
+        Rows := StrSplit(RegExReplace(RegExReplace(Trim(Diagram, '`s`t`r`n'), '\R+', '`n'), '[`s`t]+', '`s'), '`n')
+        loop Rows.Length {
+            Rows[A_Index] := StrSplit(Trim(Rows[A_Index], '`s'), '`s')
+        }
+        if !IsSet(StartX) || !IsSet(StartY) {
+            for Row in Rows {
+                i := A_Index
+                for Value in Row {
+                    k := A_Index
+                    if !IsNumber(Value) {
+                        Name := Value
+                        break 2
+                    }
+                }
+            }
+            if !IsSet(Name) {
+                throw ValueError('Invalid diagram string input.', -1)
+            }
+            if i > 1 {
+                throw ValueError('The first row in the diagram cannot contain only numbers.', -1)
+            }
+            Symbols.Get(Name).GetPos(&cx, &cy)
+            if !IsSet(StartX) {
+                if k > 1 {
+                    throw ValueError('The input diagram options does not include a ``StartX`` value,'
+                    ' and the diagram string includes leading numbers on the top row, which is invalid.', -1)
+                }
+                StartX := cx
+            }
+            if !IsSet(StartY) {
+                StartY := cy
+            }
+        }
+        if !IsSet(PaddingX) {
+            PaddingX := GuiObj.MarginX
+        }
+        if !IsSet(PaddingY) {
+            PaddingY := GuiObj.MarginY
+        }
+        Output := { Left: X := StartX, Top: Y := StartY, Right: 0, Bottom: 0, Rows: _rows := [] }
+        Right := 0
+        for Row in Rows {
+            if IsNumber(Row[1]) && Row.Length == 1 {
+                Y += Row[1]
+                continue
+            }
+            X := StartX
+            while IsNumber(Row[1]) {
+                X += Row.RemoveAt(1)
+                if !Row.Length {
+                    throw ValueError('It is invalid for a row to contain only numbers if the row contains'
+                    ' more than one number.', -1)
+                }
+            }
+            _rows.Push(row_info := { Left: X, Top: Y, Right: 0, Bottom: 0, Controls: [] })
+            Height := 0
+            for Value in Row {
+                if IsNumber(Value) {
+                    X += Value
+                } else {
+                    Ctrl := Symbols.Get(Value)
+                    Ctrl.Move(X, Y)
+                    Ctrl.GetPos(&ctrlx, , &ctrlw, &ctrlh)
+                    X += ctrlw + PaddingX
+                    Height := Max(Height, ctrlh)
+                    row_info.Controls.Push(Ctrl)
+                }
+            }
+            Right := Max(row_info.Right := ctrlx + ctrlw, Right)
+            row_info.Bottom := row_info.Top + Height
+            Y += Height + PaddingY
+        }
+        Output.Right := Right
+        Output.Bottom := row_info.Bottom
+        return Output
+    }
+
+    static GetCenterHPos(Subject, Target) {
+        Subject.GetPos(&X1, &Y1, &W1)
+        Target.GetPos(&X2, , &W2)
+        return X2 + W2 / 2 - W1 / 2
+    }
+
+    static GetCenterVPos(Subject, Target) {
+        Subject.GetPos(&X1, &Y1, , &H1)
+        Target.GetPos( , &Y2, , &H2)
+        return Y2 + H2 / 2 - H1 / 2
+    }
+
+    /**
      * @description - Standardizes a group's width to the largest width in the group.
      * @param {Array} List - An array of windows to be standardized. This function assumes there are
      * no unset indices.
@@ -351,16 +666,16 @@ class Align {
             Subject.GetPos(&subX, &subY, &subW, &subH)
             if tarX - subW - PaddingX >= Mon.LW {
                 Subject.Move(tarX - subW - PaddingX)
-                this.CenterV(Subject, Target)
+                _SetY()
             } else if tarY - subH - PaddingY >= Mon.TW {
                 Subject.Move(, tarY - subH - PaddingY)
-                this.CenterH(Subject, Target)
+                _SetX()
             } else if tarX + tarW + PaddingX + subW <= Mon.RW {
                 Subject.Move(tarX + tarW + PaddingX)
-                this.CenterV(Subject, Target)
+                _SetY()
             } else if tarY + tarH + PaddingY + subH <= Mon.BW {
                 Subject.Move(, tarY + tarH + PaddingY)
-                this.CenterH(Subject, Target)
+                _SetX()
             } else {
                 return _Default()
             }
@@ -379,6 +694,24 @@ class Align {
                 }
             }
             return 1
+        }
+        _SetX() {
+            x := this.GetCenterHPos(Subject, Target)
+            if x < Mon.LW {
+                x := Mon.LW
+            } else if x + subW > Mon.RW {
+                x := Mon.RW - subW
+            }
+            Subject.Move(x)
+        }
+        _SetY() {
+            y := this.GetCenterVPos(Subject, Target)
+            if y < Mon.TW {
+                y := Mon.TW
+            } else if y + subH > Mon.BW {
+                y := Mon.BW - subH
+            }
+            Subject.Move(, y)
         }
     }
 

@@ -35,33 +35,56 @@ Test_Align()
 
 class Test_Align {
     static Inputs :=  [['X1', 'Y1'], ['X2', 'Y2']]
-    , Buttons := ['Set position', 'Run', 'Reset', 'Make', 'Close', 'Update pos', 'Restart', 'SelectControls']
+    , Buttons := ['Set position', 'Run', 'Reset', 'Make', 'Close', 'Update pos', 'Restart', 'SelectControls', 'Diagram']
     , DPI_AWARENESS_CONTEXT := -4
     , FontSize := 11
     , FontStandard := 'Aptos,Segoe UI,Roboto'
-    , FontMono := 'Mono,Ubuntu Mono,Chivo Mono'
+    , FontMono := 'Mono,Arial Rounded MT,Roboto Mono,IBM Plex Mono,Ubuntu Mono,Chivo Mono'
 
-    , SC_ControlCt := 20
-    , SC_Width := 1100
-    , SC_Height := 700
-    , SC_AvgControlWidth := 120
-    , SC_ControlStdDevW := 40
-    , SC_AvgControlHeight := 50
-    , SC_ControlStdDevH := 19
+    , Child_AvgControlWidth := 120
+    , Child_ControlStdDevW := 40
+    , Child_AvgControlHeight := 50
+    , Child_ControlStdDevH := 19
+    , Child_Opt := '+Resize'
+    , Child_Title := 'Test_Align.Child'
+    , Child_GuiBackColor := 'd4c5c5'
+    , Child_ControlBackColor := 'FFFFFF'
+    , Child_Width := 1100
+    , Child_Height := 700
+    , Child_ControlCt := 20
+
     , SC_Types := ['Button', 'Text', 'Checkbox', 'Radio']
     , SC_Buttons := ['Start', 'Check All', 'Cancel', 'Exit']
     , SC_Checkboxes := ['GroupHeight', 'GroupWidth', 'CenterHList', 'CenterVList']
     , SC_DefaultEditWidth := 200
     , SC_EndKey := '!t'
     , SC_ResultEditRows := 15
-    , SC_GuiBackColor := 'd4c5c5'
-    , SC_ControlBackColor := 'FFFFFF'
     , SC_RectHighlightOptText := '{ "Color": "358afa" }'
-    , SC_Weights := [
-        { Start: 100, End: this.SC_Width * 0.1, Weight: 0.05 },
-        { Start: this.SC_Width * 0.1, End: this.SC_Width * 0.9, Weight: 0.9 },
-        { Start: this.SC_Width * 0.9, End: this.SC_Width - 100, Weight: 0.05 }
-    ]
+
+    , DG_Buttons := ['Run', 'Exit', 'Rename controls']
+    , DG_Checkboxes := ['DiagramFromSymbols']
+    , DG_Params := ['StartX', 'StartY', 'PaddingX', 'PaddingY']
+    , DG_ParamDefaults := [ 10, 10, '', '' ]
+    , DG_Renamed_Default_Tests := ['test"quote', 'test``rcr', 'test``nlf', 'test space', 'test``ttab', '55555', 'test\slash']
+    , DG_Renamed_Default_Diagram := '
+    (
+        test\"quote 50 test\rcr 50 test\nlf
+        50
+        "test space" 50 "test``ttab"
+        50
+        "55555" 50 test\\slash
+    )'
+    , DG_EditWidth := 100
+    , DG_DiagramWidth := 500
+    , DG_DiagramRows := 10
+    , DG_ResultRows := 20
+    , DG_Child_WindowWidth := 900
+    , DG_Child_WindowHeight := 700
+    , DG_Child_AvgControlWidth := 120
+    , DG_Child_ControlStdDevW := 40
+    , DG_Child_AvgControlHeight := 50
+    , DG_Child_ControlStdDevH := 19
+    , DG_Child_ControlCt := 7
 
     static Call() {
         Align.DPI_AWARENESS_CONTEXT := this.DPI_AWARENESS_CONTEXT
@@ -140,7 +163,7 @@ class Test_Align {
         Props := []
         Props.Capacity := ObjOwnPropCount(Align)
         for Prop in Align.OwnProps() {
-            if Align.HasMethod(Prop) && SubStr(Prop, 1, 2) !== '__' && Prop !== 'SelectControls' {
+            if Align.HasMethod(Prop) && SubStr(Prop, 1, 2) !== '__' && !InStr('SelectControls,Diagram', Prop) {
                 Props.Push(Prop)
             }
         }
@@ -212,6 +235,10 @@ class Test_Align {
             }
         }
 
+        HClickButtonDiagram(*) {
+            this.Diagram()
+        }
+
         HClickButtonSelectControls(*) {
             this.SelectControls()
         }
@@ -236,6 +263,211 @@ class Test_Align {
         }
     }
 
+    static Diagram() {
+        DG := this.DG := Gui('+Resize')
+        DG.SetFont('s11 q5')
+        DG.texts := []
+        DG.edits := []
+        DG.buttons := []
+        DG.checkboxes := []
+        for Name in this.DG_Buttons {
+            _Name := RegExReplace(Name, '\W', '')
+            DG.buttons.Push(DG.Add('Button', (A_Index == 1 ? 'Section' : 'ys') ' vBtn' _Name, Name))
+            DG.buttons[-1].OnEvent('Click', HClickButton%_Name%)
+        }
+        for Name in this.DG_Checkboxes {
+            _Name := RegExReplace(Name, '\W', '')
+            DG.checkboxes.Push(DG.Add('Checkbox', (A_Index == 1 ? 'xs Section' : 'ys') ' vChk' _Name, Name))
+        }
+        W := 0
+        editW := this.DG_EditWidth
+        defaults := this.DG_ParamDefaults
+        for Param in this.DG_Params {
+            DG.texts.Push(DG.Add('Text', 'xs Section vTxt' Param, Param))
+            DG.texts[-1].GetPos(, , &txtw)
+            DG.edits.Push(DG.Add('Edit', 'w' editW ' ys vEdt' Param, defaults[A_Index]))
+            W := Max(W, txtw)
+        }
+        X := DG.MarginX * 2 + W
+        for txt in DG.texts {
+            txt.Move(, , W)
+            DG.edits[A_Index].Move(X)
+        }
+        DG.Add('Edit', Format('w{} r{} xs vEdtDiagram', this.DG_DiagramWidth, this.DG_DiagramRows))
+        DG.Add('Edit', Format('w{} r{} xs vEdtResult', this.DG_DiagramWidth, this.DG_ResultRows))
+        DG.Child := this.MakeChild(
+            this.DG_Child_ControlCt
+            , this.DG_Child_AvgControlWidth
+            , this.DG_Child_ControlStdDevW
+            , this.DG_Child_AvgControlHeight
+            , this.DG_Child_ControlStdDevH
+            , this.DG_Child_WindowWidth
+            , this.DG_Child_WindowHeight
+        )
+        this.SetFonts(DG['EdtDiagram'], this.FontMono)
+        this.SetFonts(DG['EdtResult'], this.FontMono)
+        DG.Show('x0 y0')
+        DG.Child.Show()
+        DG.Child.Move(, , this.DG_Child_WindowWidth, this.DG_Child_WindowHeight)
+        Align.MoveAdjacent(DG.Child, DG)
+        DG.OnEvent('Close', HClickButtonExit)
+
+        return
+
+        HClickButtonExit(*) {
+            this.DG.Child.Destroy()
+            if this.DG.HasOwnProp('RenameControlsWindow') {
+                try {
+                    this.DG.RenameControlsWindow.Destroy()
+                }
+            }
+            this.DG.Destroy()
+            this.DeleteProp('DG')
+        }
+        HClickButtonRenameControls(Ctrl, *) {
+            tests := this.DG_Renamed_Default_tests
+            DG := Ctrl.Gui
+            if DG.HasOwnProp('RenameControlsWindow') {
+                RCW := DG.RenameControlsWindow
+            } else {
+                RCW := DG.RenameControlsWindow := this.Gui()
+            }
+            RCW.Add('Text', 'w25 Right Section vTxt1', 1)
+            RCW.Add('Edit', 'w200 ys vEdt1', tests[1])
+            DG.Child.Controls[1].Edit := RCW['Edt1']
+            i := 1
+            loop DG.Child.Controls.Length - 1 {
+                RCW.Add('Text', 'xs w25 Right Section vTxt' (++i), i)
+                RCW.Add('Edit', 'w200 ys vEdt' i, tests[i])
+                DG.Child.Controls[i].Edit := RCW['Edt' i]
+            }
+            for Name in ['Submit', 'Cancel'] {
+                ; _Name := RegExReplace(Name, '\W', '')
+                _Name := Name
+                btn := RCW.Add('Button', (A_Index == 1 ? 'Section' : 'ys') ' vBtn' _Name, Name)
+                btn.OnEvent('Click', HClickButton%_Name%)
+            }
+            RCW.Show()
+            Align.MoveAdjacent(RCW, DG)
+
+            return
+
+            HClickButtonCancel(*) {
+                this.DG.RenameControlsWindow.Hide()
+                for Ctrl in this.DG.Child.Controls {
+                    Ctrl.Edit.Text := Ctrl.Name
+                }
+            }
+            HClickButtonSubmit(Ctrl, *) {
+                flag := true
+                tests := this.DG_Renamed_Default_tests
+                str := ''
+                for Ctrl in this.DG.Child.Controls {
+                    str .= Ctrl.Edit.Text '`r`n'
+                    Ctrl.Name := StrReplace(StrReplace(StrReplace(Ctrl.Edit.Text, '``n', '`n'), '``r', '`r'), '``t', '`t')
+                    if Ctrl.Edit.Text != tests[A_Index] {
+                        flag := false
+                    }
+                }
+                this.DG['EdtResult'].Text := str '`r`n' this.DG['EdtResult'].Text
+                if flag {
+                    this.DG['EdtDiagram'].Text := RegExReplace(this.DG_Renamed_Default_Diagram, '\R', '`r`n')
+                }
+                this.DG.RenameControlsWindow.Hide()
+            }
+        }
+        HClickButtonRun(Ctrl, *) {
+            DG := Ctrl.Gui
+            if DG['ChkDiagramFromSymbols'].Value {
+                Diagram := StrReplace(StrReplace(StrReplace(DG['EdtDiagram'].Text, '``n', '`n'), '``r', '`r'), '``t', '`t')
+                Sym := '@'
+                Symbols := Map()
+                G := DG.Child
+                rci := 0xFFFD ; Replacment character
+                ch := Chr(rci)
+                while InStr(Diagram, ch) {
+                    ch := Chr(--rci)
+                }
+                if InStr(Diagram, '"') {
+                    Names := Map()
+                    Index := 0
+                    Pos := 1
+                    loop {
+                        if !RegExMatch(Diagram, '(?<=\s|^)"(?<text>.*?)(?<!\\)(?:\\\\)*+"', &Match, Pos) {
+                            break
+                        }
+                        Pos := Match.Pos
+                        Names.Set(ch (++Index) ch, Match)
+                        Diagram := StrReplace(Diagram, Match[0], ch Index ch)
+                    }
+                }
+                Rows := StrSplit(RegExReplace(RegExReplace(Trim(Diagram, '`s`t`r`n'), '\R+', '`n'), '[`s`t]+', '`s'), '`n')
+                loop Rows.Length {
+                    Rows[A_Index] := StrSplit(Trim(Rows[A_Index], '`s'), '`s')
+                }
+                new_diagram := ''
+                i := 0
+                for Row in Rows {
+                    for Value in Row {
+                        if IsNumber(Value) {
+                            new_diagram .= ' ' Value
+                        } else {
+                            new_diagram .= ' ' Sym (++i)
+                            _ProcValue(&Value)
+                            Symbols.Set(Sym i, G[Value])
+                        }
+                    }
+                    new_diagram .= '`n'
+                }
+                Result := Align.DiagramFromSymbols(
+                    DG.Child
+                  , Trim(new_diagram, '`n')
+                  , Symbols
+                  , DG['EdtStartX'].Text || unset
+                  , DG['EdtStartY'].Text || unset
+                  , DG['EdtPaddingX'].Text || unset
+                  , DG['EdtPaddingY'].Text || unset
+                )
+            } else {
+                Result := Align.Diagram(
+                    DG.Child
+                  , StrReplace(StrReplace(StrReplace(DG['EdtDiagram'].Text, '``n', '`n'), '``r', '`r'), '``t', '`t')
+                  , DG['EdtStartX'].Text || unset
+                  , DG['EdtStartY'].Text || unset
+                  , DG['EdtPaddingX'].Text || unset
+                  , DG['EdtPaddingY'].Text || unset
+                )
+            }
+            WinRedraw(DG.hWnd)
+            DG['EdtResult'].Text := Stringify(Result) '`r`n`r`n' DG['EdtResult'].Text
+
+            _ProcValue(&Value) {
+                if InStr(Value, ch) {
+                    Value := Names.Get(Value)['text']
+                }
+                Value := StrReplace(StrReplace(StrReplace(StrReplace(Value, '\\', '\')
+                    , '\r', '`r'), '\n', '`n'), '\"', '"')
+            }
+        }
+    }
+
+    static GetWeights(Length) {
+        return [
+            { Start: 100, End: Length * 0.1, Weight: 0.05 },
+            { Start: Length * 0.1, End: Length * 0.9, Weight: 0.9 },
+            { Start: Length * 0.9, End: Length - 100, Weight: 0.05 }
+        ]
+    }
+
+    static Gui() {
+        G := Gui('+Resize')
+        G.SetFont('s' this.FontSize)
+        for s in StrSplit(this.FontStandard, ',') {
+            G.SetFont(, s)
+        }
+        return G
+    }
+
     static Make(Index) {
         G := this.G
         if Index > this.Children.Length {
@@ -256,22 +488,46 @@ class Test_Align {
         }
     }
 
+    static MakeChild(Count?, AvgWidth?, StdDevW?, AvgHeight?, StdDevH?, WindowWidth?, WindowHeight?) {
+        if !IsSet(Count) {
+            Count := this.Child_ControlCt
+        }
+        CG := Gui('+Resize')
+        CG.BackColor := this.Child_GuiBackColor
+        xs := CG.xs := GenerateWeightedDistribution(this.GetWeights(WindowWidth ?? this.Child_Width), Count)
+        ys := CG.ys := GenerateWeightedDistribution(this.GetWeights(WindowHeight ?? this.Child_Height), Count)
+        ws := CG.ws := GenerateGaussianDistribution(AvgWidth ?? this.Child_AvgControlWidth, StdDevW ?? this.Child_ControlStdDevW, Count)
+        hs := CG.hs := GenerateGaussianDistribution(AvgHeight ?? this.Child_AvgControlHeight, StdDevH ?? this.Child_ControlStdDevH, Count)
+        Controls := CG.Controls := []
+        loop Controls.Capacity := Count {
+            Controls.Push(CG.Add(_GetType(), Format('x{} y{} w{} h{} Background{} vc{}'
+                , xs[A_Index]
+                , ys[A_Index]
+                , ws[A_Index]
+                , hs[A_Index]
+                , this.Child_ControlBackColor
+                , A_Index
+            ), 'Control ' A_Index))
+        }
+
+        return CG
+
+        _GetType() {
+            if (n := Random()) <= 0.25 {
+                return this.SC_Types[1]
+            } else if n <= 0.5 {
+                return this.SC_Types[2]
+            } else if n <= 0.75 {
+                return this.SC_Types[3]
+            } else {
+                return this.SC_Types[4]
+            }
+        }
+    }
+
     static SelectControls() {
-        SC := this.SC := Gui('+Resize')
-        SC.SetFont('s' this.FontSize)
-        for s in StrSplit(this.FontStandard, ',') {
-            SC.SetFont(, s)
-        }
-        SC_child := SC.Child := Gui('+Resize')
-        SC_child.BackColor := this.SC_GuiBackColor
-        Controls := SC.Controls := []
-        xs := SC.xs := GenerateWeightedDistribution(this.SC_Weights, this.SC_ControlCt)
-        ys := SC.ys := GenerateWeightedDistribution(this.SC_Weights, this.SC_ControlCt)
-        ws := SC.ws := GenerateGaussianDistribution(this.SC_AvgControlWidth, this.SC_ControlStdDevW, this.SC_ControlCt)
-        hs := SC.hs := GenerateGaussianDistribution(this.SC_AvgControlHeight, this.SC_ControlStdDevH, this.SC_ControlCt)
-        loop Controls.Capacity := this.SC_ControlCt {
-            Controls.Push(SC_child.Add(_GetType(), Format('x{} y{} w{} h{} Background{} vc{}', xs[A_Index], ys[A_Index], ws[A_Index], hs[A_Index], this.SC_ControlBackColor, A_Index), 'Control ' A_Index))
-        }
+        SC := this.SC := this.Gui()
+        SC_child := SC.Child := this.MakeChild()
         BW := CW := TW := EW := 0
         Buttons := SC.Buttons := []
         for Text in this.SC_Buttons {
@@ -335,17 +591,6 @@ class Test_Align {
 
         return
 
-        _GetType() {
-            if (n := Random()) <= 0.25 {
-                return this.SC_Types[1]
-            } else if n <= 0.5 {
-                return this.SC_Types[2]
-            } else if n <= 0.75 {
-                return this.SC_Types[3]
-            } else {
-                return this.SC_Types[4]
-            }
-        }
         HClickButtonStart(Ctrl, *) {
             SC := Ctrl.Gui
             Options := {}
@@ -471,6 +716,14 @@ class Test_Align {
                 '`r`nW: ' w
                 '`r`nH: ' h
             )
+        }
+    }
+
+    static SetFonts(Obj, FontFamilies) {
+        for s in StrSplit(FontFamilies, ',') {
+            if s {
+                Obj.SetFont(, S)
+            }
         }
     }
 }
