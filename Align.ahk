@@ -1,7 +1,7 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Align.ahk
     Author: Nich-Cebolla
-    Version: 1.1.0
+    Version: 1.2.0
     License: MIT
 */
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
