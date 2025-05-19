@@ -33,7 +33,7 @@ RecursiveObjSetBase(Subject, Base, RootPath := '$') {
                         ObjSetBase(Val, Base.%Prop%)
                         Stack.Push(Stack[-1] ',' Prop)
                         _Recurse(Val, Base.%Prop%)
-                    } else {
+                    } else if Base.%Prop% {
                         throw ValueError('Invalid configuration value.', -1, 'Path: ' Stack[-1] '.' Prop)
                     }
                 }
