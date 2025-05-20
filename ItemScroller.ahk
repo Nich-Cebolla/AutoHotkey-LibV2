@@ -1,7 +1,7 @@
 /*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ItemScroller.ahk
     Author: Nich-Cebolla
-    Version: 1.1.0
+    Version: 1.1.1
     License: MIT
 */
 
@@ -156,7 +156,7 @@ class ItemScroller {
         X := Params.StartX
         Y := Params.StartY
         ButtonHeight := ch
-        if Params.Orientation = 'H' {
+        if Params.Orientation = 'H' || (Params.HasOwnprop('Horizontal') && Params.Horizontal) {
             for Ctrl in List {
                 Obj := Ctrl.Params
                 Ctrl.DeleteProp('Params')
@@ -189,7 +189,7 @@ class ItemScroller {
                     ItemScroller.AlignV(Ctrl, List[BtnIndex])
                 }
             }
-        } else if Params.Orientation = 'V' {
+        } else if Params.Orientation = 'V' || (Params.HasOwnprop('Horizontal') && !Params.Horizontal) {
             for Ctrl in List {
                 Obj := Ctrl.Params
                 Ctrl.DeleteProp('Params')
