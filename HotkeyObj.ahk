@@ -6,32 +6,177 @@
 
     Status: This is untested.
 */
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/inheritance/ClassFactory.ahk
+#include <ClassFactory>
 
 class HotkeyCollection extends Map {
-    __New() {
+    __New(CollectionName, PageSize) {
+        this.CollectionName := CollectionName
+        Prototypes := this.Prototypes := {}
+        ObjSetBase(Prototypes.Page := [], HotkeyCollection.Page.Prototype)
+        Prototypes.Page.CollectionName := CollectionName
+        Prototypes.Page.PageSize := PageSize
+        ObjSetBase(Prototypes.HotkeyObj := {}, HotkeyObj.Prototype)
+        Prototypes.HotkeyObj.CollectionName := CollectionName
+        Constructors := this.Constructors := {
+            Page: ClassFactory(Prototypes.Page)
+        }
         this.CaseSense := false
+        this.Pages := []
+        this.AddPage()
+        this.__PageSize := PageSize
+        this.__Page := 1
     }
 
     Add(Name, KeyName, Action, Options?, HotIfCallback?) {
-        ObjSetBase(hk := {
+        ObjSetBase(Hk := {
             KeyName: KeyName
           , Action: Action
           , Options: Options ?? ''
           , HotIfCallback: HotIfCallback ?? ''
           , Status: 0
-        }, HotKeyObj.Prototype)
-        this.Set(Name, hk)
-        return hk
+        }, this.Prototypes.HotkeyObj)
+        this.Set(Name, Hk)
+        return Hk
     }
 
-    __Call(Name, Params) {
-        if !Params.Length {
-            throw Error('Invalid input.', -1, Name)
+    AddPage() {
+        this.Pages.Push((cls := this.Constructors.Page)())
+        this.Pages[-1].Capacity := this.__PageSize
+    }
+
+    Find(Name, &PageNumber, &Index) {
+        PageNumber := Index := 0
+        if this.Has(Name) {
+            for Page in this.Pages {
+                PageNumber++
+                for hk in Page {
+                    if hk.Name = Name {
+                        Index := A_Index
+                        return 1
+                    }
+                }
+            }
         }
-        if !this.Has(Params[1]) {
-            throw UnsetItemError('Item not found in the hotkey collection.', -1, Params[1])
+    }
+
+    Set(Name, Hk) {
+        if this.Find(Name, &PageNumber, &Index) {
+            this.Pages[PageNumber][Index] := Hk
+        } else {
+            this.__AddToPage(Hk)
         }
-        return this.Get(Params.RemoveAt(1)).%Name%(Params*)
+        (set := Map.Prototype.Set)(this, Name, Hk)
+    }
+
+    SetCtrlCheckBox(Ctrls) {
+        this.__SetCtrl(Ctrls, 'CheckBox')
+    }
+
+    SetCtrlEdit(Ctrls) {
+        this.__SetCtrl(Ctrls, 'Edit')
+    }
+
+    SetCtrlHotkey(Ctrls) {
+        this.__SetCtrl(Ctrls, 'Hotkey')
+    }
+
+    SetCtrlText(Ctrls) {
+        this.__SetCtrl(Ctrls, 'Text')
+    }
+
+    SetPage(PageNum) {
+        if PageNum > this.Pages.Length || PageNum <= this.Pages.Length * -1 || !PageNum {
+            throw IndexError('The page number is out of range.', -1, PageNum)
+        }
+        if PageNum < 0 {
+            PageNum := this.Pages.Length + PageNum + 1
+        }
+        this.__Page := PageNum
+    }
+
+    SetPageSize(PageSize) {
+        if PageSize = this.__PageSize {
+            return
+        }
+        this.Prototypes.Page.PageSize := PageSize
+        Pages := this.Pages
+        if PageSize > this.__PageSize {
+            if this.Pages.Length > 1 {
+                P1 := Pages[1]
+                i := 2
+                loop Pages.Length {
+                    P1.Capacity := PageSize
+                    P2 := Pages.RemoveAt(i)
+                    while P1.Length < PageSize {
+                        if !P2.Length {
+                            if i == Pages.Length {
+                                break 2
+                            }
+                            P2 := Pages.RemoveAt(i)
+                        }
+                        P1.Push(P2.RemoveAt(1))
+                    }
+                    P1 := P2
+                    if ++i > Pages.Length {
+                        break
+                    }
+                }
+                if P2.Length {
+                    Pages.Push(P2)
+                    P2.Capacity := PageSize
+                }
+            }
+        } else {
+            P1 := Pages[1]
+            NewPages := this.Pages := []
+            cls := this.Constructors.Page
+            loop Ceil(Pages.Length * this.__PageSize / PageSize) {
+                NewPages.Push(Page := cls())
+                loop Page.Capacity := PageSize {
+                    if !P1.Length {
+                        if !Pages.Length {
+                            break 2
+                        }
+                        P1 := Pages.RemoveAt(1)
+                    }
+                    Page.Push(P1.RemoveAt(1))
+                }
+            }
+        }
+        this.__PageSize := PageSize
+    }
+
+    __AddToPage(Hk) {
+        if this.Pages[-1].Length == this.__PageSize {
+            this.AddPage()
+        }
+        this.Pages[-1].Push(Hk)
+    }
+
+    __SetCtrl(Ctrls, Name) {
+        if Ctrls.Length !== this.__PageSize {
+            throw ValueError('The number of controls in the array is not the same as the page size.', -1, 'Ctrls.Length == ' Ctrls.Length)
+        }
+        this.Ctrl%Name% := Ctrls
+        for Hk in this.Active {
+            Hk.SetCtrl%Name%(Ctrls[A_Index])
+        }
+    }
+
+    Active => this.Pages[this.__Page]
+
+    Page {
+        Get => this.__Page
+        Set => this.SetPage(Value)
+    }
+
+    PageSize {
+        Get => this.__PageSize
+        Set => this.SetPageSize(Value)
+    }
+
+    class Page extends Array {
     }
 }
 
