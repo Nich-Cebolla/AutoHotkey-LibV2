@@ -177,7 +177,7 @@ class Align {
      * in-between two diagram rows.
      *
      * In the below example, the top-left coordinates of `BtnGo` are (60, 100). The distance between
-     * the bottom of `EdtInput` and the top of `LVData` is `MyGui.MarginY + 5`.
+     * the bottom of `EdtInput` and the top of `LVData` is `105`.
      * @example
      *  Diagram := '
      *  (
