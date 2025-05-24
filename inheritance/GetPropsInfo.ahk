@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/
     Author: Nich-Cebolla
-    Version: 1.2.0
+    Version: 1.3.0
     License: MIT
 */
 
@@ -263,6 +263,7 @@ class PropsInfo {
         this.__FilterActive := 1
         this.__FilteredItems := this.__FilterCache.Get(Name).Items
         this.__FilteredIndex := this.__FilterCache.Get(Name).Index
+        this.Filter := this.__FilterCache.Get(Name).FilterGroup
         this.__FilterSwitchProps(1)
     }
 
@@ -301,60 +302,17 @@ class PropsInfo {
      */
     FilterAdd(Activate := true, Filters*) {
         if !this.Filter {
-            this.DefineProp('Filter', { Value: Map() })
-            this.Filter.Exclude := ''
-            this.__FilterIndex := 5
+            this.DefineProp('Filter', { Value: PropsInfo.FilterGroup() })
         }
         this.DefineProp('FilterAdd', { Call: _FilterAdd })
         this.FilterAdd(Activate, Filters*)
 
         _FilterAdd(Self, Activate := true, Filters*) {
-            Filter := Self.Filter
-            for InfoItem in Filters {
-                if IsObject(InfoItem) {
-                    if InfoItem is Func || HasMethod(InfoItem, 'Call') || HasMethod(InfoItem, '__Call') {
-                        if !IsSet(Start) {
-                            Start := Self.__FilterIndex
-                        }
-                        Filter.Set(Self.__FilterIndex, PropsInfo.Filter(InfoItem, Self.__FilterIndex++))
-                    } else {
-                        throw ValueError('A value passed to the ``Filters`` parameter is invalid.', -1
-                        , 'Type(Value): ' Type(InfoItem))
-                    }
-                } else {
-                    switch InfoItem, 0 {
-                        case '1', '2', '3', '4':
-                            Filter.Set(InfoItem, PropsInfo.Filter(_Filter_%InfoItem%, InfoItem))
-                        default:
-                            if SubStr(Filter.Exclude, -1, 1) == ',' {
-                                Filter.Exclude .= InfoItem
-                            } else {
-                                Filter.Exclude .= ',' InfoItem
-                            }
-                            Flag_Exclude := true
-                    }
-                }
-            }
-            if IsSet(Flag_Exclude) {
-                ; Be ensuring every name has a comma on both sides, we can check the names by
-                ; using `InStr(Filter.Exclude, ',' Prop ',')` which should perform better than RegExMatch.
-                Filter.Exclude .= ','
-                Filter.Set(0, PropsInfo.Filter(_Exclude, 0))
-            }
-
+            result := Self.Filter.Add(Filters*)
             if Activate {
                 Self.FilterActivate()
             }
-            ; If a custom filter is added, return the start index so the caller function can keep track.
-            return Start ?? ''
-
-            _Exclude(InfoItem) {
-                return InStr(Filter.Exclude, ',' InfoItem.Name ',')
-            }
-            _Filter_1(InfoItem) => !InfoItem.Index
-            _Filter_2(InfoItem) => InfoItem.Index
-            _Filter_3(InfoItem) => InfoItem.HasOwnProp('Alt')
-            _Filter_4(InfoItem) => !InfoItem.HasOwnProp('Alt')
+            return result
         }
     }
 
@@ -366,9 +324,9 @@ class PropsInfo {
         if !this.__FilterCache {
             this.__FilterCache := Map()
         }
-        this.DefineProp('FilterCache', { Call: _Set })
+        this.DefineProp('FilterCache', { Call: _FilterCache })
         this.FilterCache(Name)
-        _Set(Self, Name) => Self.__FilterCache.Set(Name, { Items: Self.__FilteredItems, Index: Self.__FilteredIndex })
+        _FilterCache(Self, Name) => Self.__FilterCache.Set(Name, { Items: Self.__FilteredItems, Index: Self.__FilteredIndex, FilterGroup: this.Filter })
     }
 
     /**
@@ -429,40 +387,7 @@ class PropsInfo {
      * with that name.
      */
     FilterDelete(Key) {
-        local r
-        if Key is Func {
-            ptr := ObjPtr(Key)
-            for Index, FilterObj in this.Filter {
-                if ObjPtr(FilterObj.Function) == ptr {
-                    r := FilterObj
-                    break
-                }
-            }
-            if IsSet(r) {
-                this.Filter.Delete(r.Index)
-            } else {
-                throw UnsetItemError('The function passed to ``Key`` is not in the filter.', -1)
-            }
-        } else if IsObject(Key) {
-            r := this.Filter.Get(Key.Index)
-            this.Filter.Delete(Key.Index)
-        } else if IsNumber(Key) {
-            r := this.Filter.Get(Key)
-            this.Filter.Delete(Key)
-        } else {
-            for Fn in this.Filter {
-                if Fn.Name == Key {
-                    r := Fn
-                    break
-                }
-            }
-            if IsSet(r) {
-                this.Filter.Delete(r.Index)
-            } else {
-                throw UnsetItemError('The filter does not contain a function with that name.', -2, Key)
-            }
-        }
-        return r
+        return this.Filter.Delete(Key)
     }
 
     /**
@@ -492,6 +417,23 @@ class PropsInfo {
         Filter := this.Filter
         for _name in StrSplit(Name, ',') {
             Filter.Exclude := RegExReplace(Filter.Exclude, ',' _name '(?=,)', '')
+        }
+    }
+
+    /**
+     * @description - Sets the `PropsInfoObj.Filter` property with the filter group.
+     * @param {PropsInfo.FilterGroup} FilterGroup - The `PropsInfo.FilterGroup` object.
+     * @param {String} [CacheName] - If set, the current filter will be cached. If unset, the
+     * current filter is replaced without being cached.
+     * @param {Boolean} [Activate := true] - If true, the filter is activated immediately.
+     */
+    FilterSet(FilterGroup, CacheName?, Activate := true) {
+        if IsSet(CacheName) {
+            this.FilterCache(CacheName)
+        }
+        this.DefineProp('Filter', { Value: FilterGroup })
+        if Activate {
+            this.FilterActivate()
         }
     }
 
@@ -943,6 +885,118 @@ class PropsInfo {
             }
         }
         Name => this.Function.Name
+    }
+
+    class FilterGroup extends Map {
+        __New(Filters*) {
+            this.Exclude := ''
+            this.__Index := 5
+            if Filters.Length {
+                this.Add(Filters*)
+            }
+        }
+
+        /**
+         * @see {@link PropsInfo#FilterAdd}
+         */
+        Add(Filters*) {
+            for filter in Filters {
+                if IsObject(filter) {
+                    if filter is Func || HasMethod(filter, 'Call') || HasMethod(filter, '__Call') {
+                        if !IsSet(Start) {
+                            Start := this.__Index
+                        }
+                        this.Set(this.__Index, PropsInfo.Filter(filter, this.__Index++))
+                    } else {
+                        throw ValueError('A value passed to the ``Filters`` parameter is invalid.', -1
+                        , 'Type(Value): ' Type(filter))
+                    }
+                } else {
+                    switch filter, 0 {
+                        case '1', '2', '3', '4':
+                            this.Set(filter, PropsInfo.Filter(_filter_%filter%, filter))
+                        default:
+                            if SubStr(this.Exclude, -1, 1) == ',' {
+                                this.Exclude .= filter
+                            } else {
+                                this.Exclude .= ',' filter
+                            }
+                            Flag_Exclude := true
+                    }
+                }
+            }
+            if IsSet(Flag_Exclude) {
+                ; By ensuring every name has a comma on both sides, we can check the names by
+                ; using `InStr(Filter.Exclude, ',' Prop ',')` which should perform better than RegExMatch.
+                this.Exclude .= ','
+                this.Set(0, PropsInfo.Filter(_Exclude, 0))
+            }
+
+            ; If a custom filter is added, return the start index so the caller function can keep track.
+            return Start ?? ''
+
+            _Exclude(InfoItem) {
+                return InStr(this.Exclude, ',' InfoItem.Name ',')
+            }
+            _Filter_1(InfoItem) => !InfoItem.Index
+            _Filter_2(InfoItem) => InfoItem.Index
+            _Filter_3(InfoItem) => InfoItem.HasOwnProp('Alt')
+            _Filter_4(InfoItem) => !InfoItem.HasOwnProp('Alt')
+        }
+
+        /**
+         * @see {@link PropsInfo#FilterDelete}
+         */
+        Delete(Key) {
+            local r
+            if Key is Func {
+                ptr := ObjPtr(Key)
+                for Index, FilterObj in this {
+                    if ObjPtr(FilterObj.Function) == ptr {
+                        r := FilterObj
+                        break
+                    }
+                }
+                if IsSet(r) {
+                    this.__Delete(r.Index)
+                } else {
+                    throw UnsetItemError('The function passed to ``Key`` is not in the filter.', -1)
+                }
+            } else if IsObject(Key) {
+                r := this.Get(Key.Index)
+                this.__Delete(Key.Index)
+            } else if IsNumber(Key) {
+                r := this.Get(Key)
+                this.__Delete(Key)
+            } else {
+                for Fn in this {
+                    if Fn.Name == Key {
+                        r := Fn
+                        break
+                    }
+                }
+                if IsSet(r) {
+                    this.__Delete(r.Index)
+                } else {
+                    throw UnsetItemError('The filter does not contain a function with that name.', -2, Key)
+                }
+            }
+            return r
+        }
+
+        /**
+         * @see {@link PropsInfo#FilterRemoveFromExclude}
+         */
+        RemoveFromExclude(Name) {
+            for _name in StrSplit(Name, ',') {
+                this.Exclude := RegExReplace(this.Exclude, ',' _name '(?=,)', '')
+            }
+        }
+
+        static __New() {
+            this.DeleteProp('__New')
+            this.Prototype.DefineProp('__Delete', Map.Prototype.GetOwnPropDesc('Delete'))
+        }
     }
 
     /**

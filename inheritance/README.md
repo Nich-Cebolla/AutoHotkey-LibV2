@@ -12,6 +12,7 @@
     <a href="#propsinfo---instance-properties"><li>PropsInfo - instance properties</li></a>
     <a href="#propsinfo---accessing-items-by-index"><li>PropsInfo - accessing items by index</li></a>
     <a href="#propsinfofilter"><li>PropsInfo.Filter</li></a>
+    <a href="#propsinfofiltergroup"><li>PropsInfo.FilterGroup</li></a>
     <a href="#propsinfoproxy_array"><li>PropsInfo.Proxy_Array</li></a>
     <a href="#propsinfoproxy_map"><li>PropsInfo.Proxy_Map</li></a>
   </ol>
@@ -55,6 +56,7 @@ See example-Inheritance.ahk for a walkthrough on how to use the class.
 - Be passed to a function that expects an iterable object like any of the three above bullet points.
 - Filter the properties according to one or more conditions.
 - Get the function objects associated with the properties.
+- Get the values associated with the properties.
 
 `PropsInfoItem` objects are modified descriptor objects. After getting the descriptor object, `GetPropsInfo` changes the descriptor object's base exposing additional properties. See the parameter hints above each property for details. See https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc.
 
@@ -91,6 +93,7 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 - FilterDelete - Deletes a filter object from the currently active filter.
 - FilterDeleteFromCache - Deletes a cached filter.
 - FilterRemoveFromExclude - Removes a property name from the string list of properties to exclude.
+- FilterSet - Sets the `PropsInfoObj.Filter` property with the input `PropsInfo.FilterGroup` object.
 - Get - Returns a `PropsInfoItem` object using a string name or integer index as the key. Note that the object's current value of `PropsInfoObj.StringMode` infleunces this method's behavior. See the section below "Accessing items by index".
 - GetIndex - Accepts a property name as string as input and returns the index value of the associated `PropsInfoItem` object.
 - GetProxy - Returns a proxy that can be passed to a function that expects an array or map.
@@ -127,6 +130,22 @@ When a function is added to the filter, it gets added as a `PropsInfo.Filter` ob
 - Name - Returns the function's built-in name, "the function" meaning the function object that was added to `PropsInfoObj.Filter` by calling `PropsInfoObj.FilterAdd`.
 - Index - The index associated with the `PropsInfo.Filter` object. The built-in filters have indices 0-4. When one or more custom filters are added using `PropsInfoObj.FilterAdd`, `PropsInfoObj.FilterAdd` returns the index of the first `PropsInfo.Filter` object added to `PropsInfoObj.Filter`; your code would need to calculate the rest (by adding 1 for each additional custom filter added). Saving the index is not necessary because you can simply pass the function object to `PropsInfoObj.FilterDelete` to delete its associated `PropsInfo.Filter` object.
 - Function - A reference to the function object.
+
+### PropsInfo.FilterGroup
+
+Added in v1.3.0.
+
+`PropsInfo.FilterGroup` objects inherit from `Map`. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a `PropsInfo` object. It was always possible to take a `PropsInfoObj.Filter` object and set it onto another `PropsInfo` object's `Filter` property, but the library's design did not give the impression that this would work or was intended. It also required an existing `PropsInfo` object. Now, we can create a filter collection by calling `PropsInfo.FilterGroup()`, add functions to it, and reuse it across any number of `PropsInfo` objects by calling `PropsInfo.Prototype.SetFilter`.
+
+In addition to the methods inherited from `Map`, `PropsInfo.FilterGroup` objects have:
+
+- Add: Adds a function to the filter.
+- Delete: Deletes a function from the filter.
+- RemoveFromExclude: Removes a property name from the string list of properties to exclude.
+
+In addition to the properties inherited from `Map`, `PropsInfo.FilterGroup` objects have:
+
+- Exclude: A string list of property names to exclude.
 
 ### PropsInfo.Proxy_Array
 
@@ -382,6 +401,13 @@ These are the general concepts that `Inheritance` builds from:
 - Inheritance.ahk - A short script that calls `#include` for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".
 
 ## Changelog
+
+2025-05-24 - v1.3.0
+- Added `PropsInfo.FilterGroup`.
+- Added `PropsInfo.Prototype.FilterSet`.
+- Adjusted `PropsInfo.Prototype.FilterAdd` and `PropsInfo.Prototype.FilterDelete` to call their `PropsInfo.FilterGroup.Prototype` counterpart.
+- Adjusted `PropsInfo.Prototype.FilterCache` and `PropsInfo.Prototype.FilterActivateFromCache` to also cache / restore the `PropsInfo.FilterGroup` object.
+- Removed `PropsInfoObj._FilterIndex`.
 
 2025-05-05
 - Fixed an issue with `PropsInfoItem.Prototype.GetOwner`. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.

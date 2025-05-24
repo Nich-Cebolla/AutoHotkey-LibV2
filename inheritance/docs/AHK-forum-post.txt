@@ -8,8 +8,9 @@ III. PropsInfo class
 ----B. PropsInfo - instance properties
 ----C. PropsInfo - accessing items by index
 ----D. PropsInfo.Filter
-----E. PropsInfo.Proxy_Array
-----F. PropsInfo.Proxy_Map
+----E. PropsInfo.FilterGroup
+----F. PropsInfo.Proxy_Array
+----G. PropsInfo.Proxy_Map
 IV. PropsInfoItem class
 ----A. PropsInfoItem - instance methods
 ----B. PropsInfoItem - instance properties
@@ -45,7 +46,8 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [*][color=#000000][size=100]Produce an array of [c]PropsInfoItem[/c] objects.[/size][/color]
 [*][color=#000000][size=100]Be passed to a function that expects an iterable object like any of the three above bullet points.[/size][/color]
 [*][color=#000000][size=100]Filter the properties according to one or more conditions.[/size][/color]
-[*][color=#000000][size=100]Get the function objects associated with the properties.[/size][/color][/list]
+[*][color=#000000][size=100]Get the function objects associated with the properties.[/size][/color]
+[*][color=#000000][size=100]Get the values associated with the properties.[/size][/color][/list]
 
 [color=#000000][size=100][c]PropsInfoItem[/c] objects are modified descriptor objects. After getting the descriptor object, [c]GetPropsInfo[/c] changes the descriptor object's base exposing additional properties. See the parameter hints above each property for details. See [url]https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc.[/url][/size][/color]
 
@@ -78,6 +80,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [*][color=#000000][size=100]FilterDelete - Deletes a filter object from the currently active filter.[/size][/color]
 [*][color=#000000][size=100]FilterDeleteFromCache - Deletes a cached filter.[/size][/color]
 [*][color=#000000][size=100]FilterRemoveFromExclude - Removes a property name from the string list of properties to exclude.[/size][/color]
+[*][color=#000000][size=100]FilterSet - Sets the [c]PropsInfoObj.Filter[/c] property with the input [c]PropsInfo.FilterGroup[/c] object.[/size][/color]
 [*][color=#000000][size=100]Get - Returns a [c]PropsInfoItem[/c] object using a string name or integer index as the key. Note that the object's current value of [c]PropsInfoObj.StringMode[/c] infleunces this method's behavior. See the section below "Accessing items by index".[/size][/color]
 [*][color=#000000][size=100]GetIndex - Accepts a property name as string as input and returns the index value of the associated [c]PropsInfoItem[/c] object.[/size][/color]
 [*][color=#000000][size=100]GetProxy - Returns a proxy that can be passed to a function that expects an array or map.[/size][/color]
@@ -111,6 +114,22 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [list][*][color=#000000][size=100]Name - Returns the function's built-in name, "the function" meaning the function object that was added to [c]PropsInfoObj.Filter[/c] by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
 [*][color=#000000][size=100]Index - The index associated with the [c]PropsInfo.Filter[/c] object. The built-in filters have indices 0-4. When one or more custom filters are added using [c]PropsInfoObj.FilterAdd[/c], [c]PropsInfoObj.FilterAdd[/c] returns the index of the first [c]PropsInfo.Filter[/c] object added to [c]PropsInfoObj.Filter[/c]; your code would need to calculate the rest (by adding 1 for each additional custom filter added). Saving the index is not necessary because you can simply pass the function object to [c]PropsInfoObj.FilterDelete[/c] to delete its associated [c]PropsInfo.Filter[/c] object.[/size][/color]
 [*][color=#000000][size=100]Function - A reference to the function object.[/size][/color][/list]
+
+[color=#800000][size=125][b]PropsInfo.FilterGroup[/b][/size][/color]
+
+[color=#000000][size=100]Added in v1.3.0.
+
+[c]PropsInfo.FilterGroup[/c] objects inherit from [c]Map[/c]. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a [c]PropsInfo[/c] object. It was always possible to take a [c]PropsInfoObj.Filter[/c] object and set it onto another [c]PropsInfo[/c] object's [c]Filter[/c] property, but the library's design did not give the impression that this would work or was intended. It also required an existing [c]PropsInfo[/c] object. Now, we can create a filter collection by calling [c]PropsInfo.FilterGroup()[/c], add functions to it, and reuse it across any number of [c]PropsInfo[/c] objects by calling [c]PropsInfo.Prototype.SetFilter[/c].
+
+In addition to the methods inherited from [c]Map[/c], [c]PropsInfo.FilterGroup[/c] objects have:[/size][/color]
+
+[list][*]Add: Adds a function to the filter.
+[*]Delete: Deletes a function from the filter.
+[*]RemoveFromExclude: Removes a property name from the string list of properties to exclude.[/list]
+
+In addition to the properties inherited from [c]Map[/c], [c]PropsInfo.FilterGroup[/c] objects have:
+
+[list][*]Exclude: A string list of property names to exclude.[/list]
 
 [color=#800000][size=125][b]PropsInfo.Proxy_Array[/b][/size][/color]
 [color=#000000][size=100]When calling [c]PropsInfoObj.GetProxy(1)[/c], the return value is a [c]PropsInfo.Proxy_Array[/c] object. The [c]PropsInfo.Proxy_Array[/c] object forwards all property accessors and method calls to the [c]PropsInfo[/c] object. A [c]PropsInfo.Proxy_Array[/c] object has these characteristics:[/size][/color]
@@ -153,7 +172,7 @@ MsgBox(proxy_map.__Class) ; Map
 [color=#800000][size=125][b]PropsInfoItem - instance properties[/b][/size][/color]
 [color=#000000][size=100]In these descriptions, the phrase "the property" means "the object's property that was used to create this [c]PropsInfoItem[/c] object."[/size][/color]
 
-[list][*][color=#000000][size=100]Alt - For properties that share a name with other properties in an inheritance chain, the [c]PropsInfoItem[/c] object directly accessible from the [c]PropsInfo[/c] object will have an [c]Alt[/c] property. The [c]Alt[/c] property will return an array containing references to the other [c]PropsInfoItem[/c] objects. I find this concept challenging to convey using words, and so if this is confusing, the section "E. `PropsInfoItem` objects - `InfoItem.GetFunc`" within the file "example-Inheritance.ahk" contains code that illustrates what I am trying to convey here. The "Alt" property is only available if the following are both true:[/size][/color]
+[list][*][color=#000000][size=100]Alt - For properties that share a name with other properties in an inheritance chain, the [c]PropsInfoItem[/c] object directly accessible from the [c]PropsInfo[/c] object will have an [c]Alt[/c] property. The [c]Alt[/c] property will return an array containing references to the other [c]PropsInfoItem[/c] objects. I find this concept challenging to convey using words, and so if this is confusing, the section "E. [c]PropsInfoItem[/c] objects - [c]InfoItem.GetFunc[/c]" within the file "example-Inheritance.ahk" contains code that illustrates what I am trying to convey here. The "Alt" property is only available if the following are both true:[/size][/color]
 [*][indent=2][color=#000000][size=100]The [c]PropsInfoItem[/c] object's [c]Count[/c] property is greater than 1 (see below).[/size][/color][/indent]
 [*][indent=2][color=#000000][size=100]One of the following are true:[/size][/color][/indent]
 [*][indent=4][color=#000000][size=100]The [c]PropsInfoItem[/c] object is associated with an own property of the object that was passed to [c]GetPropsInfo[/c].[/size][/color][/indent]
@@ -358,8 +377,15 @@ MsgBox(_child.Parent.Value) ; Error: This value of type "Child" has no property 
 [*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
 
 [color=#800000][size=145]Changelog[/size][/color]
+[color=#000000][size=100][b]2025-05-24 - v1.3.0[/b][/size][/color]
+[list][*]Added [c]PropsInfo.FilterGroup[/c].
+[*]Added [c]PropsInfo.Prototype.FilterSet[/c].
+[*]Adjusted [c]PropsInfo.Prototype.FilterAdd[/c] and [c]PropsInfo.Prototype.FilterDelete[/c] to call their [c]PropsInfo.FilterGroup.Prototype[/c] counterpart.
+[*]Adjusted [c]PropsInfo.Prototype.FilterCache[/c] and [c]PropsInfo.Prototype.FilterActivateFromCache[/c] to also cache / restore the [c]PropsInfo.FilterGroup[/c] object.
+[*]Removed [c]PropsInfoObj._FilterIndex[/c].[/size]
+
 [color=#000000][size=100][b]2025-05-05[/b][/size][/color]
-[list][*][color=#000000][size=100]Fixed an issue with `PropsInfoItem.Prototype.GetOwner`. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.[/size][/color][/list]
+[list][*][color=#000000][size=100]Fixed an issue with [c]PropsInfoItem.Prototype.GetOwner[/c]. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.[/size][/color][/list]
 
 [color=#000000][size=100][b]2025-05-03[/b][/size][/color]
 [list][*][color=#000000][size=100]Finalized some details and uploaded to the AutoHotkey forums.[/size][/color][/list]
