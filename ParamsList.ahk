@@ -36,7 +36,7 @@ class ParamsList extends Array {
         for P in Split {
             this.Push(ParamsList.Param(P))
             if this[-1].Default && RegExMatch(this[-1].Default, Replacement '(\d+)' Replacement, &Match) {
-                this[-1].Default := Trim(Replaced[Match[1]].Match[0], '`s`t`r`n')
+                this[-1].Default := Trim(Replaced[Match[1]][0], '`s`t`r`n')
             }
         }
 
