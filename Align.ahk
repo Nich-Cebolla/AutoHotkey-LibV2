@@ -314,8 +314,10 @@ class Align {
             if InStr(Value, ch) {
                 Value := Names.Get(Value)['text']
             }
-            Value := StrReplace(StrReplace(StrReplace(StrReplace(Value, '\\', '\')
-                , '\r', '`r'), '\n', '`n'), '\"', '"')
+            if InStr(Value, '\') {
+                Value := StrReplace(StrReplace(StrReplace(StrReplace(Value, '\\', '\')
+                    , '\r', '`r'), '\n', '`n'), '\"', '"')
+            }
         }
     }
 
