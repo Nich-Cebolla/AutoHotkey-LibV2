@@ -119,7 +119,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 
 [color=#000000][size=100]Added in v1.3.0.
 
-[c]PropsInfo.FilterGroup[/c] objects inherit from [c]Map[/c]. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a [c]PropsInfo[/c] object. It was always possible to take a [c]PropsInfoObj.Filter[/c] object and set it onto another [c]PropsInfo[/c] object's [c]Filter[/c] property, but the library's design did not give the impression that this would work or was intended. It also required an existing [c]PropsInfo[/c] object. Now, we can create a filter collection by calling [c]PropsInfo.FilterGroup()[/c], add functions to it, and reuse it across any number of [c]PropsInfo[/c] objects by calling [c]PropsInfo.Prototype.SetFilter[/c].
+[c]PropsInfo.FilterGroup[/c] objects inherit from [c]Map[/c]. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a [c]PropsInfo[/c] object. It was always possible to take a [c]PropsInfoObj.Filter[/c] object and set it onto another [c]PropsInfo[/c] object's [c]Filter[/c] property, but the library's design did not give the impression that this would work or was intended. It also required an existing [c]PropsInfo[/c] object. Now, we can create a filter collection by calling [c]PropsInfo.FilterGroup()[/c], add functions to it, and reuse it across any number of [c]PropsInfo[/c] objects by calling [c]PropsInfo.Prototype.FilterSet[/c].
 
 In addition to the methods inherited from [c]Map[/c], [c]PropsInfo.FilterGroup[/c] objects have:[/size][/color]
 

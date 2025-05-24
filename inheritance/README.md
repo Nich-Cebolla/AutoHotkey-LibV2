@@ -135,7 +135,7 @@ When a function is added to the filter, it gets added as a `PropsInfo.Filter` ob
 
 Added in v1.3.0.
 
-`PropsInfo.FilterGroup` objects inherit from `Map`. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a `PropsInfo` object. It was always possible to take a `PropsInfoObj.Filter` object and set it onto another `PropsInfo` object's `Filter` property, but the library's design did not give the impression that this would work or was intended. It also required an existing `PropsInfo` object. Now, we can create a filter collection by calling `PropsInfo.FilterGroup()`, add functions to it, and reuse it across any number of `PropsInfo` objects by calling `PropsInfo.Prototype.SetFilter`.
+`PropsInfo.FilterGroup` objects inherit from `Map`. The purpose of separating the filter collection object into its own class is to allow us to define a set of filters independently from a `PropsInfo` object. It was always possible to take a `PropsInfoObj.Filter` object and set it onto another `PropsInfo` object's `Filter` property, but the library's design did not give the impression that this would work or was intended. It also required an existing `PropsInfo` object. Now, we can create a filter collection by calling `PropsInfo.FilterGroup()`, add functions to it, and reuse it across any number of `PropsInfo` objects by calling `PropsInfo.Prototype.FilterSet`.
 
 In addition to the methods inherited from `Map`, `PropsInfo.FilterGroup` objects have:
 
