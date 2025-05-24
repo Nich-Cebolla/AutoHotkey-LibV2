@@ -22,13 +22,13 @@ class ParamsList extends Array {
         ; Extract all quoted strings and replace them with a unique identifier that will not interfere with pattern matching.
         while RegExMatch(Str, '(?<=[\s=:,&(.[?]|^)([`"`'])[\w\W]*?(?<!``)(?:````)*+\g{-1}', &Match) {
             Replaced.Push(Match)
-            Str := StrReplace(Str, Match[0], _GetReplacement, , , 1)
+            Str := StrReplace(Str, Match[0], _GetReplacement(), , , 1)
         }
         ; Extract bracketed text
         loop 3 {
             while RegExMatch(Str, Format('\{1}([^{1}\{2}]++|(?R))*\{2}', Brackets[A_Index * 2 - 1], Brackets[A_Index * 2]), &Match) {
                 Replaced.Push(Match)
-                Str := StrReplace(Str, Match[0], _GetReplacement, , , 1)
+                Str := StrReplace(Str, Match[0], _GetReplacement(), , , 1)
             }
         }
         Split := StrSplit(Str, ',')
