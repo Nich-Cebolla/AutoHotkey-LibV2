@@ -937,7 +937,7 @@ StringToAhkAction(Str, RootObj?) {
  * will correctly match the entire text between the open and close parentheses, even if there are
  * nested parentheses in-between the open and close parentheses.
  * @param {String} TextParams - The text that contains the parameters, not including the containing
- * parentheses. {@link RemoveContainigParentheses}.
+ * parentheses. {@link RemoveContaingParentheses}.
  * @returns {Array} - An array of objects with the following properties:
  * @property {String} Name - The name of the parameter.
  * @property {Boolean} Optional - Whether the parameter is optional.
@@ -985,7 +985,7 @@ GetParams(TextParams) {
 }
 
 
-RemoveContainigParentheses(TextParams) {
+RemoveContaingParentheses(TextParams) {
     if !RegExMatch(TextParams, '(?<params>\((?<inner>([^()]++|(?&params))*)\))', &MatchParams) {
         StrReplace(TextParams, '(',,, &CountOpen)
         StrReplace(TextParams, ')',,, &CountClose)
