@@ -1,3 +1,6 @@
+2025-05-25 - 1.3.1
+- Added parameter `ExcludeMethods=false` to `GetPropsInfo`.
+
 2025-05-24 - 1.3.0
 - Added `PropsInfo.FilterGroup`.
 - Added `PropsInfo.Prototype.FilterSet`.

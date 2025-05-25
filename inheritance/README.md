@@ -67,6 +67,7 @@ See example-Inheritance.ahk for a walkthrough on how to use the class.
 - {String} [Exclude=''] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".
 - {Boolean} [IncludeBaseProp=true] - If true, the object's `Base` property is included. If false, `Base` is excluded.
 - {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of base objects that is generated during the function call.
+- {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded. (Added in 1.3.1).
 
 ### Returns
 
@@ -402,7 +403,10 @@ These are the general concepts that `Inheritance` builds from:
 
 ## Changelog
 
-2025-05-24 - v1.3.0
+2025-05-25 - 1.3.1
+- Added parameter `ExcludeMethods=false` to `GetPropsInfo`.
+
+2025-05-24 - 1.3.0
 - Added `PropsInfo.FilterGroup`.
 - Added `PropsInfo.Prototype.FilterSet`.
 - Adjusted `PropsInfo.Prototype.FilterAdd` and `PropsInfo.Prototype.FilterDelete` to call their `PropsInfo.FilterGroup.Prototype` counterpart.

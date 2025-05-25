@@ -56,7 +56,8 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [*][size=100][color=#008000][b]{Integer|String}[/color] [StopAt=GPI_STOP_AT_DEFAULT[/b] ?? '-Object'] - If an integer, the number of base objects to traverse up the inheritance chain. If a string, the name of the class to stop at. You can define a global variable [c]GPI_STOP_AT_DEFAULT[/c] to change the default value. If GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs [c]GetPropsInfo[/c] to include properties owned by objects up to but not including [c]Object.Prototype[/c]. See the parameter hint above [c]GetBaseObjects[/c] within the code file "GetBaseObjects.ahk" for full details about this parameter.[/size]
 [*][size=100][color=#008000][b]{String}[/color] [Exclude=''][/b] - A comma-delimited, case-insensitive list of properties to exclude. For example: "Length,Capacity,__Item".[/size]
 [*][size=100][color=#008000][b]{Boolean}[/color] [IncludeBaseProp=true][/b] - If true, the object's [c]Base[/c] property is included. If false, [c]Base[/c] is excluded.[/size]
-[*][size=100][color=#008000][b]{VarRef}[/color] [OutBaseObjList][/b] - A variable that will receive a reference to the array of base objects that is generated during the function call.[/size][/list]
+[*][size=100][color=#008000][b]{VarRef}[/color] [OutBaseObjList][/b] - A variable that will receive a reference to the array of base objects that is generated during the function call.[/size]
+[*][size=100][color=#008000][b]{Boolean}[/color] [ExcludeMethods=false][/b] - If true, callable properties are excluded. (Added in 1.3.1).[/size][/list]
 
 [color=#800000][size=125][b]Returns[/b][/size][/color]
 [color=#000000][size=100]Returns an instance of [c]PropsInfo[/c].[/size][/color]
@@ -376,12 +377,14 @@ MsgBox(_child.Parent.Value) ; Error: This value of type "Child" has no property 
 [*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
 
 [color=#800000][size=145]Changelog[/size][/color]
+[color=#000000][size=100][b]2025-05-25 - v1.3.1[/b][/size][/color]
+[list][*]AddedAdded parameter [c]ExcludeMethods=false[/c] to [c]GetPropsInfo[/c][/list].
 [color=#000000][size=100][b]2025-05-24 - v1.3.0[/b][/size][/color]
 [list][*]Added [c]PropsInfo.FilterGroup[/c].
 [*]Added [c]PropsInfo.Prototype.FilterSet[/c].
 [*]Adjusted [c]PropsInfo.Prototype.FilterAdd[/c] and [c]PropsInfo.Prototype.FilterDelete[/c] to call their [c]PropsInfo.FilterGroup.Prototype[/c] counterpart.
 [*]Adjusted [c]PropsInfo.Prototype.FilterCache[/c] and [c]PropsInfo.Prototype.FilterActivateFromCache[/c] to also cache / restore the [c]PropsInfo.FilterGroup[/c] object.
-[*]Removed [c]PropsInfoObj._FilterIndex[/c].[/size]
+[*]Removed [c]PropsInfoObj._FilterIndex[/c].[/size][/list]
 
 [color=#000000][size=100][b]2025-05-05[/b][/size][/color]
 [list][*][color=#000000][size=100]Fixed an issue with [c]PropsInfoItem.Prototype.GetOwner[/c]. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.[/size][/color][/list]

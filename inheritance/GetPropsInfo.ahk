@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/
     Author: Nich-Cebolla
-    Version: 1.3.0
+    Version: 1.3.1
     License: MIT
 */
 
@@ -51,9 +51,10 @@
  * false, `Base` is excluded.
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
+ * @param {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded.
  * @returns {PropsInfo}
  */
-GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?) {
+GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?, ExcludeMethods := false) {
     OutBaseObjList := GetBaseObjects(Obj, StopAt)
     Container := Map()
     Container.Default := Container.CaseSense := false
@@ -65,62 +66,125 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
 
     PropsInfoItemBase := PropsInfoItem(Obj)
 
-    for Prop in ObjOwnProps(Obj) {
-        if Container.Get(Prop) {
-            ; Prop is in `Exclude`
-            continue
-        }
-        ObjSetBase(ItemBase := {
-            /**
-             * The property name.
-             * @memberof PropsInfoItem
-             * @instance
-             */
-                Name: Prop
-            /**
-             * `Count` gets incremented by one for each object which owns a property by the same name.
-             * @memberof PropsInfoItem
-             * @instance
-             */
-              , Count: 1
+    if ExcludeMethods {
+        for Prop in ObjOwnProps(Obj) {
+            if HasMethod(Obj, Prop) || Container.Get(Prop) {
+                continue
             }
-          , PropsInfoItemBase)
-        ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
-        Item.Index := 0
-        Container.Set(Prop, Item)
-    }
-    if IncludeBaseProp {
-        ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, PropsInfoItemBase)
-        ObjSetBase(BasePropItem := { Value: Obj.Base }, ItemBase)
-        BasePropItem.Index := 0
-        Container.Set('Base', BasePropItem)
-    }
-    i := 0
-    for b in OutBaseObjList {
-        i++
-        for Prop in ObjOwnProps(b) {
-            if r := Container.Get(Prop) {
-                if r == -1 {
-                    continue
+            ObjSetBase(ItemBase := {
+                /**
+                 * The property name.
+                 * @memberof PropsInfoItem
+                 * @instance
+                 */
+                    Name: Prop
+                /**
+                 * `Count` gets incremented by one for each object which owns a property by the same name.
+                 * @memberof PropsInfoItem
+                 * @instance
+                 */
+                  , Count: 1
                 }
-                ; It's an existing property
-                ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), r.Base)
-                Item.Index := i
-                r.__SetAlt(Item)
-                r.Base.Count++
-            } else {
-                ; It's a new property
-                ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, PropsInfoItemBase)
-                ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), ItemBase)
-                Item.Index := i
-                Container.Set(Prop, Item)
-            }
+              , PropsInfoItemBase)
+            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
+            Item.Index := 0
+            Container.Set(Prop, Item)
         }
         if IncludeBaseProp {
-            ObjSetBase(Item := { Value: Obj.Base }, BasePropItem.Base)
-            Item.Index := i
-            BasePropItem.__SetAlt(Item)
-            BasePropItem.Base.Count++
+            ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, PropsInfoItemBase)
+            ObjSetBase(BasePropItem := { Value: Obj.Base }, ItemBase)
+            BasePropItem.Index := 0
+            Container.Set('Base', BasePropItem)
+        }
+        i := 0
+        for b in OutBaseObjList {
+            i++
+            for Prop in ObjOwnProps(b) {
+                if HasMethod(b, Prop) {
+                    continue
+                }
+                if r := Container.Get(Prop) {
+                    if r == -1 {
+                        continue
+                    }
+                    ; It's an existing property
+                    ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), r.Base)
+                    Item.Index := i
+                    r.__SetAlt(Item)
+                    r.Base.Count++
+                } else {
+                    ; It's a new property
+                    ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, PropsInfoItemBase)
+                    ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), ItemBase)
+                    Item.Index := i
+                    Container.Set(Prop, Item)
+                }
+            }
+            if IncludeBaseProp {
+                ObjSetBase(Item := { Value: Obj.Base }, BasePropItem.Base)
+                Item.Index := i
+                BasePropItem.__SetAlt(Item)
+                BasePropItem.Base.Count++
+            }
+        }
+    } else {
+        for Prop in ObjOwnProps(Obj) {
+            if Container.Get(Prop) {
+                ; Prop is in `Exclude`
+                continue
+            }
+            ObjSetBase(ItemBase := {
+                /**
+                 * The property name.
+                 * @memberof PropsInfoItem
+                 * @instance
+                 */
+                    Name: Prop
+                /**
+                 * `Count` gets incremented by one for each object which owns a property by the same name.
+                 * @memberof PropsInfoItem
+                 * @instance
+                 */
+                  , Count: 1
+                }
+              , PropsInfoItemBase)
+            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
+            Item.Index := 0
+            Container.Set(Prop, Item)
+        }
+        if IncludeBaseProp {
+            ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, PropsInfoItemBase)
+            ObjSetBase(BasePropItem := { Value: Obj.Base }, ItemBase)
+            BasePropItem.Index := 0
+            Container.Set('Base', BasePropItem)
+        }
+        i := 0
+        for b in OutBaseObjList {
+            i++
+            for Prop in ObjOwnProps(b) {
+                if r := Container.Get(Prop) {
+                    if r == -1 {
+                        continue
+                    }
+                    ; It's an existing property
+                    ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), r.Base)
+                    Item.Index := i
+                    r.__SetAlt(Item)
+                    r.Base.Count++
+                } else {
+                    ; It's a new property
+                    ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, PropsInfoItemBase)
+                    ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), ItemBase)
+                    Item.Index := i
+                    Container.Set(Prop, Item)
+                }
+            }
+            if IncludeBaseProp {
+                ObjSetBase(Item := { Value: Obj.Base }, BasePropItem.Base)
+                Item.Index := i
+                BasePropItem.__SetAlt(Item)
+                BasePropItem.Base.Count++
+            }
         }
     }
     for s in StrSplit(Exclude, ',', '`s`t') {
