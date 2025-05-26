@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/
     Author: Nich-Cebolla
-    Version: 1.3.1
+    Version: 1.3.2
     License: MIT
 */
 
@@ -52,8 +52,7 @@
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
  * @param {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded. Note that
- * when this is true this also causes `GetPropsInfo` to exclude properties that have a value that is
- * a class object.
+ * properties with a value that is a class object are unaffected by `ExcludeMethods`.
  * @returns {PropsInfo}
  */
 GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?, ExcludeMethods := false) {
@@ -70,7 +69,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
 
     if ExcludeMethods {
         for Prop in ObjOwnProps(Obj) {
-            if HasMethod(Obj, Prop) || Container.Get(Prop) {
+            if (HasMethod(Obj, Prop) && not Obj.%Prop% is Class) || Container.Get(Prop) {
                 continue
             }
             ObjSetBase(ItemBase := {
