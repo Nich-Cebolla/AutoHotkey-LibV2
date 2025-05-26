@@ -121,6 +121,8 @@ OutputDebug('`n' A_LineNumber ': ' InfoItem_Prop.Kind) ; Get
 ; `InfoItem.GetValue` sets a `VarRef` parameter with the value instead of returning the value because
 ; `InfoItem.GetValue` should be expected to occasionally fail, particularly if the method requires
 ; additional parameters. So we should always call `InfoItem.GetValue` from a conditional statement.
+; In your own code, you likely wouldn't throw an error as a result of not getting the value, because
+; you would expect it and respond in some other way.
 if code := InfoItem_Prop.GetValue(&Value) {
     HandleGetValueCode(code)
 } else {
