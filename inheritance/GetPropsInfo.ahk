@@ -51,7 +51,9 @@
  * false, `Base` is excluded.
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
- * @param {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded.
+ * @param {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded. Note that
+ * when this is true this also causes `GetPropsInfo` to exclude properties that have a value that is
+ * a class object.
  * @returns {PropsInfo}
  */
 GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?, ExcludeMethods := false) {
