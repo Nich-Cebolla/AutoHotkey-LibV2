@@ -377,8 +377,10 @@ MsgBox(_child.Parent.Value) ; Error: This value of type "Child" has no property 
 [*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
 
 [color=#800000][size=145]Changelog[/size][/color]
+[color=#000000][size=100][b]2025-05-26 - v1.3.2[/b][/size][/color]
+[list][*]Fixed an issue where `PropsInfo.Prototype.Dispose` would call `PropsInfoObj.Filter.Clear`, resulting in the filter being invalidated. This no longer occurs.[/list]
 [color=#000000][size=100][b]2025-05-25 - v1.3.1[/b][/size][/color]
-[list][*]AddedAdded parameter [c]ExcludeMethods=false[/c] to [c]GetPropsInfo[/c][/list].
+[list][*]Added parameter [c]ExcludeMethods=false[/c] to [c]GetPropsInfo[/c].[/list]
 [color=#000000][size=100][b]2025-05-24 - v1.3.0[/b][/size][/color]
 [list][*]Added [c]PropsInfo.FilterGroup[/c].
 [*]Added [c]PropsInfo.Prototype.FilterSet[/c].

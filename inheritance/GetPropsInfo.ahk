@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/
     Author: Nich-Cebolla
-    Version: 1.3.2
+    Version: 1.3.3
     License: MIT
 */
 
@@ -256,9 +256,8 @@ class PropsInfo {
             this.__FilteredItems.Clear()
             this.__FilteredItems.Capacity := 0
         }
-        if this.Filter is Map {
-            this.Filter.Clear()
-            this.Filter.Capacity := 0
+        if this.HasOwnProp('Filter') {
+            this.DeleteProp('Filter')
         }
         if this.HasOwnProp('__FilterCache') {
             this.__FilterCache.Clear()
