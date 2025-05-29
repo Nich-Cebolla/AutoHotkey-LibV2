@@ -196,6 +196,7 @@ In these descriptions, the phrase "the property" means "the object's property th
     - The `PropsInfoItem` object is associated with an own property of the object that was passed to `GetPropsInfo`.
     - The `PropsInfoItem` object is associated with an inherited property of the object that was passed to `GetPropsInfo`.
 - Count - Returns the number of objects that own a property by the same name within the inheritance chain of the object that was passed to `GetPropsInfo` that produced the `PropsInfoItem` object.
+- Index - An integer representing the index position of the object that owns the property relative to the input object's inheritance chain. A value of `0` indicates the property is an own property of the input object. A value of `1` indicates the property is an own property of `InputObj.Base`. A value of `2` indicates the property is an own property of `InputObj.Base.Base` ...
 - Kind - Returns a string representation of the kind of property. These are the values:
   - "Call"
   - "Get"
