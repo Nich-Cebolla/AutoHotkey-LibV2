@@ -1458,31 +1458,31 @@ class PropsInfoItem {
          * ; GetPropsInfo
          * PropsInfoObj := GetPropsInfo(Obj)
          * ; Get the `PropsInfoItem` for "Length".
-         * PropsInfo_Length := PropsInfoObj.Get('Length')
-         * if code := PropsInfo_Length.GetValue(&Value) {
+         * InfoItem_Length := PropsInfoObj.Get('Length')
+         * if code := InfoItem_Length.GetValue(&Value) {
          *     throw Error('GetValue failed.', -1, 'Code: ' code)
          * } else {
          *     OutputDebug('`n' A_LineNumber ': ' Value) ; Arbitrary
          * }
          * ; Checking if the property was overridden (we already know
          * ; it was, but just for example)
-         * OutputDebug('`n' A_LineNumber ': ' PropsInfo_Length.Count) ; 2
-         * OutputDebug('`n' A_LineNumber ': ' (PropsInfo_Length.HasOwnProp('Alt'))) ; 1
-         * PropsInfo_Length_Alt := PropsInfo_Length.Alt[1]
+         * OutputDebug('`n' A_LineNumber ': ' InfoItem_Length.Count) ; 2
+         * OutputDebug('`n' A_LineNumber ': ' (InfoItem_Length.HasOwnProp('Alt'))) ; 1
+         * InfoItem_Length_Alt := InfoItem_Length.Alt[1]
          * ; Calling `GetValue()` below returns the true length because
          * ; `Obj` is passed to `Array.Prototype.Length.Get`, producing
          * ; the same result as `Obj.Length` if we never overrode the
          * ; property.
-         * if code := PropsInfo_Length_Alt.GetValue(&Value) {
+         * if code := InfoItem_Length_Alt.GetValue(&Value) {
          *     throw Error('GetValue failed.', -1, 'Code: ' code)
          * } else {
          *     OutputDebug('`n' A_LineNumber ': ' Value) ; 2
          * }
          * ; The objects nested in the `Alt` array never have an `Alt`
          * ; property, but have the other properties.
-         * OutputDebug('`n' A_LineNumber ': ' (PropsInfo_Length_Alt.HasOwnProp('Alt'))) ; 0
-         * OutputDebug('`n' A_LineNumber ': ' PropsInfo_Length_Alt.Count) ; 2
-         * OutputDebug('`n' A_LineNumber ': ' PropsInfo_Length_Alt.Name) ; Length
+         * OutputDebug('`n' A_LineNumber ': ' (InfoItem_Length_Alt.HasOwnProp('Alt'))) ; 0
+         * OutputDebug('`n' A_LineNumber ': ' InfoItem_Length_Alt.Count) ; 2
+         * OutputDebug('`n' A_LineNumber ': ' InfoItem_Length_Alt.Name) ; Length
          * @instance
          */
         this.Alt := [Item]
