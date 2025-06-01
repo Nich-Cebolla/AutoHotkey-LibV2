@@ -1,5 +1,5 @@
 
-# Inheritance
+# Inheritance - v1.3.3
 
 ## Table of Contents
 
@@ -403,6 +403,9 @@ These are the general concepts that `Inheritance` builds from:
 - Inheritance.ahk - A short script that calls `#include` for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".
 
 ## Changelog
+
+2025-06-01 - 1.3.3
+- Fixed an error causing the setter function not to be returned when calling `InfoItem.Prototype.GetFunc`.
 
 2025-05-26 - 1.3.2
 - Fixed an issue where `PropsInfo.Prototype.Dispose` would call `PropsInfoObj.Filter.Clear`, resulting in the filter being invalidated. This no longer occurs.

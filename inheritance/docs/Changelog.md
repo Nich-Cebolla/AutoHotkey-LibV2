@@ -1,3 +1,10 @@
+
+2025-06-01 - 1.3.3
+- Fixed an error causing the setter function not to be returned when calling `InfoItem.Prototype.GetFunc`.
+
+2025-05-26 - 1.3.2
+- Fixed an issue where `PropsInfo.Prototype.Dispose` would call `PropsInfoObj.Filter.Clear`, resulting in the filter being invalidated. This no longer occurs.
+
 2025-05-25 - 1.3.1
 - Added parameter `ExcludeMethods=false` to `GetPropsInfo`.
 
