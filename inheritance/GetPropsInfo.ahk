@@ -1248,7 +1248,7 @@ class PropsInfoItem {
                 case 1: return this.Call.Bind(Obj)
                 case 2: return this.Get.Bind(Obj)
                 case 3:
-                    Set := this.Set.Bind(Obj)
+                    OutSet := this.Set.Bind(Obj)
                     return this.Get.Bind(Obj)
                 case 4: return this.Set.Bind(Obj)
                 case 5: return ''
