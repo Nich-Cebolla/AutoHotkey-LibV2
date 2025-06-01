@@ -1232,7 +1232,7 @@ class PropsInfoItem {
                     case 1: return this.Call
                     case 2: return this.Get
                     case 3:
-                        Set := this.Set
+                        OutSet := this.Set
                         return this.Get
                     case 4: return this.Set
                     case 5: return ''
