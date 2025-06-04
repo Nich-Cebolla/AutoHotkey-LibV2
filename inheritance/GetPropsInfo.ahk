@@ -831,7 +831,7 @@ class PropsInfo {
                 return 0
             }
             Index := i
-            Prop := FilteredItems[Index[i]]
+            Prop := FilteredItems[Index[i]].Name
             return 1
         }
     }
