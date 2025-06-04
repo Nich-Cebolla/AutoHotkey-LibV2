@@ -823,7 +823,7 @@ class PropsInfo {
             if ++i > Index.Length {
                 return 0
             }
-            Prop := FilteredItems[Index[i]]
+            Prop := FilteredItems[Index[i]].Name
             return 1
         }
         _Filtered_Enum_StringMode_2(&Index, &Prop) {
