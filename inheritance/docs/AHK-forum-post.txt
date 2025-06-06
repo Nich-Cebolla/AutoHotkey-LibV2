@@ -1,4 +1,4 @@
-[color=#800000][size=165][b]Inheritance[/b][/size][/color]
+[color=#800000][size=165][b]Inheritance[/b] - v1.4.0[/size][/color]
 
 [color=#800000][size=145][b]Table of Contents[/b][/size][/color]
 [list=I][*]Introduction
@@ -69,6 +69,8 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [color=#800000][size=125][b]PropsInfo - instance methods[/b][/size][/color]
 [list][*][color=#000000][size=100]__New - The class constructor. This is not intended to be called directly, and instead instances should be created by calling the function [c]GetPropsInfo[/c].[/size][/color]
   [*][color=#000000][size=100]__Enum - The enumerator. When calling a [c]PropsInfo[/c] object from a [c]for[/c] loop, [c]PropsInfoObj.__Enum[/c]'s behavior varies depending on the [c]PropsInfoObj.StringMode[/c] and [c]PropsInfoObj.FilterActive[/c] property values.[/size][/color]
+  [*][color=#000000][size=100]Add - Updates the [c]PropsInfoItem[/c] objects associated with the property names passed to the function, adding any items if currently absent from the collection. (Added in 1.4.0)[/size][/color]
+  [*][color=#000000][size=100]Delete - Removes the [c]PropsInfoItem[/c] object associated with each name passed to the function. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Dispose - Call this every time your code is finished using a [c]PropsInfo[/c] object. If you do not, you risk a reference cycle preventing some resources from being freed.[/size][/color]
   [*][color=#000000][size=100]FilterActivate - Activates the current filter on the object. The following is a brief description of filters in general. [c]PropsInfo[/c] objects have a built-in filter system that allows us to exclude certain properties from being accessed via the object. This is useful for situations when our code must respond to or interact with some properties but not others.[/size][/color]
   [*][color=#000000][size=100]FilterActivateFromCache - Activates a cached filter.[/size][/color]
@@ -79,6 +81,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
   [*][color=#000000][size=100]FilterDeactivate - Deactivates the currently active filter. When called, all properties that were previously excluded by the filter become available again.[/size][/color]
   [*][color=#000000][size=100]FilterDelete - Deletes a filter object from the currently active filter.[/size][/color]
   [*][color=#000000][size=100]FilterDeleteFromCache - Deletes a cached filter.[/size][/color]
+  [*][color=#000000][size=100]FilterGetList - Returns a comma-delimited list of property names that were filtered out by the currently active filter. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]FilterRemoveFromExclude - Removes a property name from the string list of properties to exclude.[/size][/color]
   [*][color=#000000][size=100]FilterSet - Sets the [c]PropsInfoObj.Filter[/c] property with the input [c]PropsInfo.FilterGroup[/c] object.[/size][/color]
   [*][color=#000000][size=100]Get - Returns a [c]PropsInfoItem[/c] object using a string name or integer index as the key. Note that the object's current value of [c]PropsInfoObj.StringMode[/c] infleunces this method's behavior. See the section below "Accessing items by index".[/size][/color]
@@ -86,11 +89,13 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
   [*][color=#000000][size=100]GetProxy - Returns a proxy that can be passed to a function that expects an array or map.[/size][/color]
   [*][color=#000000][size=100]GetFilteredProps - Returns a container object that has been populated with references to [c]PropsInfoItem[/c] objects that have been processed through a filter.[/size][/color]
   [*][color=#000000][size=100]Has - Returns nonzero if an item exists in the [c]PropsInfo[/c] object's internal collection.[/size][/color]
+  [*][color=#000000][size=100]Refresh - Updates all [c]PropsInfoItem[/c] objects within the collection to reflect the current state of the root object and the base objects. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]ToArray - Returns an array of property names as string, or [c]PropsInfoItem[/c] objects.[/size][/color]
   [*][color=#000000][size=100]ToMap - Returns a map with keys that are property names and values that are [c]PropsInfoItem[/c] objects.[/size][/color][/list]
 
 [color=#800000][size=125][b]PropsInfo - instance properties[/b][/size][/color]
-[list][*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
+[list][*][color=#000000][size=100]Excluded - A comma-delimited list of properties that are not exposed by the [c]PropsInfo[/c] object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)[/size][/color]
+  [*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
   [*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] and if [c]<nonzero value>[/c] is the name of a cached filter, it will call [c]PropsInfoObj.FilterActivateFromCache(Value)[/c]; else it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
   [*][color=#000000][size=100]StringMode - Initially [c]0[/c]. If you set [c]PropsInfoObj.StringMode := <nonzero value>[/c], "string mode" becomes active on the [c]PropsInfo[/c] object. While [c]PropsInfoObj.StringMode == 1[/c], the [c]PropsInfo[/c] object behaves like an array of property names as string. The following are influenced by string mode: [c]__Enum[/c], [c]Get[/c], [c]__Item[/c]. By extension, the proxies are also influenced by string mode, though not directly.[/size][/color][/list]
 

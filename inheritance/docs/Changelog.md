@@ -1,4 +1,16 @@
 
+2025-06-06 - 1.4.0
+- Added `PropsInfo.Prototype.Add`.
+- Added `PropsInfo.Prototype.Delete`.
+- Added `PropsInfo.Prototype.Refresh`.
+- Added `PropsInfo.Prototype.FilterGetList`.
+- Added `PropsInfoObj.Excluded`, which is a comma-delimited list of properties that are not exposed by the `PropsInfo` object. For each of `GetPropsInfo`, `PropsInfo.Prototype.Add`, `PropsInfo.Prototype.Delete`, and `PropsInfo.Prototype.Refresh`, the `PropsInfoObj.Excluded` property is updated to reflect any changes made.
+- Added "test-files\test-Inheritance-1.4.0.ahk".
+- `PropsInfo.Prototype.__New` now has an additional parameter `Excluded`.
+- If `PropsInfo.Prototype.GetFilteredProps` returns a `PropsInfo` object, the `PropsInfo` object's `Excluded` property is set as the combined property names from the original object's `Excluded` property + the property names that were just excluded by the filter.
+- Fixed an error in `GetPropsInfo` that caused `PropsInfoItem` objects associated with the `Base` property to always be the base object of the root object.
+
+
 2025-06-01 - 1.3.3
 - Fixed an error causing the setter function not to be returned when calling `InfoItem.Prototype.GetFunc`.
 
