@@ -46,15 +46,15 @@ class StackTraceReader {
      * parameter of the function will receive the the `Params` object that gets constructed by
      * the `StackTraceReader` for each item. (See the description in the parameter hint for
      * `StackTraceReader.Read` for moreinformation).
-     * @param {String} [Encoding='utf-8'] - The encoding of the files to read.
+     * @param {String} [Encoding] - The encoding of the files to read.
      * @returns {Array} - An array of objects. See the description in the @returns section of
      * `StackTraceReader.Read` for more information.
      */
-    static FromError(ErrorObj, LinesBefore := 0, LinesAfter := 0, Callback?, Encoding := 'utf-8') {
+    static FromError(ErrorObj, LinesBefore := 0, LinesAfter := 0, Callback?, Encoding?) {
         if not ErrorObj is Error {
             throw TypeError('``ErrorObj`` must be an instance of ``Error`` or one of its subclasses.', -1)
         }
-        return this.Read(this.ParseStack(ErrorObj), LinesBefore, LinesAfter, Callback ?? unset, Encoding)
+        return this.Read(this.ParseStack(ErrorObj), LinesBefore, LinesAfter, Callback ?? unset, Encoding ?? unset)
     }
 
 
@@ -122,7 +122,7 @@ class StackTraceReader {
      * <br>
      * For a complete description of all of the properties on the object, see the top of the code
      * file.
-     * @param {String} [Encoding='utf-8'] - The encoding of the files to read.
+     * @param {String} [Encoding] - The encoding of the files to read.
      * @returns {Array} - For each item in the input `Arr`, an object is added to this result array.
      * - If the input item was not processed by the function (i.e. it was a string or number and did
      * not match the required format), then its value in this array is an object with property
@@ -134,8 +134,8 @@ class StackTraceReader {
      * associated parameter's value value was specified by the input item. If the input item was
      * a `RegExMatchInfo` object, a property `Match` is included with the match info object.
      */
-    static Read(Arr, LinesBefore := 0, LinesAfter := 0, Callback?, Encoding := 'utf-8') {
-        Default := { LinesBefore: LinesBefore, LinesAfter: LinesAfter, Callback: Callback ?? '', Encoding: Encoding }
+    static Read(Arr, LinesBefore := 0, LinesAfter := 0, Callback?, Encoding?) {
+        Default := { LinesBefore: LinesBefore, LinesAfter: LinesAfter, Callback: Callback ?? '', Encoding: Encoding ?? unset}
         Result := []
         Objects := []
         Result.Capcity := Arr.Length
@@ -199,7 +199,7 @@ class StackTraceReader {
             }
         }
         _Process(Params) {
-            f := FileOpen(Params.Path, 'r', Params.Encoding)
+            f := FileOpen(Params.Path, 'r', HasProp(Params, 'Encoding') ? (Params.Encoding || unset) : unset)
             loop Params.Line - Params.LinesBefore {
                 f.ReadLine()
                 if f.AtEOF {
