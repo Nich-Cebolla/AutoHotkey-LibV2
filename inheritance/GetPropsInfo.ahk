@@ -236,6 +236,8 @@ class PropsInfo {
      * @param {Map} Container - The keys are property names and the values are `PropsInfoItem` objects.
      * @param {PropsInfoItem} PropsInfoItemBase - The base object shared by all instances of
      * `PropsInfoItem` associated with this `PropsInfo` object.
+     * @param {String} [Excluded] - A comma-delimited list of properties that were excluded from the
+     * collection.
      * @returns {PropsInfo} - The `PropsInfo` instance.
      */
     __New(Container, PropsInfoItemBase, Excluded?) {
@@ -253,9 +255,10 @@ class PropsInfo {
     }
 
     /**
-     * @description - Removes a `PropsInfoItem` object from the collection. This does not change any
-     * cached sets of filtered items; any cached filters will need to be reactivated to synchronize
-     * the items. The `PropsInfoObj.Excluded` property is updated.
+     * @description - Removes a `PropsInfoItem` object from the collection. This does not change the
+     * items exposed by the currently active filter nor any cached filters. To update a filter,
+     * call `PropsInfo.Prototype.FilterActivate` after calling `PropsInfo.Prototype.Delete`,
+     * `PropsInfo.Prototype.Refresh`, or `PropsInfo.Prototype.RefreshProp`.
      * @param {String} Names - A comma-delimited list of property names to delete.
      * @returns {PropsInfoItem[]} - An array of deleted `PropsInfoItem` objects.
      */
@@ -713,7 +716,10 @@ class PropsInfo {
 
     /**
      * @description - Iterates the root object's properties, updating the `PropsInfo` object's
-     * internal containers to reflect the current state of the objects.
+     * internal containers to reflect the current state of the objects. This does not change the
+     * items exposed by the currently active filter nor any cached filters. To update a filter,
+     * call `PropsInfo.Prototype.FilterActivate` after calling `PropsInfo.Prototype.Delete`,
+     * `PropsInfo.Prototype.Refresh`, or `PropsInfo.Prototype.RefreshProp`.
      *
      * - The reason for using `PropsInfo.Prototype.Refresh` instead of calling `GetPropsInfo`
      * would be to preserve any changes that external code has made to the `PropsInfo` object or the
@@ -843,7 +849,10 @@ class PropsInfo {
      * @description - For each name listed in `Names`, the root object and its base objects are
      * iterated. If an object owns a property with a given name, and if the current collection does not
      * have an associated `PropsInfoItem` object for the property, a `PropsInfoItem` object is
-     * created and added to the collection.
+     * created and added to the collection. This does not change the items exposed by the currently
+     * active filter nor any cached filters. To update a filter, call
+     * `PropsInfo.Prototype.FilterActivate` after calling `PropsInfo.Prototype.Delete`,
+     * `PropsInfo.Prototype.Refresh`, or `PropsInfo.Prototype.RefreshProp`.
      *
      * - `PropsInfoObj.FilterActive` and `PropsInfoObj.StringMode` are set to `0` at the start of the
      * procedure, and returned to their original values at the end.
@@ -866,7 +875,8 @@ class PropsInfo {
      * `PropsInfoItem` object is always associated with either the root object or the object from
      * which the root object inherits the property.
      *
-     * @param {String} Names - A comma-delimited list of property names to add. For example, "__Class,Length".
+     * @param {String} Names - A comma-delimited list of property names to update. For example,
+     * "__Class,Length".
      * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
      * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
      * You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If
@@ -1781,7 +1791,8 @@ class PropsInfoItem {
     /**
      * @description - `PropsInfoItem.Prototye.GetOwner` travels up the root object's inheritance chain
      * for `InfoItem.Index` objects, and if that object owns a property named `InfoItem.Name`, the
-     * object is returned. If it does not own a property with that name, an empty string is returned.
+     * object is returned. If it does not own a property with that name,`PropsInfoItem.Prototype.GetOwner`
+     * returns `0`.
      * The `InfoItem.Index` value represents the position in the inheritance chain of the object
      * that produced this `PropsInfoItem` object, beginning with the root object passed to
      * `GetPropsInfo`. Unless something has changed, the object at `InfoItem.Index` will be the
@@ -1859,9 +1870,12 @@ class PropsInfoItem {
     }
 
     /**
-     * @description - Calls `Object.Prototype.GetOwnPropDesc` to retrieve the owner of the property that
-     * produced this `PropsInfoItem` object, and updates this `PropsInfoItem` object according
-     * to the return value, replacing or removing the existing properties as needed.
+     * @description - Calls `PropsInfo.Prototype.GetOwner` to retrieve the owner of the property that
+     * produced this `PropsInfoItem` object, then calls `Object.Prototype.GetOwnPropDesc` and updates
+     * this `PropsInfoItem` object according to the return value, replacing or removing the existing
+     * properties as needed.
+     *
+     * If the property is "Base", calls `this.DefineProp('Value', { Value: Owner })` and returns `5`.
      * @returns {Integer} - The kind index, which indicates the kind of property. They are:
      * - 1: Callable property
      * - 2: Dynamic property with only a getter
