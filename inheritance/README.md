@@ -83,7 +83,6 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 
 - __New - The class constructor. This is not intended to be called directly, and instead instances should be created by calling the function `GetPropsInfo`.
 - __Enum - The enumerator. When calling a `PropsInfo` object from a `for` loop, `PropsInfoObj.__Enum`'s behavior varies depending on the `PropsInfoObj.StringMode` and `PropsInfoObj.FilterActive` property values.
-- Add - Updates the `PropsInfoItem` objects associated with the property names passed to the function, adding any items if currently absent from the collection. (Added in 1.4.0)
 - Delete - Removes the `PropsInfoItem` object associated with each name passed to the function. (Added in 1.4.0)
 - Dispose - Call this every time your code is finished using a `PropsInfo` object. If you do not, you risk a reference cycle preventing some resources from being freed.
 - FilterActivate - Activates the current filter on the object. The following is a brief description of filters in general. `PropsInfo` objects have a built-in filter system that allows us to exclude certain properties from being accessed via the object. This is useful for situations when our code must respond to or interact with some properties but not others.
@@ -104,12 +103,14 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 - GetFilteredProps - Returns a container object that has been populated with references to `PropsInfoItem` objects that have been processed through a filter.
 - Has - Returns nonzero if an item exists in the `PropsInfo` object's internal collection.
 - Refresh - Updates all `PropsInfoItem` objects within the collection to reflect the current state of the root object and the base objects. (Added in 1.4.0)
+- RefreshProp - Updates the `PropsInfoItem` objects associated with the property names passed to the function, adding any items if currently absent from the collection, and removing any if their associated owner no longer has a property by the name. (Added in 1.4.0)
 - ToArray - Returns an array of property names as string, or `PropsInfoItem` objects.
 - ToMap - Returns a map with keys that are property names and values that are `PropsInfoItem` objects.
 
 ### PropsInfo - instance properties
 
 - Excluded - A comma-delimited list of properties that are not exposed by the `PropsInfo` object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)
+- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)
 - Filter - A `Map` object where the key is an index as integer and the value is the `PropsInfo.Filter` object created by calling `PropsInfoObj.FilterAdd`.
 - FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
 - StringMode - Initially `0`. If you set `PropsInfoObj.StringMode := <nonzero value>`, "string mode" becomes active on the `PropsInfo` object. While `PropsInfoObj.StringMode == 1`, the `PropsInfo` object behaves like an array of property names as string. The following are influenced by string mode: `__Enum`, `Get`, `__Item`. By extension, the proxies are also influenced by string mode, though not directly.
@@ -187,7 +188,7 @@ In these descriptions, the phrase "the property" means "the object's property th
 
 - __New - The class constructor. This is not intended to be called directly. When `GetPropsInfo` is called, the process calls `PropsInfoItem.Prototype.__New` only once. The object returned from that call is then used as the base object for all of the other `PropsInfoItem` objects added to the `PropsInfo` object's internal containers.
 - GetFunc - Returns the function object associated with the property.
-- GetOwner - Returns the object that owns the property.
+- GetOwner - Returns the object that owns the property. If the object no longer owns the property with the associated name, then the function returns 0.
 - GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a `VarRef` parameter and the function returns 0. If the property is not a value property nor does it have a `Get` accessor, the function returns 1 and the `VarRef` parameter remains unchanged. If unsuccessful, the error object is assigned to the `VarRef` parameter and the function returns 2.
 - Refresh - Calls `GetOwnPropDesc` from the object that owns the property, updating the `PropsInfoItem` object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the `PropsInfoItem` object was created or the last time `Refresh` was called.
 
@@ -202,6 +203,7 @@ In these descriptions, the phrase "the property" means "the object's property th
     - The `PropsInfoItem` object is associated with an inherited property of the object that was passed to `GetPropsInfo`.
 - Count - Returns the number of objects that own a property by the same name within the inheritance chain of the object that was passed to `GetPropsInfo` that produced the `PropsInfoItem` object.
 - Index - An integer representing the index position of the object that owns the property relative to the input object's inheritance chain. A value of `0` indicates the property is an own property of the input object. A value of `1` indicates the property is an own property of `InputObj.Base`. A value of `2` indicates the property is an own property of `InputObj.Base.Base` ...
+- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)
 - Kind - Returns a string representation of the kind of property. These are the values:
   - "Call"
   - "Get"
@@ -408,6 +410,20 @@ These are the general concepts that `Inheritance` builds from:
 - Inheritance.ahk - A short script that calls `#include` for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".
 
 ## Changelog
+
+2025-06-06 - 1.4.0
+- Added `PropsInfo.Prototype.Delete`.
+- Added `PropsInfo.Prototype.FilterGetList`.
+- Added `PropsInfo.Prototype.Refresh`.
+- Added `PropsInfo.Prototype.RefreshProp`.
+- Added `PropsInfoObj.Excluded`, which is a comma-delimited list of properties that are not exposed by the `PropsInfo` object. For each of `GetPropsInfo`, `PropsInfo.Prototype.Delete`, `PropsInfo.Prototype.Refresh`, and `PropsInfo.Prototype.RefreshProp`, the `PropsInfoObj.Excluded` property is updated to reflect any changes made.
+- Added `PropsInfoObj.InheritanceDepth` and `InfoItem.InheritanceDepth`, which is an integer value set by `GetPropsInfo` originally, and updated by  `PropsInfo.Prototype.Refresh` and `PropsInfo.Prototype.RefreshProp`. The value is the number of base objects from the root object that have properties included in the collection. In other words, it is the length of the array returned by `GetBaseObjects`.
+- Added "test-files\test-Inheritance-1.4.0.ahk".
+- `PropsInfo.Prototype.__New` now has an additional parameter `Excluded`.
+- `PropsInfoItem.Prototype.GetOwner` no longer throws an error if the object does not own the property, it returns 0 instead.
+- `PropsInfoItem.Prototype.Refresh` returns 0 if the object no longer owns the property.
+- If `PropsInfo.Prototype.GetFilteredProps` returns a `PropsInfo` object, the `PropsInfo` object's `Excluded` property is set as the combined property names from the original object's `Excluded` property + the property names that were just excluded by the filter.
+- Fixed an error in `GetPropsInfo` that caused `PropsInfoItem` objects associated with the `Base` property to always be the base object of the root object.
 
 2025-06-01 - 1.3.3
 - Fixed an error causing the setter function not to be returned when calling `InfoItem.Prototype.GetFunc`.

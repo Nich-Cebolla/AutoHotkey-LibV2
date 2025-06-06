@@ -66,13 +66,10 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
         }
     }
 
-    PropsInfoItemBase := PropsInfoItem(Obj)
+    PropsInfoItemBase := PropsInfoItem(Obj, OutBaseObjList.Length)
 
     if ExcludeMethods {
         for Prop in ObjOwnProps(Obj) {
-            if Prop = 'prop2' {
-                sleep 1
-            }
             if (HasMethod(Obj, Prop) && not Obj.%Prop% is Class) || Container.Get(Prop) {
                 if !InStr(Excluded, ',' Prop ',') {
                     Excluded .= Prop ','
@@ -256,244 +253,6 @@ class PropsInfo {
     }
 
     /**
-     * @description - For each name listed in `Names`, the root object and its base objects are
-     * iterated. If an object owns a property with a given name, and if the current collection does not
-     * have an associated `PropsInfoItem` object for the property, a `PropsInfoItem` object is
-     * created and added to the collection.
-     *
-     * - `PropsInfo.Prototype.Add` will update the `InfoItem.Alt` array to be consistent with
-     * the objects' current state. Any items that are removed are returned when the function ends.
-     *
-     * - `PropsInfo.Prototype.Add` updates the `PropsInfoObj.Excluded` property.
-     *
-     * @param {String} Names - A comma-delimited list of property names to add. For example, "__Class,Length".
-     * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
-     * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
-     * You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If
-     * GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs
-     * `PropsInfo.Prototype.Add` to include properties owned by objects up to but not including
-     * `Object.Prototype`.
-     * @see {@link GetBaseObjects} for full details about this parameter.
-     * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
-     * base objects that is generated during the function call.
-     * @returns {PropsInfoItem[]|String} - If any items are removed from one of the `InfoItem.Alt` arrays,
-     * `PropsInfo.Prototype.Add` returns the objects as an array of `PropsInfoItem` objects. Else,
-     * `PropsInfoItem.Prototype.Add` returns an empty string.
-     */
-    Add(Names, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', &OutBaseObjList?) {
-        local InfoItem_Base
-        DefineKindIndex := PropsInfoItem.Prototype.__DefineKindIndex
-        if this.FilterActive {
-            tempFilterActive := this.FilterActive
-            this.FilterActive := 0
-        }
-        InfoItems := this.__InfoItems
-        InfoIndex := this.__InfoIndex
-        tempStringMode := this.StringMode
-        this.StringMode := 0
-        Obj := this.Root
-        OutBaseObjList := GetBaseObjects(Obj, StopAt)
-        AltMap := Map()
-        AltMap.CaseSense := false
-        PropsInfoItemBase := this.__PropsInfoItemBase
-        OutBaseObjList.InsertAt(1, Obj)
-        i := -1
-        b := Obj
-        Names := StrSplit(Trim(Names, ','), ',', '`s`t')
-        for b in OutBaseObjList {
-            ++i
-            for Prop in Names {
-                if !b.HasOwnProp(Prop) && Prop != 'Base' {
-                    continue
-                }
-                _Process(&Prop, b)
-            }
-        }
-        Deleted := []
-        for Prop, IndexList in AltMap {
-            if IndexList := Trim(IndexList, ',') {
-                InfoItem := this.Get(Prop)
-                if InfoItem.HasOwnProp('Alt') || Prop = 'Base' {
-                    for s in StrSplit(IndexList, ',') {
-                        if s {
-                            i := 0
-                            Alt := InfoItem.Alt
-                            loop Alt.Length {
-                                if Alt[++i].Index = s {
-                                    Deleted.Push(Alt.RemoveAt(i))
-                                    _IncrementCount(InfoItem, -1)
-                                    i--
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if InfoItem.HasOwnProp('Alt') && !InfoItem.Alt.Length {
-                InfoItem.DeleteProp('Alt')
-            }
-        }
-        if IsSet(tempFilterActive) {
-            this.FilterActive := tempFilterActive
-        }
-        this.StringMode := tempStringMode
-        Excluded := this.Excluded ','
-        for Prop in Names {
-            this.Excluded := StrReplace(Excluded, ',' Prop)
-        }
-        this.Excluded := Trim(Excluded, ',')
-
-        return Deleted.Length ? Deleted : ''
-
-        _Add(InfoItem, Obj) {
-            _IncrementCount(InfoItem, 1)
-            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, InfoItem.Name), InfoItem.Base)
-            Item.Index := i
-            InfoItem.__SetAlt(Item)
-        }
-        _Alt(Index, InfoItem) {
-            if !AltMap.Has(InfoItem.Name) {
-                indexList := ',' InfoItem.Index ','
-                if InfoItem.HasOwnProp('Alt') {
-                    for AltInfoItem in InfoItem.Alt {
-                        indexList .= AltInfoItem.Index ','
-                    }
-                }
-                AltMap.Set(InfoItem.Name, indexList)
-            }
-            if InStr(AltMap.Get(InfoItem.Name), ',' Index ',') {
-                AltMap.Set(InfoItem.Name, StrReplace(AltMap.Get(InfoItem.Name), ',' Index ',', ','))
-            } else {
-                return 1
-            }
-        }
-        _BaseProp(Obj) {
-            if IsSet(InfoItem_Base) {
-                ObjSetBase(Item := { Value: Obj.Base }, InfoItem_Base.Base)
-                Item.Index := i
-                InfoItem_Base.__SetAlt(Item)
-                _IncrementCount(InfoItem_Base, 1)
-            } else {
-                ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, PropsInfoItemBase)
-                ObjSetBase(InfoItem_Base := { Value: Obj.Base, Index: 0 }, ItemBase)
-                InfoItems.Push(InfoItem_Base)
-                InfoIndex.Set('Base', InfoItems.Length)
-            }
-        }
-        _IncrementCount(InfoItem, n) {
-            loop {
-                if InfoItem.HasOwnProp('Count') {
-                    InfoItem.Count += n
-                    break
-                }
-                InfoItem := InfoItem.Base
-            }
-        }
-        _Make(Prop, Obj) {
-            ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, PropsInfoItemBase)
-            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
-            Item.Index := i
-            InfoItems.Push(Item)
-            InfoIndex.Set(Prop, InfoItems.Length)
-        }
-        _Process(&Prop, Obj) {
-            if this.Has(Prop) {
-                InfoItem := this.Get(Prop)
-                if _Alt(i, InfoItem) {
-                    if i < InfoItem.Index {
-                        _Swap(InfoItem, Obj)
-                    } else {
-                        if Prop = 'Base' {
-                            _BaseProp(Obj)
-                        } else {
-                            _Add(InfoItem, Obj)
-                        }
-                    }
-                }
-            } else {
-                if Prop = 'Base' {
-                    _BaseProp(Obj)
-                } else {
-                    _Make(Prop, Obj)
-                }
-            }
-        }
-        _Swap(InfoItem, Obj) {
-            _IncrementCount(InfoItem, 1)
-            if InfoItem.Name = 'Base' {
-                Item := { Value: Obj.Base }
-            } else {
-                Item := ObjGetOwnPropDesc(Obj, InfoItem.Name)
-            }
-            Item.Index := InfoItem.Index
-            InfoItem.Index := i
-            switch InfoItem.KindIndex {
-                case 1: _SwapProps(['Call'], ['Get', 'Set', 'Value'])
-                case 2: _SwapProps(['Get'], ['Call', 'Set', 'Value'])
-                case 3: _SwapProps(['Get', 'Set'], ['Call', 'Value'])
-                case 4: _SwapProps(['Set'], ['Call', 'Get', 'Value'])
-                case 5: _SwapProps(['Value'], ['Call', 'Get', 'Set'])
-            }
-            DefineKindIndex(InfoItem)
-            ObjSetBase(Item, InfoItem.Base)
-            InfoItem.__SetAlt(Item)
-
-            _SwapProps(PrimaryProps, AlternateProps) {
-                for Prop in PrimaryProps {
-                    if Item.HasOwnProp(Prop) {
-                        temp := InfoItem.%Prop%
-                        InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
-                        Item.DefineProp(Prop, { Value: temp })
-                    } else {
-                        Item.DefineProp(Prop, { Value: InfoItem.%Prop% })
-                        InfoItem.DeleteProp(Prop)
-                    }
-                }
-                for Prop in AlternateProps {
-                    if Item.HasOwnProp(Prop) {
-                        InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
-                        Item.DeleteProp(Prop)
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @description - Performs these actions:
-     * - Deletes the `Root` property from the `PropsInfoItem` object that is used as the base for
-     * all `PropsInfoItem` objects associated with this `PropsInfo` object. This action invalidates
-     * some of the `PropsInfoItem` objects' methods and properties, and they should be considered
-     * effectively disposed.
-     * - Clears the `PropsInfo` object's container properties and sets their capacity to 0
-     * - Deletes the `PropsInfo` object's own properties.
-     */
-    Dispose() {
-        this.__PropsInfoItemBase.DeleteProp('Root')
-        this.__InfoIndex.Clear()
-        this.__InfoIndex.Capacity := this.__InfoItems.Capacity := 0
-        if this.__FilteredIndex {
-            this.__FilteredIndex.Capacity := 0
-        }
-        if this.__FilteredItems {
-            this.__FilteredItems.Clear()
-            this.__FilteredItems.Capacity := 0
-        }
-        if this.HasOwnProp('Filter') {
-            this.DeleteProp('Filter')
-        }
-        if this.HasOwnProp('__FilterCache') {
-            this.__FilterCache.Clear()
-            this.__FilterCache.Capacity := 0
-        }
-        for Prop in this.OwnProps() {
-            this.DeleteProp(Prop)
-        }
-        this.DefineProp('Dispose', { Call: (*) => '' })
-    }
-
-    /**
      * @description - Removes a `PropsInfoItem` object from the collection. This does not change any
      * cached sets of filtered items; any cached filters will need to be reactivated to synchronize
      * the items. The `PropsInfoObj.Excluded` property is updated.
@@ -528,6 +287,39 @@ class PropsInfo {
         NewInfoIndex.Capacity := NewInfoIndex.Count
         Deleted.Capacity := Deleted.Length
         return Deleted
+    }
+
+    /**
+     * @description - Performs these actions:
+     * - Deletes the `Root` property from the `PropsInfoItem` object that is used as the base for
+     * all `PropsInfoItem` objects associated with this `PropsInfo` object. This action invalidates
+     * some of the `PropsInfoItem` objects' methods and properties, and they should be considered
+     * effectively disposed.
+     * - Clears the `PropsInfo` object's container properties and sets their capacity to 0
+     * - Deletes the `PropsInfo` object's own properties.
+     */
+    Dispose() {
+        this.__PropsInfoItemBase.DeleteProp('Root')
+        this.__InfoIndex.Clear()
+        this.__InfoIndex.Capacity := this.__InfoItems.Capacity := 0
+        if this.__FilteredIndex {
+            this.__FilteredIndex.Capacity := 0
+        }
+        if this.__FilteredItems {
+            this.__FilteredItems.Clear()
+            this.__FilteredItems.Capacity := 0
+        }
+        if this.HasOwnProp('Filter') {
+            this.DeleteProp('Filter')
+        }
+        if this.HasOwnProp('__FilterCache') {
+            this.__FilterCache.Clear()
+            this.__FilterCache.Capacity := 0
+        }
+        for Prop in this.OwnProps() {
+            this.DeleteProp(Prop)
+        }
+        this.DefineProp('Dispose', { Call: (*) => '' })
     }
 
     /**
@@ -921,7 +713,7 @@ class PropsInfo {
 
     /**
      * @description - Iterates the root object's properties, updating the `PropsInfo` object's
-     * internal containers as needed.
+     * internal containers to reflect the current state of the objects.
      *
      * - The reason for using `PropsInfo.Prototype.Refresh` instead of calling `GetPropsInfo`
      * would be to preserve any changes that external code has made to the `PropsInfo` object or the
@@ -931,21 +723,23 @@ class PropsInfo {
      * - `PropsInfoObj.FilterActive` and `PropsInfoObj.StringMode` are set to `0` at the start of the
      * procedure, and returned to their original values at the end.
      *
-     * - `PropsInfo.Prototype.Refresh` can be used to add items to the collection that were initially
-     * excluded by the input parameters of `GetPropsInfo`, and vise-versa.
+     * - `PropsInfo.Prototype.Refresh` will update the `InfoItem.Alt` array to be consistent with
+     * the objects' current state. Any items that are removed are returned when the function ends.
      *
-     * - `PropsInfo.Prototype.Refresh` updates the `PropsInfoObj.Excluded` property.
+     * - `PropsInfo.Prototype.Refresh` updates the `PropsInfoObj.Excluded` property and the
+     * `PropsInfoObj.InheritanceDepth` property.
      *
-     * - If one or more properties currently included in the `PropsInfo` object's collection are
-     * excluded by the input options, `PropsInfo.Prototype.Delete` is called with the list of
-     * property names. The associated `PropsInfoItem` objects are returned by this function.
+     * - If an object no longer owns a property by the name, the `PropsInfoItem` object is removed
+     * from the collection and added to the returned array.
      *
-     * - `PropsInfo.Prototype.Refresh` updates any `InfoItem.Alt` arrays if properties on any of the
-     * base objects have been altered.
+     * - `InfoItem.Count` is updated for any additions and deletions.
      *
-     * - If a property that is currently included in the `PropsInfo` object's collection no longer
-     * exists on any of the objects in the root object's inheritance chain, the associated
-     * `PropsInfoItem` object is deleted and returned with the other deleted items.
+     * - `PropsInfo.Prototype.Refresh` will swap the top-level `PropsInfoItem` object if a new
+     * `PropsInfoItem` object is created with a lower `Index` property value than the current top-level
+     * item. The original top-level item has the `Alt` property deleted if present, then gets added
+     * to the `Alt` property of the new top-level item. This is to ensure consistency that the top-level
+     * `PropsInfoItem` object is always associated with either the root object or the object from
+     * which the root object inherits the property.
      *
      * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
      * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
@@ -962,31 +756,28 @@ class PropsInfo {
      * base objects that is generated during the function call.
      * @param {Boolean} [ExcludeMethods=false] - If true, callable properties are excluded. Note that
      * properties with a value that is a class object are unaffected by `ExcludeMethods`.
-     * @returns {PropsInfoItem[]|String} - If any items are deleted, `PropsInfo.Prototype.Add`
-     * returns the objects as an array of `PropsInfoItem` objects. Else, `PropsInfoItem.Prototype.Add`
-     * returns an empty string.
+     * @returns {PropsInfoItem[]|String} - If any items are removed from the collection they are
+     * added to an array to be returned. Else, returns an empty string.
      */
     Refresh(StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', IncludeBaseProp := true, &OutBaseObjList?, ExcludeMethods := false) {
-        local InfoItem_Base
-        DefineKindIndex := PropsInfoItem.Prototype.__DefineKindIndex
         if this.FilterActive {
-            tempFilterActive := this.FilterActive
+            OriginalFilterActive := this.FilterActive
             this.FilterActive := 0
         }
         Excluded := ','
         InfoItems := this.__InfoItems
         InfoIndex := this.__InfoIndex
-        tempStringMode := this.StringMode
+        OriginalStringMode := this.StringMode
         this.StringMode := 0
         Obj := this.Root
-        OutBaseObjList := GetBaseObjects(Obj, StopAt)
         AltMap := Map()
         AltMap.CaseSense := false
-        PropsInfoItemBase := this.__PropsInfoItemBase
+        OutBaseObjList := GetBaseObjects(Obj, StopAt)
+        this.__PropsInfoItemBase.InheritanceDepth := OutBaseObjList.Length
         OutBaseObjList.InsertAt(1, Obj)
         Exclude := ',' Exclude ','
         ToDelete := ''
-        List := this.ToMap()
+        ActivePropsList := this.ToMap()
         Deleted := []
         i := -1
         for b in OutBaseObjList {
@@ -1001,175 +792,208 @@ class PropsInfo {
                     }
                     continue
                 }
-                _Process(&Prop, b)
+                this.__RefreshProcess(ActivePropsList, AltMap, i, Prop, b)
             }
             if IncludeBaseProp {
-                _Process(&(Prop := 'Base'), b)
+                this.__RefreshProcess(ActivePropsList, AltMap, i, 'Base', b)
             }
         }
-        for name, InfoItem in List {
+        for name, InfoItem in ActivePropsList {
             ToDelete .= name ','
         }
-        ToDelete := Trim(ToDelete, ',')
-        if StrLen(ToDelete) {
-            Result := this.Delete(ToDelete)
+        if ToDelete := Trim(ToDelete, ',') {
+            if DeletedItems := this.Delete(ToDelete) {
+                Deleted.Push(DeletedItems*)
+            }
         }
         for Prop, IndexList in AltMap {
-            if IndexList := Trim(IndexList, ',') {
-                InfoItem := this.Get(Prop)
-                if InfoItem.HasOwnProp('Alt') {
-                    for s in StrSplit(IndexList, ',') {
-                        if s {
-                            i := 0
-                            Alt := InfoItem.Alt
-                            loop Alt.Length {
-                                if Alt[++i].Index = s {
-                                    Deleted.Push(Alt.RemoveAt(i))
-                                    _IncrementCount(InfoItem, -1)
-                                    i--
-                                    break
+            if InfoItem := this.Get(Prop) {
+                if IndexList := Trim(IndexList, ',') {
+                    if InfoItem.HasOwnProp('Alt') {
+                        for s in StrSplit(IndexList, ',') {
+                            if s {
+                                i := 0
+                                Alt := InfoItem.Alt
+                                loop Alt.Length {
+                                    if Alt[++i].Index = s {
+                                        Deleted.Push(Alt.RemoveAt(i))
+                                        this.__RefreshIncrementCount(InfoItem, -1)
+                                        i--
+                                        break
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            if InfoItem.HasOwnProp('Alt') && !InfoItem.Alt.Length {
-                InfoItem.DeleteProp('Alt')
+                if InfoItem.HasOwnProp('Alt') && !InfoItem.Alt.Length {
+                    InfoItem.DeleteProp('Alt')
+                }
             }
         }
-        if IsSet(Result) {
-            if Deleted.Length {
-                Result.Push(Deleted*)
-            }
-        } else if Deleted.Length {
-            Result := Deleted
-        } else {
-            Result := ''
+        if IsSet(OriginalFilterActive) {
+            this.FilterActive := OriginalFilterActive
         }
-        if IsSet(tempFilterActive) {
-            this.FilterActive := tempFilterActive
-        }
-        this.StringMode := tempStringMode
+        this.StringMode := OriginalStringMode
         this.Excluded := Trim(Excluded, ',')
+        return Deleted.Length ? Deleted : ''
+    }
 
-        return Result
-
-        _Add(InfoItem, Obj) {
-            _IncrementCount(InfoItem, 1)
-            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, InfoItem.Name), InfoItem.Base)
-            Item.Index := i
-            InfoItem.__SetAlt(Item)
+    /**
+     * @description - For each name listed in `Names`, the root object and its base objects are
+     * iterated. If an object owns a property with a given name, and if the current collection does not
+     * have an associated `PropsInfoItem` object for the property, a `PropsInfoItem` object is
+     * created and added to the collection.
+     *
+     * - `PropsInfoObj.FilterActive` and `PropsInfoObj.StringMode` are set to `0` at the start of the
+     * procedure, and returned to their original values at the end.
+     *
+     * - `PropsInfo.Prototype.RefreshProp` will update the `InfoItem.Alt` array to be consistent with
+     * the objects' current state. Any items that are removed are returned when the function ends.
+     *
+     * - `PropsInfo.Prototype.RefreshProp` updates the `PropsInfoObj.Excluded` property and the
+     * `PropsInfoObj.InheritanceDepth` property.
+     *
+     * - If an object no longer owns a property by the name, the `PropsInfoItem` object is removed
+     * from the collection and added to the returned array.
+     *
+     * - `InfoItem.Count` is updated for any additions and deletions.
+     *
+     * - `PropsInfo.Prototype.RefreshProp` will swap the top-level `PropsInfoItem` object if a new
+     * `PropsInfoItem` object is created with a lower `Index` property value than the current top-level
+     * item. The original top-level item has the `Alt` property deleted if present, then gets added
+     * to the `Alt` property of the new top-level item. This is to ensure consistency that the top-level
+     * `PropsInfoItem` object is always associated with either the root object or the object from
+     * which the root object inherits the property.
+     *
+     * @param {String} Names - A comma-delimited list of property names to add. For example, "__Class,Length".
+     * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
+     * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
+     * You can define a global variable `GPI_STOP_AT_DEFAULT` to change the default value. If
+     * GPI_STOP_AT_DEFAULT is unset, the default value is '-Object', which directs
+     * `PropsInfo.Prototype.Add` to include properties owned by objects up to but not including
+     * `Object.Prototype`.
+     * @see {@link GetBaseObjects} for full details about this parameter.
+     * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
+     * base objects that is generated during the function call.
+     * @returns {PropsInfoItem[]|String} - If any items are removed from the collection they are
+     * added to an array to be returned. Else, returns an empty string.
+     */
+    RefreshProp(Names, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', &OutBaseObjList?) {
+        if this.FilterActive {
+            OriginalFilterActive := this.FilterActive
+            this.FilterActive := 0
         }
-        _Alt(Index, InfoItem) {
-            if !AltMap.Has(InfoItem.Name) {
-                indexList := ',' InfoItem.Index ','
+        OriginalStringMode := this.StringMode
+        this.StringMode := 0
+        OutBaseObjList := GetBaseObjects(this.Root, StopAt)
+        this.__PropsInfoItemBase.InheritanceDepth := OutBaseObjList.Length
+        OutBaseObjList.InsertAt(1, this.Root)
+        Names := StrSplit(Trim(Names, ','), ',', '`s`t')
+        Deleted := []
+        Excluded := ',' this.Excluded ','
+        for Prop in Names {
+            i := -1
+            if InStr(Excluded, ',' Prop ',') {
+                Excluded := StrReplace(Excluded, ',' Prop, '')
+            }
+            if this.Has(prop) {
+                InfoItem := this.Get(Prop)
+                IndexList := ',' InfoItem.Index ','
                 if InfoItem.HasOwnProp('Alt') {
                     for AltInfoItem in InfoItem.Alt {
-                        indexList .= AltInfoItem.Index ','
+                        IndexList .= AltInfoItem.Index ','
                     }
                 }
-                AltMap.Set(InfoItem.Name, indexList)
-            }
-            if InStr(AltMap.Get(InfoItem.Name), ',' Index ',') {
-                AltMap.Set(InfoItem.Name, StrReplace(AltMap.Get(InfoItem.Name), ',' Index ',', ','))
-            } else {
-                return 1
-            }
-        }
-        _BaseProp(Obj) {
-            if IsSet(InfoItem_Base) {
-                ObjSetBase(Item := { Value: Obj.Base }, InfoItem_Base.Base)
-                Item.Index := i
-                InfoItem_Base.__SetAlt(Item)
-                _IncrementCount(InfoItem_Base, 1)
-            } else {
-                ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, PropsInfoItemBase)
-                ObjSetBase(InfoItem_Base := { Value: Obj.Base, Index: 0 }, ItemBase)
-                InfoItems.Push(InfoItem_Base)
-                InfoIndex.Set('Base', InfoItems.Length)
-            }
-        }
-        _IncrementCount(InfoItem, n) {
-            loop {
-                if InfoItem.HasOwnProp('Count') {
-                    InfoItem.Count += n
-                    break
-                }
-                InfoItem := InfoItem.Base
-            }
-        }
-        _Make(Prop, Obj) {
-            ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, PropsInfoItemBase)
-            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
-            Item.Index := i
-            InfoItems.Push(Item)
-            InfoIndex.Set(Prop, InfoItems.Length)
-        }
-        _Process(&Prop, Obj) {
-            if List.Has(Prop) {
-                List.Delete(Prop)
-            }
-            if this.Has(Prop) {
-                InfoItem := this.Get(Prop)
-                if _Alt(i, InfoItem) {
-                    if i < InfoItem.Index {
-                        _Swap(InfoItem, Obj)
-                    } else {
-                        if Prop == 'Base' {
-                            _BaseProp(Obj)
+                for b in OutBaseObjList {
+                    ++i
+                    if b.HasOwnProp(Prop) {
+                        if InStr(IndexList, ',' i ',') {
+                            if InfoItem.Index = i {
+                                InfoItem.Refresh()
+                            } else {
+                                for AltInfoItem in InfoItem.Alt {
+                                    if AltInfoItem.Index = i {
+                                        AltInfoItem.Refresh()
+                                        break
+                                    }
+                                }
+                            }
                         } else {
-                            _Add(InfoItem, Obj)
+                            if Prop = 'Base' {
+                                if i < InfoItem.Index {
+                                    this.__RefreshSwap(i, InfoItem, b)
+                                } else {
+                                    this.__RefreshBaseProp(i, b)
+                                }
+                            } else {
+                                if i < InfoItem.Index {
+                                    this.__RefreshSwap(i, InfoItem, b)
+                                } else {
+                                    this.__RefreshAdd(i, Prop, b)
+                                }
+                            }
+                        }
+                    } else {
+                        if InStr(IndexList, ',' i ',') {
+                            if InfoItem.Index = i {
+                                if InfoItem.HasOwnProp('Alt') {
+                                    if InfoItem.Alt.Length > 1 {
+                                        lowest := 9223372036854775807
+                                        for AltInfoItem in InfoItem.Alt {
+                                            if AltInfoItem.Index < lowest {
+                                                lowest := AltInfoItem.Index
+                                                LowestIndex := A_Index
+                                            }
+                                        }
+                                        AltInfoItem := InfoItem.Alt.RemoveAt(LowestIndex)
+                                        AltInfoItem.DefineProp('Alt', { Value: InfoItem.Alt })
+                                    } else {
+                                        AltInfoItem := InfoItem.Alt[1]
+                                        InfoItem.DeleteProp('Alt')
+                                    }
+                                    this.__InfoItems[this.__InfoIndex.Get(Prop)] := AltInfoItem
+                                    Deleted.Push(InfoItem)
+                                    this.__RefreshIncrementCount(InfoItem, -1)
+                                    AltInfoItem.Refresh()
+                                } else {
+                                    Deleted.Push(this.__InfoItems.RemoveAt(this.__InfoIndex.Get(Prop)))
+                                    this.__RefreshIncrementCount(InfoItem, -1)
+                                }
+                            } else {
+                                for AltInfoItem in InfoItem.Alt {
+                                    if AltInfoItem.Index = i {
+                                        Deleted.Push(InfoItem.Alt.RemoveAt(A_Index))
+                                        this.__RefreshIncrementCount(InfoItem, -1)
+                                        break
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             } else {
-                if Prop == 'Base' {
-                    _BaseProp(Obj)
+                if Prop = 'Base' {
+                    for b in OutBaseObjList {
+                        this.__RefreshBaseProp(++i, b)
+                    }
                 } else {
-                    _Make(Prop, Obj)
+                    for b in OutBaseObjList {
+                        ++i
+                        if b.HasOwnProp(Prop) {
+                            this.__RefreshAdd(i, Prop, b)
+                        }
+                    }
                 }
             }
         }
-        _Swap(InfoItem, Obj) {
-            _IncrementCount(InfoItem, 1)
-            if InfoItem.Name = 'Base' {
-                Item := { Value: Obj.Base }
-            } else {
-                Item := ObjGetOwnPropDesc(Obj, InfoItem.Name)
-            }
-            Item.Index := InfoItem.Index
-            InfoItem.Index := i
-            switch InfoItem.KindIndex {
-                case 1: _SwapProps(['Call'], ['Get', 'Set', 'Value'])
-                case 2: _SwapProps(['Get'], ['Call', 'Set', 'Value'])
-                case 3: _SwapProps(['Get', 'Set'], ['Call', 'Value'])
-                case 4: _SwapProps(['Set'], ['Call', 'Get', 'Value'])
-                case 5: _SwapProps(['Value'], ['Call', 'Get', 'Set'])
-            }
-            DefineKindIndex(InfoItem)
-            ObjSetBase(Item, InfoItem.Base)
-            InfoItem.__SetAlt(Item)
+        if IsSet(OriginalFilterActive) {
+            this.FilterActive := OriginalFilterActive
+        }
+        this.StringMode := OriginalStringMode
+        this.Excluded := Trim(Excluded, ',')
 
-            _SwapProps(PrimaryProps, AlternateProps) {
-                for Prop in PrimaryProps {
-                    if Item.HasOwnProp(Prop) {
-                        temp := InfoItem.%Prop%
-                        InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
-                        Item.DefineProp(Prop, { Value: temp })
-                    } else {
-                        Item.DefineProp(Prop, { Value: InfoItem.%Prop% })
-                        InfoItem.DeleteProp(Prop)
-                    }
-                }
-                for Prop in AlternateProps {
-                    if Item.HasOwnProp(Prop) {
-                        InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
-                        Item.DeleteProp(Prop)
-                    }
-                }
-            }
-        }
+        return Deleted.Length ? Deleted : ''
     }
 
     /**
@@ -1244,6 +1068,12 @@ class PropsInfo {
      * @readonly
      */
     Default => this.__InfoIndex.Default
+    /**
+     * @memberof PropsInfo
+     * @instance
+     * @readonly
+     */
+    InheritanceDepth => this.__PropsInfoItemBase.InheritanceDepth
     /**
      * @memberof PropsInfo
      * @instance
@@ -1468,6 +1298,139 @@ class PropsInfo {
                 this.DefineProp(Name, Proto.GetOwnPropDesc(Name))
             }
             this.DefineProp('Get', Proto.GetOwnPropDesc(this.__StringMode ? '__ItemGet_StringMode' : '__ItemGet_Bitypic'))
+        }
+    }
+
+    __RefreshAdd(Index, Prop, Obj) {
+        if this.Has(Prop) {
+            b := InfoItem := this.Get(Prop)
+            while !b.HasOwnProp('Name') {
+                b := b.Base
+            }
+            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, InfoItem.Name), b)
+            Item.Index := Index
+            InfoItem.__SetAlt(Item)
+            b.Count++
+        } else {
+            ObjSetBase(ItemBase := { Name: Prop, Count: 1 }, this.__PropsInfoItemBase)
+            ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
+            Item.Index := Index
+            this.__InfoItems.Push(Item)
+            this.__InfoIndex.Set(Prop, this.__InfoItems.Length)
+        }
+    }
+
+    __RefreshBaseProp(Index, Obj) {
+        if this.Has('Base') {
+            b := InfoItem := this.Get('Base')
+            while !b.HasOwnProp('Name') {
+                b := b.Base
+            }
+            ObjSetBase(Item := { Value: Obj.Base, Index: Index }, b)
+            InfoItem.__SetAlt(Item)
+            b.Count++
+        } else {
+            ObjSetBase(ItemBase := { Name: 'Base', Count: 1 }, this.__PropsInfoItemBase)
+            ObjSetBase(InfoItem := { Value: Obj.Base, Index: Index }, ItemBase)
+            this.__InfoItems.Push(InfoItem)
+            this.__InfoIndex.Set('Base', this.__InfoItems.Length)
+        }
+    }
+
+    __RefreshIncrementCount(InfoItem, Count) {
+        loop this.InheritanceDepth {
+            if InfoItem.HasOwnProp('Count') {
+                InfoItem.Count += Count
+                return
+            } else {
+                InfoItem := InfoItem.Base
+            }
+        }
+        throw Error('Failed to increment the count.', -1, '``InfoItem.Name == ' InfoItem.Name)
+    }
+
+    __RefreshProcess(ActivePropsList, AltMap, Index, Prop, Obj) {
+        if ActivePropslist && ActivePropsList.Has(Prop) {
+            ActivePropsList.Delete(Prop)
+        }
+        if this.Has(Prop) {
+            InfoItem := this.Get(Prop)
+            if !AltMap.Has(InfoItem.Name) {
+                indexList := ',' InfoItem.Index ','
+                if InfoItem.HasOwnProp('Alt') {
+                    for AltInfoItem in InfoItem.Alt {
+                        indexList .= AltInfoItem.Index ','
+                    }
+                }
+                AltMap.Set(InfoItem.Name, indexList)
+            }
+            if InStr(AltMap.Get(InfoItem.Name), ',' Index ',') {
+                AltMap.Set(InfoItem.Name, StrReplace(AltMap.Get(InfoItem.Name), ',' Index, ''))
+                InfoItem.Refresh()
+            } else {
+                if Index < InfoItem.Index {
+                    this.__RefreshSwap(Index, InfoItem, Obj)
+                } else {
+                    if Prop == 'Base' {
+                        this.__RefreshBaseProp(Index, Obj)
+                    } else {
+                        this.__RefreshAdd(Index, Prop, Obj)
+                    }
+                }
+            }
+        } else {
+            if Prop == 'Base' {
+                this.__RefreshBaseProp(Index, Obj)
+            } else {
+                this.__RefreshAdd(Index, Prop, Obj)
+            }
+        }
+    }
+
+    __RefreshSwap(Index, InfoItem, Obj) {
+        if InfoItem.Name = 'Base' {
+            if Type(Obj) == 'Prototype' && Obj.__Class == 'Any' {
+                return
+            }
+            Item := { Value: Obj.Base, Index: Index }
+        } else {
+            Item := ObjGetOwnPropDesc(Obj, InfoItem.Name)
+            Item.Index := InfoItem.Index
+        }
+        InfoItem.Index := Index
+        switch InfoItem.KindIndex {
+            case 1: _SwapProps(['Call'], ['Get', 'Set', 'Value'])
+            case 2: _SwapProps(['Get'], ['Call', 'Set', 'Value'])
+            case 3: _SwapProps(['Get', 'Set'], ['Call', 'Value'])
+            case 4: _SwapProps(['Set'], ['Call', 'Get', 'Value'])
+            case 5: _SwapProps(['Value'], ['Call', 'Get', 'Set'])
+        }
+        b := InfoItem.Base
+        while !b.HasOwnProp('Name') {
+            b := b.Base
+        }
+        ObjSetBase(Item, b)
+        b.Count++
+        InfoItem.__SetAlt(Item)
+        InfoItem.__DefineKindIndex()
+
+        _SwapProps(PrimaryProps, AlternateProps) {
+            for Prop in PrimaryProps {
+                if Item.HasOwnProp(Prop) {
+                    temp := InfoItem.%Prop%
+                    InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
+                    Item.DefineProp(Prop, { Value: temp })
+                } else {
+                    Item.DefineProp(Prop, { Value: InfoItem.%Prop% })
+                    InfoItem.DeleteProp(Prop)
+                }
+            }
+            for Prop in AlternateProps {
+                if Item.HasOwnProp(Prop) {
+                    InfoItem.DefineProp(Prop, { Value: Item.%Prop% })
+                    Item.DeleteProp(Prop)
+                }
+            }
         }
     }
 
@@ -1758,12 +1721,15 @@ class PropsInfoItem {
      * instances generated within that `GetPropsInfo` function call (and only that function call),
      * allowing properties to be defined once on the base and shared by the rest.
      * `PropsInfoItem.Prototype.__New` is not intended to be called directly.
-     * @param {Object} - The objecet that was passed to `GetPropsInfo`.
+     * @param {Object} Root - The object that was passed to `GetPropsInfo`.
+     * @param {Integer}InheritanceDepth - The number of base objects traversed during the `GetPropsInfo`
+     * call.
      * @returns {PropsInfoItem} - The `PropsInfoItem` instance.
      * @class
      */
-    __New(Root) {
+    __New(Root, InheritanceDepth) {
         this.Root := Root
+        this.InheritanceDepth := InheritanceDepth
     }
 
     /**
@@ -1813,9 +1779,16 @@ class PropsInfoItem {
     }
 
     /**
-     * @description - Returns the owner of the property which produced this `PropsInfoItem` object.
-     * It is possible for this method to return an unexpected value. This is an illustration of how
-     * this is possible:
+     * @description - `PropsInfoItem.Prototye.GetOwner` travels up the root object's inheritance chain
+     * for `InfoItem.Index` objects, and if that object owns a property named `InfoItem.Name`, the
+     * object is returned. If it does not own a property with that name, an empty string is returned.
+     * The `InfoItem.Index` value represents the position in the inheritance chain of the object
+     * that produced this `PropsInfoItem` object, beginning with the root object passed to
+     * `GetPropsInfo`. Unless something has changed, the object at `InfoItem.Index` will be the
+     * original owner of the property `InfoItem.Name`
+     *
+     * This example depicts a scenario in which the value returned by `PropsInfoItem.Prototype.GetOwner`
+     * is not the original owner of the property that produced the `PropsInfoItem` object.
      * @example
      *  class a {
      *      __SomeProp := 0
@@ -1836,15 +1809,8 @@ class PropsInfoItem {
      *  NewOwner := InfoItem.GetOwner()
      *  MsgBox(ObjPtr(OriginalOwner) == ObjPtr(NewOwner)) ; 0
      * @
-     * What the example conveys is that, if one or more of the input object's base objects are altered
-     * with an object that owns a property by the same name as the `PropsInfoItem` object, then
-     * `PropsInfoItem.Prototype.GetOwner` will return a value that is not the original owner of
-     * the property.
-     * @returns {*} - The owner of the property.
-     * @throws {Error} - The error reads "Unable to retrieve the property's owner." If you get this
-     * error, it means the object inheritance chain has been altered since the time the `PropsInfoItem`
-     * object was created. The `PropsInfoItem` objects should be considered invalid and you should
-     * call `GetPropsInfo` again to get a new `PropsInfo` object.
+     *
+     * @returns {*} - If the object owns the property, the object. Else, returns 0.
      */
     GetOwner() {
         b := this.Root
@@ -1853,9 +1819,8 @@ class PropsInfoItem {
         }
         if this.Name = 'Base' || b.HasOwnProp(this.Name) {
             return b
-        } else {
-            throw Error('Unable to retrieve the property`'s owner.', -1)
         }
+        return 0
     }
 
     /**
@@ -1894,7 +1859,7 @@ class PropsInfoItem {
     }
 
     /**
-     * @description - Calls `Object.Prototype.GetOwnPropDesc` on the owner of the property that
+     * @description - Calls `Object.Prototype.GetOwnPropDesc` to retrieve the owner of the property that
      * produced this `PropsInfoItem` object, and updates this `PropsInfoItem` object according
      * to the return value, replacing or removing the existing properties as needed.
      * @returns {Integer} - The kind index, which indicates the kind of property. They are:
@@ -1903,17 +1868,30 @@ class PropsInfoItem {
      * - 3: Dynamic property with both a getter and setter
      * - 4: Dynamic property with only a setter
      * - 5: Value property
+     *
+     * If the object returned by `PropsInfoItem.Prototype.GetOwner` no longer owns a property by
+     * the name `InfoItem.Name`, then `PropsInfoItem.Prototype.Refresh` returns 0. You can call
+     * `PropsInfo.Prototype.RefreshProp` to adjust the collection to reflect the objects' current
+     * state.
      */
     Refresh() {
-        desc := this.Owner.GetOwnPropDesc(this.Name)
+        if !(Owner := this.Owner) {
+            return 0
+        }
+        if this.Name = 'Base' {
+            this.DefineProp('Value', { Value: Owner })
+            return 5
+        }
+        desc := Owner.GetOwnPropDesc(this.Name)
         n := 0
+        KindIndex := this.KindIndex
         for Prop, Val in desc.OwnProps() {
             if this.HasOwnProp(Prop) {
                 n++
             }
             this.DefineProp(Prop, { Value: Val })
         }
-        switch this.KindIndex {
+        switch KindIndex {
             case 1,2,4,5:
                 ; The type of property changed
                 if !n {

@@ -1,15 +1,17 @@
 
 2025-06-06 - 1.4.0
-- Added `PropsInfo.Prototype.Add`.
 - Added `PropsInfo.Prototype.Delete`.
-- Added `PropsInfo.Prototype.Refresh`.
 - Added `PropsInfo.Prototype.FilterGetList`.
-- Added `PropsInfoObj.Excluded`, which is a comma-delimited list of properties that are not exposed by the `PropsInfo` object. For each of `GetPropsInfo`, `PropsInfo.Prototype.Add`, `PropsInfo.Prototype.Delete`, and `PropsInfo.Prototype.Refresh`, the `PropsInfoObj.Excluded` property is updated to reflect any changes made.
+- Added `PropsInfo.Prototype.Refresh`.
+- Added `PropsInfo.Prototype.RefreshProp`.
+- Added `PropsInfoObj.Excluded`, which is a comma-delimited list of properties that are not exposed by the `PropsInfo` object. For each of `GetPropsInfo`, `PropsInfo.Prototype.Delete`, `PropsInfo.Prototype.Refresh`, and `PropsInfo.Prototype.RefreshProp`, the `PropsInfoObj.Excluded` property is updated to reflect any changes made.
+- Added `PropsInfoObj.InheritanceDepth` and `InfoItem.InheritanceDepth`, which is an integer value set by `GetPropsInfo` originally, and updated by  `PropsInfo.Prototype.Refresh` and `PropsInfo.Prototype.RefreshProp`. The value is the number of base objects from the root object that have properties included in the collection. In other words, it is the length of the array returned by `GetBaseObjects`.
 - Added "test-files\test-Inheritance-1.4.0.ahk".
 - `PropsInfo.Prototype.__New` now has an additional parameter `Excluded`.
+- `PropsInfoItem.Prototype.GetOwner` no longer throws an error if the object does not own the property, it returns 0 instead.
+- `PropsInfoItem.Prototype.Refresh` returns 0 if the object no longer owns the property.
 - If `PropsInfo.Prototype.GetFilteredProps` returns a `PropsInfo` object, the `PropsInfo` object's `Excluded` property is set as the combined property names from the original object's `Excluded` property + the property names that were just excluded by the filter.
 - Fixed an error in `GetPropsInfo` that caused `PropsInfoItem` objects associated with the `Base` property to always be the base object of the root object.
-
 
 2025-06-01 - 1.3.3
 - Fixed an error causing the setter function not to be returned when calling `InfoItem.Prototype.GetFunc`.

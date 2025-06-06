@@ -46,7 +46,7 @@ class test_Inheritance {
             Result.Push({ Item: item, Result: result2, Line: A_LineNumber, Obj: PropsInfoObj, Copy: PropsInfoObjCopy, s1: s1, s2: s2, s3: s3, Condition: this.GetCondition(A_LineNumber, A_LineFile, parent_func, &RemovedResult, &Split, &LenIndent) })
         }
 
-        PropsInfoObj.Add(s2)
+        PropsInfoObj.RefreshProp(s2)
         result3 := _Compare(PropsInfoObj, PropsInfoObjCopy)
         if result3.Length {
             for item in result3 {
@@ -67,9 +67,9 @@ class test_Inheritance {
         } else {
             Result.Push({ Item: item, Result: result4, Line: A_LineNumber, Obj: PropsInfoObj, Copy: PropsInfoObjCopy, s1: s1, s2: s2, s3: s3, Condition: this.GetCondition(A_LineNumber, A_LineFile, parent_func, &RemovedResult, &Split, &LenIndent) })
         }
-        PropsInfoObjCopy.Add(s2)
+        PropsInfoObjCopy.RefreshProp(s2)
 
-        PropsInfoObj.Add(s3)
+        PropsInfoObj.RefreshProp(s3)
         result5 := _Compare(PropsInfoObj, PropsInfoObjCopy)
         if result5.Length {
             for item in result5 {
@@ -84,7 +84,7 @@ class test_Inheritance {
         if result6.Length {
             Result.Push({ Result: result6, Line: A_LineNumber, Obj: PropsInfoObj, Copy: PropsInfoObjCopy, s1: s1, s2: s2, s3: s3, Condition: this.GetCondition(A_LineNumber, A_LineFile, parent_func, &RemovedResult, &Split, &LenIndent) })
         }
-        PropsInfoObjCopy.Add(s3)
+        PropsInfoObjCopy.RefreshProp(s3)
 
         PropsInfoObj.Delete(s2)
         result7 := _Compare(PropsInfoObjCopy, PropsInfoObj)

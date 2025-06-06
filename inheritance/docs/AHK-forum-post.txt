@@ -18,7 +18,7 @@
 [*]GetBaseObjects
 [*]GetPropDesc
 [*]For Learners
-[*]Included Files[/list]
+[*]Changelog[/list]
 
 [color=#800000][size=145][b]Introduction[/b][/size][/color]
 [color=#000000][size=100]Inheritance is a library containing four functions to aid working with AHK's object inheritance model.[/size][/color]
@@ -69,7 +69,6 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [color=#800000][size=125][b]PropsInfo - instance methods[/b][/size][/color]
 [list][*][color=#000000][size=100]__New - The class constructor. This is not intended to be called directly, and instead instances should be created by calling the function [c]GetPropsInfo[/c].[/size][/color]
   [*][color=#000000][size=100]__Enum - The enumerator. When calling a [c]PropsInfo[/c] object from a [c]for[/c] loop, [c]PropsInfoObj.__Enum[/c]'s behavior varies depending on the [c]PropsInfoObj.StringMode[/c] and [c]PropsInfoObj.FilterActive[/c] property values.[/size][/color]
-  [*][color=#000000][size=100]Add - Updates the [c]PropsInfoItem[/c] objects associated with the property names passed to the function, adding any items if currently absent from the collection. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Delete - Removes the [c]PropsInfoItem[/c] object associated with each name passed to the function. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Dispose - Call this every time your code is finished using a [c]PropsInfo[/c] object. If you do not, you risk a reference cycle preventing some resources from being freed.[/size][/color]
   [*][color=#000000][size=100]FilterActivate - Activates the current filter on the object. The following is a brief description of filters in general. [c]PropsInfo[/c] objects have a built-in filter system that allows us to exclude certain properties from being accessed via the object. This is useful for situations when our code must respond to or interact with some properties but not others.[/size][/color]
@@ -90,11 +89,13 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
   [*][color=#000000][size=100]GetFilteredProps - Returns a container object that has been populated with references to [c]PropsInfoItem[/c] objects that have been processed through a filter.[/size][/color]
   [*][color=#000000][size=100]Has - Returns nonzero if an item exists in the [c]PropsInfo[/c] object's internal collection.[/size][/color]
   [*][color=#000000][size=100]Refresh - Updates all [c]PropsInfoItem[/c] objects within the collection to reflect the current state of the root object and the base objects. (Added in 1.4.0)[/size][/color]
+  [*][color=#000000][size=100]RefreshProp - Updates the [c]PropsInfoItem[/c] objects associated with the property names passed to the function, adding any items if currently absent from the collection. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]ToArray - Returns an array of property names as string, or [c]PropsInfoItem[/c] objects.[/size][/color]
   [*][color=#000000][size=100]ToMap - Returns a map with keys that are property names and values that are [c]PropsInfoItem[/c] objects.[/size][/color][/list]
 
 [color=#800000][size=125][b]PropsInfo - instance properties[/b][/size][/color]
 [list][*][color=#000000][size=100]Excluded - A comma-delimited list of properties that are not exposed by the [c]PropsInfo[/c] object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)[/size][/color]
+  [*][color=#000000][size=100]InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
   [*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] and if [c]<nonzero value>[/c] is the name of a cached filter, it will call [c]PropsInfoObj.FilterActivateFromCache(Value)[/c]; else it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
   [*][color=#000000][size=100]StringMode - Initially [c]0[/c]. If you set [c]PropsInfoObj.StringMode := <nonzero value>[/c], "string mode" becomes active on the [c]PropsInfo[/c] object. While [c]PropsInfoObj.StringMode == 1[/c], the [c]PropsInfo[/c] object behaves like an array of property names as string. The following are influenced by string mode: [c]__Enum[/c], [c]Get[/c], [c]__Item[/c]. By extension, the proxies are also influenced by string mode, though not directly.[/size][/color][/list]
@@ -169,9 +170,9 @@ MsgBox(proxy_map.__Class) ; Map
 
 [list][*][color=#000000][size=100]__New - The class constructor. This is not intended to be called directly. When [c]GetPropsInfo[/c] is called, the process calls [c]PropsInfoItem.Prototype.__New[/c] only once. The object returned from that call is then used as the base object for all of the other [c]PropsInfoItem[/c] objects added to the [c]PropsInfo[/c] object's internal containers.[/size][/color]
   [*][color=#000000][size=100]GetFunc - Returns the function object associated with the property.[/size][/color]
-  [*][color=#000000][size=100]GetOwner - Returns the object that owns the property.[/size][/color]
+  [*][color=#000000][size=100]GetOwner - Returns the object that owns the property. If the object no longer owns the property with the associated name, then the function returns 0.[/size][/color]
   [*][color=#000000][size=100]GetValue - Attempts to access the value associated with the property. If successful, the value is assigned to a [c]VarRef[/c] parameter and the function returns 0. If the property is not a value property nor does it have a [c]Get[/c] accessor, the function returns 1 and the [c]VarRef[/c] parameter remains unchanged.  If unsuccessful, the error object is assigned to the [c]VarRef[/c] parameter and the function returns 2. [/size][/color]
-  [*][color=#000000][size=100]Refresh - Calls [c]GetOwnPropDesc[/c] from the object that owns the property, updating the [c]PropsInfoItem[/c] object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the [c]PropsInfoItem[/c] object was created or the last time [c]Refresh[/c] was called.[/size][/color][/list]
+  [*][color=#000000][size=100]Refresh - Calls [c]GetOwnPropDesc[/c] from the object that owns the property, updating the [c]PropsInfoItem[/c] object's own properties according to the return value. Said in another way, it updates the cached values to reflect any changes to the original object since the time the [c]PropsInfoItem[/c] object was created or the last time [c]Refresh[/c] was called. If the object no longer owns the property with the associated name, then the function returns 0.[/size][/color][/list]
 
 [color=#800000][size=125][b]PropsInfoItem - instance properties[/b][/size][/color]
 [color=#000000][size=100]In these descriptions, the phrase "the property" means "the object's property that was used to create this [c]PropsInfoItem[/c] object."[/size][/color]
@@ -183,6 +184,7 @@ MsgBox(proxy_map.__Class) ; Map
     [*][color=#000000][size=100]The [c]PropsInfoItem[/c] object is associated with an inherited property of the object that was passed to [c]GetPropsInfo[/c].[/size][/color][/list]
   [*][color=#000000][size=100]Count - Returns the number of objects that own a property by the same name within the inheritance chain of the object that was passed to [c]GetPropsInfo[/c] that produced the [c]PropsInfoItem[/c] object.[/size][/color]
   [*][color=#000000][size=100]Index - An integer representing the index position of the object that owns the property relative to the input object's inheritance chain. A value of [c]0[/c] indicates the property is an own property of the input object. A value of [c]1[/c] indicates the property is an own property of [c]InputObj.Base[/c]. A value of [c]2[/c] indicates the property is an own property of [c]InputObj.Base.Base[/c] ...[/size][/color]
+  [*][color=#000000][size=100]InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Kind - Returns a string representation of the kind of property. These are the values:[/size][/color]
   [list][*][color=#000000][size=100]"Call"[/size][/color]
     [*][color=#000000][size=100]"Get"[/size][/color]
@@ -371,30 +373,5 @@ MsgBox(_child.Parent.Value) ; Error: This value of type "Child" has no property 
   [*][color=#000000][size=100]How overriding a property works[/size][/color]
   [*][color=#000000][size=100]What is a [c]Class[/c] in AHK's object model[/size][/color][/list]
 
-[color=#800000][size=145][b]Included files[/b][/size][/color]
-[list][*][color=#000000][size=100]ClassFactory.ahk - Contains [c]ClassFactory[/c].[/size][/color]
-  [*][color=#000000][size=100]example-Inheritance.ahk - Contains a walkthrough demonstrating the usage of [c]GetPropsInfo[/c] and a [c]PropsInfo[/c] object.[/size][/color]
-  [*][color=#000000][size=100]GetBaseObjects.ahk - Contains [c]GetBaseObjects[/c].[/size][/color]
-  [*][color=#000000][size=100]GetPropDesc.ahk - Contains [c]GetPropDesc[/c].[/size][/color]
-  [*][color=#000000][size=100]GetPropsInfo-info.md - Contains some ramblings about why I wrote [c]GetPropsInfo[/c] and other details.[/size][/color]
-  [*][color=#000000][size=100]GetPropsInfo.ahk - Contains [c]GetPropsInfo[/c], [c]PropsInfo[/c], and [c]PropsInfoItem[/c].[/size][/color]
-  [*][color=#000000][size=100]Inheritance_Shared.ahk - Contains one line of code that is needed by most of the functions: [c]ObjGetOwnPropDesc := Object.Prototype.GetOwnPropDesc[/c][/size][/color]
-  [*][color=#000000][size=100]Inheritance.ahk - A short script that calls [c]#include[/c] for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".[/size][/color][/list]
-
 [color=#800000][size=145]Changelog[/size][/color]
-[color=#000000][size=100][b]2025-05-26 - v1.3.2[/b][/size][/color]
-[list][*]Fixed an issue where `PropsInfo.Prototype.Dispose` would call `PropsInfoObj.Filter.Clear`, resulting in the filter being invalidated. This no longer occurs.[/list]
-[color=#000000][size=100][b]2025-05-25 - v1.3.1[/b][/size][/color]
-[list][*]Added parameter [c]ExcludeMethods=false[/c] to [c]GetPropsInfo[/c].[/list]
-[color=#000000][size=100][b]2025-05-24 - v1.3.0[/b][/size][/color]
-[list][*]Added [c]PropsInfo.FilterGroup[/c].
-  [*]Added [c]PropsInfo.Prototype.FilterSet[/c].
-  [*]Adjusted [c]PropsInfo.Prototype.FilterAdd[/c] and [c]PropsInfo.Prototype.FilterDelete[/c] to call their [c]PropsInfo.FilterGroup.Prototype[/c] counterpart.
-  [*]Adjusted [c]PropsInfo.Prototype.FilterCache[/c] and [c]PropsInfo.Prototype.FilterActivateFromCache[/c] to also cache / restore the [c]PropsInfo.FilterGroup[/c] object.
-  [*]Removed [c]PropsInfoObj._FilterIndex[/c].[/size][/list]
-
-[color=#000000][size=100][b]2025-05-05[/b][/size][/color]
-[list][*][color=#000000][size=100]Fixed an issue with [c]PropsInfoItem.Prototype.GetOwner[/c]. Previously, it was possible for the method to return an incorrect value. While it is still possible for the method to return a value that is different from the original owner of the property, this is much less likely and less of a concern than previous. See the parameter hint above the method for details about the limitations of the method.[/size][/color][/list]
-
-[color=#000000][size=100][b]2025-05-03[/b][/size][/color]
-[list][*][color=#000000][size=100]Finalized some details and uploaded to the AutoHotkey forums.[/size][/color][/list]
+Please view the changelog on the Github webpage [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/inheritance/docs/Changelog.md[/url]
