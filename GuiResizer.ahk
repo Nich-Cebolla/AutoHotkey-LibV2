@@ -14,10 +14,10 @@ class GuiResizer {
      * `GuiResizer` modifies the `Gui.Prototype.Show` method slightly. This is the change:
         @example
         Gui.Prototype.DefineProp('Show', {Call: _Show})
-        _Show(Self) {
+        _Show(Self, Opt?) {
             Show := Gui.Prototype.Show
             this.JustShown := 1
-            Show(Self)
+            Show(Self, Opt ?? unset)
         }
         @
      * @param {Gui} GuiObj - The GUI object that contains the controls to be resized.
@@ -108,10 +108,10 @@ class GuiResizer {
                 throw Error('A control has ``Resizer`` property, but the property does not have'
                 '`r`na ``w``, ``h``, ``x``, or ``y`` property.', -1, 'Ctrl name: ' Ctrl.Name)
 
-            _Show(Self) {
+            _Show(Self, Opt?) {
                 Show := Gui.Prototype.Show
                 this.JustShown := 1
-                Show(Self)
+                Show(Self, Opt ?? unset)
             }
         }
         if SetSizerImmediately
