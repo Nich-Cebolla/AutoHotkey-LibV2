@@ -1,5 +1,5 @@
 
-# Inheritance - v1.3.3
+# Inheritance - v1.4.0
 
 ## Table of Contents
 
@@ -18,8 +18,8 @@
   </ol>
   <a href="#propsinfoitem-class"><li>PropsInfoItem class</li></a>
   <ol type="A">
-    <a href="#propsinfo---instance-methods"><li>PropsInfoItem - instance methods</li></a>
-    <a href="#propsinfo---instance-properties"><li>PropsInfoItem - instance properties</li></a>
+    <a href="#propsinfoitem---instance-methods"><li>PropsInfoItem - instance methods</li></a>
+    <a href="#propsinfoitem---instance-properties"><li>PropsInfoItem - instance properties</li></a>
   </ol>
   <a href="#classfactory"><li>ClassFactory</li></a>
   <a href="#getbaseobjects"><li>GetBaseObjects</li></a>
@@ -83,6 +83,8 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 
 - __New - The class constructor. This is not intended to be called directly, and instead instances should be created by calling the function `GetPropsInfo`.
 - __Enum - The enumerator. When calling a `PropsInfo` object from a `for` loop, `PropsInfoObj.__Enum`'s behavior varies depending on the `PropsInfoObj.StringMode` and `PropsInfoObj.FilterActive` property values.
+- Add - Updates the `PropsInfoItem` objects associated with the property names passed to the function, adding any items if currently absent from the collection. (Added in 1.4.0)
+- Delete - Removes the `PropsInfoItem` object associated with each name passed to the function. (Added in 1.4.0)
 - Dispose - Call this every time your code is finished using a `PropsInfo` object. If you do not, you risk a reference cycle preventing some resources from being freed.
 - FilterActivate - Activates the current filter on the object. The following is a brief description of filters in general. `PropsInfo` objects have a built-in filter system that allows us to exclude certain properties from being accessed via the object. This is useful for situations when our code must respond to or interact with some properties but not others.
 - FilterActivateFromCache - Activates a cached filter.
@@ -93,6 +95,7 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 - FilterDeactivate - Deactivates the currently active filter. When called, all properties that were previously excluded by the filter become available again.
 - FilterDelete - Deletes a filter object from the currently active filter.
 - FilterDeleteFromCache - Deletes a cached filter.
+- FilterGetList - Returns a comma-delimited list of property names that were filtered out by the currently active filter. (Added in 1.4.0)
 - FilterRemoveFromExclude - Removes a property name from the string list of properties to exclude.
 - FilterSet - Sets the `PropsInfoObj.Filter` property with the input `PropsInfo.FilterGroup` object.
 - Get - Returns a `PropsInfoItem` object using a string name or integer index as the key. Note that the object's current value of `PropsInfoObj.StringMode` infleunces this method's behavior. See the section below "Accessing items by index".
@@ -100,11 +103,13 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 - GetProxy - Returns a proxy that can be passed to a function that expects an array or map.
 - GetFilteredProps - Returns a container object that has been populated with references to `PropsInfoItem` objects that have been processed through a filter.
 - Has - Returns nonzero if an item exists in the `PropsInfo` object's internal collection.
+- Refresh - Updates all `PropsInfoItem` objects within the collection to reflect the current state of the root object and the base objects. (Added in 1.4.0)
 - ToArray - Returns an array of property names as string, or `PropsInfoItem` objects.
 - ToMap - Returns a map with keys that are property names and values that are `PropsInfoItem` objects.
 
 ### PropsInfo - instance properties
 
+- Excluded - A comma-delimited list of properties that are not exposed by the `PropsInfo` object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)
 - Filter - A `Map` object where the key is an index as integer and the value is the `PropsInfo.Filter` object created by calling `PropsInfoObj.FilterAdd`.
 - FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
 - StringMode - Initially `0`. If you set `PropsInfoObj.StringMode := <nonzero value>`, "string mode" becomes active on the `PropsInfo` object. While `PropsInfoObj.StringMode == 1`, the `PropsInfo` object behaves like an array of property names as string. The following are influenced by string mode: `__Enum`, `Get`, `__Item`. By extension, the proxies are also influenced by string mode, though not directly.

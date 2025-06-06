@@ -1,6 +1,8 @@
 #Include ..\Inheritance\Inheritance.ahk
 ; https://github.com/Nich-Cebolla/Stringify-ahk/blob/main/Stringify.ahk
 #Include <Stringify>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RemoveStringsAndComments.a
+#include ..\RemoveStringsAndComments.ahk
 
 
 test_Inheritance(0)
@@ -37,11 +39,11 @@ class test_Inheritance {
             Object.Prototype.Index_C := 7
             Any.Prototype.Index_C := 8
 
-            ; this.Obj_M2_I will inherit `Method2` and `prop2` from this.Obj_M2_I_b1
+            ; `this.Obj_M2_I` will inherit `Method2` and `prop2` from `this.Obj_M2_I_b1`
             ObjSetBase(this.Obj_M2_I := Map(), this.Obj_M2_I_b1 := M2())
             ; this.Obj_M2_I_b2 also has  `Method2` and `prop2`, so this should be counted as one override for each
             ObjSetBase(this.Obj_M2_I_b1, this.Obj_M2_I_b2 := M())
-            ; The base to this.Obj_M2_I_b2 is M.Prototype, which is what provides this.Obj_M2_I_b2
+            ; The base to `this.Obj_M2_I_b2` is `M.Prototype`, which is what provides `this.Obj_M2_I_b2`
             ; with `method2` and `prop2`. For `GetPropsInfo` to differentiate between a method that is
             ; overridden and a method that is inheritedd it can check the function name, which, if
             ; inherited, should have the same name as the function on the prototype. See the notes
