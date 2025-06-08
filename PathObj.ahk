@@ -37,29 +37,28 @@
  */
 class PathObj {
     __New(Name := '$') {
-        this.DefineProp('IsRoot', { Value: 1 })
         this.Name := Name
         this.Count := 1
+        this.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot'))
     }
     Call() {
-        if this.IsRoot {
-            return this.Name
-        }
         o := this
         p := ''
-        while !o.IsRoot {
-            p := o.GetPathSegment() p
+        loop {
+            if o.GetPathSegment(&p) {
+                break
+            }
             o := o.Base
         }
         return o.Name p
     }
     MakeProp(Name) {
-        ObjSetBase(Segment := { IsRoot: 0, Name: Name, Count: this.Count + 1 }, this)
+        ObjSetBase(Segment := { Name: Name, Count: this.Count + 1 }, this)
         Segment.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp'))
         return Segment
     }
     MakeItem(Name) {
-        ObjSetBase(Segment := { IsRoot: 0, Name: Name, Count: this.Count + 1 }, this)
+        ObjSetBase(Segment := { Name: Name, Count: this.Count + 1 }, this)
         if IsNumber(Name) {
             Segment.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number'))
         } else {
@@ -67,13 +66,16 @@ class PathObj {
         }
         return Segment
     }
-    __GetPathSegmentProp() {
-        return '.' this.Name
+    __GetPathSegmentItem_Number(&Path) {
+        Path := '[' this.Name ']' Path
     }
-    __GetPathSegmentItem_Number() {
-        return '[' this.Name ']'
+    __GetPathSegmentItem_String(&Path) {
+        Path := '["' this.Name '"]' Path
     }
-    __GetPathSegmentItem_String() {
-        return '["' this.Name '"]'
+    __GetPathSegmentProp(&Path) {
+        Path := '.' this.Name Path
+    }
+    __GetPathSegmentRoot(*) {
+        return 1
     }
 }
