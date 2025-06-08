@@ -1,4 +1,10 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
 /**
  * @classdesc - This is a solution for tracking object paths using strings.
  * @example
