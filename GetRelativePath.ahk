@@ -17,7 +17,7 @@
  * - `RelativeTo` should always be a directory path. Using a file path will throw off the results by 1
  * directory level.
  * - `RelativeTo` can also be relative. If it is a relative path, `RelativeTo` will be resolved relative
- * to the workin directory.
+ * to the working directory.
  * - The path does not need to exist.
  * @returns {String}
  */
