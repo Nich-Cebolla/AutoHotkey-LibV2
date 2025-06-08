@@ -110,7 +110,7 @@ Each `PropsInfo` object is a container for one or more `PropsInfoItem` object re
 ### PropsInfo - instance properties
 
 - Excluded - A comma-delimited list of properties that are not exposed by the `PropsInfo` object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)
-- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)
+- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not include the root object. (Added in 1.4.0)
 - Filter - A `Map` object where the key is an index as integer and the value is the `PropsInfo.Filter` object created by calling `PropsInfoObj.FilterAdd`.
 - FilterActive - Initially `0`. If you set `PropsInfoObj.FilterActive := <nonzero value>` it will call `PropsInfoObj.FilterActivate`. If you set `PropsInfoObj.FilterActive := <falsy value>`, it will call `PropsInfoObj.FilterDeactivate`.
 - StringMode - Initially `0`. If you set `PropsInfoObj.StringMode := <nonzero value>`, "string mode" becomes active on the `PropsInfo` object. While `PropsInfoObj.StringMode == 1`, the `PropsInfo` object behaves like an array of property names as string. The following are influenced by string mode: `__Enum`, `Get`, `__Item`. By extension, the proxies are also influenced by string mode, though not directly.
@@ -203,7 +203,7 @@ In these descriptions, the phrase "the property" means "the object's property th
     - The `PropsInfoItem` object is associated with an inherited property of the object that was passed to `GetPropsInfo`.
 - Count - Returns the number of objects that own a property by the same name within the inheritance chain of the object that was passed to `GetPropsInfo` that produced the `PropsInfoItem` object.
 - Index - An integer representing the index position of the object that owns the property relative to the input object's inheritance chain. A value of `0` indicates the property is an own property of the input object. A value of `1` indicates the property is an own property of `InputObj.Base`. A value of `2` indicates the property is an own property of `InputObj.Base.Base` ...
-- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not incldue the root object. (Added in 1.4.0)
+- InheritanceDepth - The number of base objects that have properties represented in the collection. This does not include the root object. (Added in 1.4.0)
 - Kind - Returns a string representation of the kind of property. These are the values:
   - "Call"
   - "Get"
