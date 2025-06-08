@@ -35,8 +35,8 @@ class RectHighlight extends Gui {
      * is updated using the `Obj` object's current position and size. When `Options.Duration <= 0`,
      * `Options.Blink` has no effect.
      * @param {Integer} [Options.Border=2] - The border thickness in pixels.
-     * @param {String} [Options.Color='00e0fe'] - The color of the highlighting. The default value is a light
-     * blue.
+     * @param {String} [Options.Color='00e0fe'] - The color of the highlighting. The default value is
+     * a light blue.
      * @param {Integer} [Options.Duration=-3000] - The duration (milliseconds) passed to `SetTimer`.
      * - See the description of `Options.Blink` for information about how `Options.Duration` is used
      * when it is a positive number.
@@ -95,6 +95,7 @@ class RectHighlight extends Gui {
                 x += gx
                 y += gy
             }
+            return
         } else if HasProp(Obj, 'hWnd') {
             WinGetPos(&x, &y, &w, &h, Obj.hWnd)
             if Obj is Gui.Control {
@@ -102,6 +103,7 @@ class RectHighlight extends Gui {
                 x += gx
                 y += gy
             }
+            return
         } else {
             for Arr in this.__Properties {
                 Flag := 1
@@ -124,12 +126,11 @@ class RectHighlight extends Gui {
                             w := Arr[3]
                             h := Arr[4]
                     }
+                    return
                 }
             }
         }
-        if !IsSet(x) {
-            throw ValueError('The input object dose not have the required properties for ``RectHighlight``.', -1, 'Type(Obj) == ' Type(Obj))
-        }
+        throw ValueError('The input object dose not have the required properties for ``RectHighlight``.', -1, 'Type(Obj) == ' Type(Obj))
     }
 
     /**
@@ -140,7 +141,8 @@ class RectHighlight extends Gui {
      * set with a nonzero value when `Options.Duration > 0`. When `Options.Duration > 0`, and when
      * `Options.Blink` is nonzero, the visibility of the rectangle will be toggled every time the
      * timer calls its function. Therefore, if `RectHighlightObj.Timer > 0`, the visibility is going
-     * to be toggled anyway when the timer calls the function for the last time before disabling itself.
+     * to be toggled anyway when the timer calls the function for the last time before disabling
+     * itself.
      *
      * - If `Options.Blink` is falsy, visibility is never toggled. This is because the timer updates
      * the position and/or size of the rectangle instead of toggling visibility.
@@ -222,7 +224,6 @@ class RectHighlight extends Gui {
             if Visibility {
                 this.SetRegion()
             } else {
-                this.Visible := false
                 this.Hide()
             }
         }
@@ -236,6 +237,7 @@ class RectHighlight extends Gui {
             if this.Options.HasOwnProp('Obj') {
                 this.Options.DeleteProp('Obj')
             }
+            this.DeleteProp('Options')
         }
         this.Destroy()
     }
@@ -390,7 +392,6 @@ class RectHighlight extends Gui {
         )
         this.Move(ox - O.OffsetL - O.Border, oy - O.OffsetT - O.Border, OuterR, OuterB)
         if Show {
-            this.Visible := true
             this.Show('NoActivate')
         }
         ; this.GetPos(&tx, &ty, &tw, &th)
@@ -451,7 +452,6 @@ class RectHighlight extends Gui {
             this.OnHide()
         }
         this.Hide()
-        this.Visible := false
     }
 
     __ThrowOverrideError(fn) {
@@ -570,12 +570,19 @@ class RectHighlight extends Gui {
      *
      * Regarding the getter:
      *
+     * The function returned by the getter depends on the value of `Options.Blink`, and whether you
+     * have set your own callback function using `RectHighlight.Prototype.SetTimerFunc`. In either
+     * case, the function object is located on the `RectHighlightObj.__Func_Move` property or the
+     * `RectHighlightObj.__Func_Blink` property.
+     *
      * If `Which` is set, the current value of `Options.Blink` is ignored.
-     * - If `Which` is 1, returns `_Timer_Move`.
-     * - If `Which` is 2, returns `_Timer_Blink`.
+     * - If `Which` is 1, returns `RectHighlightObj.__Func_Move`, which is the function used when
+     * `Options.Blink` is falsy.
+     * - If `Which` is 2, returns `RectHighlightObj.__Func_Blink`, which is the function used when
+     * `Options.Blink` is nonzero.
      * - If `Which` is unset
-     *   - If `Options.Blink` is nonzero, returns `_Timer_Blink`.
-     *   - If `Options.Blink` is falsy, returns `_Timer_Move`.
+     *   - If `Options.Blink` is falsy, returns `RectHighlightObj.__Func_Move`.
+     *   - If `Options.Blink` is nonzero, returns `RectHighlightObj.__Func_Blink`.
      *
      * Regarding the setter, see the parameter hint above `RectHighlight.Prototype.SetTimerFunc`.
      * @param [Which] - Either 1 or 2 as described in the description.
@@ -596,6 +603,8 @@ class RectHighlight extends Gui {
         }
         Set => this.SetTimerFunc(Value, Which ?? unset)
     }
+
+    Visible => DllCall('IsWindowVisible', 'ptr', this.Hwnd, 'int')
 
     static __New() {
         if this.Prototype.__Class == 'RectHighlight' {
