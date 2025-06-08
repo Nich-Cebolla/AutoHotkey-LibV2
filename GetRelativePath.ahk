@@ -19,7 +19,8 @@
  * - `RelativeTo` can also be relative. If it is a relative path, `RelativeTo` will be resolved relative
  * to the working directory.
  * - The path does not need to exist.
- * @returns {String}
+ * @returns {String|Integer} - If successful, returns the new relative path.
+ * - If the input `Path` and input `RelativeTo` are located on different drives, returns `1`.
  */
 GetRelativePath(Path, RelativeTo?) {
     if !IsSet(RelativeTo) {
