@@ -31,6 +31,7 @@
  * - Be passed to a function that expects an iterable object like any of the three above bullet points.
  * - Filter the properties according to one or more conditions.
  * - Get the function objects associated with the properties.
+ * - Get the values associated with the properties.
  *
  * `PropsInfoItem` objects are modified descriptor objects.
  * @see {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}.
@@ -1041,18 +1042,6 @@ class PropsInfo {
         }
         return Result
     }
-
-    ; ToTreeView(
-    ;     GuiObj
-    ;   , Name
-    ;   , Opt := '-ReadOnly'
-    ;   , Parent := 0
-    ;   , Options?
-    ; ) {
-    ;     TV := PropsInfoTree(GuiObj, Opt || unset)
-    ;     TV.AddRoot(this, Name, Parent, Options ?? {})
-    ;     return TV
-    ; }
 
     /**
      * @memberof PropsInfo
