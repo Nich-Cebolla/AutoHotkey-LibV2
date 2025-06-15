@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParse.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
 
@@ -27,12 +27,18 @@ class QuickParse {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParse` with `Path`.
+     * @param {*} [Root] - If set, the root object onto which properties are assigned will be
+     * `Root`, and `QuickParse` will return the modified `Root` at the end of the function.
+     * - If `AsMap` is true and the first open bracket in the JSON string is a curly bracket, `Root`
+     * must have a method `Set`.
+     * - If the first open bracket in the JSON string is a square bracket, `Root` must have methods
+     * `Push` and `Pop`.
      * @param {Boolean} [AsMap = false] - If true, JSON objects are converted into AHK `Map` objects.
      * @param {Boolean} [MapCaseSense = false] - The value set to the `MapObj.CaseSense` property.
      * `MapCaseSense` is ignored when `AsMap` is false.
      * @returns {Object|Array}
      */
-    static Call(Str?, Path?, Encoding?, AsMap := false, MapCaseSense := false)  {
+    static Call(Str?, Path?, Encoding?, Root?, AsMap := false, MapCaseSense := false) {
         ;@region Initialization
         static ArrayItem := QuickParse.Patterns.ArrayItem
         , ObjectPropName := QuickParse.Patterns.ObjectPropName
@@ -68,12 +74,31 @@ class QuickParse {
             SetValue := _SetProp2
         }
 
-        if Match[0] == '[' {
-            Root := Obj := []
-            Pattern := ArrayItem
+        if IsSet(Root) {
+            if Match[0] == '[' {
+                if !HasMethod(Root, 'Push') || !HasMethod(Root, 'Pop') {
+                    throw ValueError('The value passed to the ``Root`` parameter is required to have'
+                        ' methods ``Push`` and ``Pop`` when the opening bracket in the JSON is a square'
+                        ' bracket.', -1)
+                }
+                Pattern := ArrayItem
+                Obj := Root
+            } else {
+                if AsMap && !HasMethod(Root, 'Set') {
+                    throw ValueError('The value passed to the ``Root`` parameter is required to have'
+                        ' a ``Set`` method when ``AsMap`` is true.', -1)
+                }
+                Pattern := ObjectPropName
+                Obj := Root
+            }
         } else {
-            Root := Obj := GetObj()
-            Pattern := ObjectPropName
+            if Match[0] == '[' {
+                Root := Obj := []
+                Pattern := ArrayItem
+            } else {
+                Root := Obj := GetObj()
+                Pattern := ObjectPropName
+            }
         }
         Stack := []
         Pos := Match.Pos + 1
@@ -200,11 +225,11 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             if InStr(MatchValue['text'], '\') {
-                SetValue(Match['name'], StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['text'], '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), '\\', '\'))
+                SetValue(Match, StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['text'], '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), '\\', '\'))
             } else if MatchValue['text'] && MatchValue.Text !== '""' {
-                SetValue(Match['name'], MatchValue['text'])
+                SetValue(Match, MatchValue['text'])
             } else {
-                SetValue(Match['name'], '')
+                SetValue(Match, '')
             }
             _PrepareNextObj(MatchValue)
         }
@@ -213,7 +238,7 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match['name'], _obj := [])
+            SetValue(Match, _obj := [])
             Stack.Push({ Obj: Obj, Handler: _GetContextObject })
             Obj := _obj
             Pattern := ArrayItem
@@ -224,7 +249,7 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match['name'], _obj := GetObj())
+            SetValue(Match, _obj := GetObj())
             if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
                 _Throw(1, Pos)
             }
@@ -242,7 +267,7 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match['name'], 0)
+            SetValue(Match, 0)
             if !RegExMatch(Str, ObjectFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -253,7 +278,7 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match['name'], 1)
+            SetValue(Match, 1)
             if !RegExMatch(Str, ObjectTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -264,7 +289,7 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match['name'], '')
+            SetValue(Match, '')
             if !RegExMatch(Str, ObjectNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -278,7 +303,7 @@ class QuickParse {
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            SetValue(Match['name'], Number(MatchValue['n']))
+            SetValue(Match, Number(MatchValue['n']))
             _PrepareNextObj(MatchValue)
         }
         ;@endregion
@@ -340,13 +365,13 @@ class QuickParse {
             }
         }
         _SetProp1(MatchName, Value) {
-            Obj.Set(MatchName, Value)
+            Obj.Set(MatchName['name'], Value)
         }
         _SetProp2(MatchName, Value) {
-            this.%Matchname[0]% := Value
+            Obj.DefineProp(MatchName['name'], { Value: Value })
         }
         _Throw(Code, Extra?, n := -2) {
-           switch Code, 0 {
+            switch Code, 0 {
                 case '1': throw Error('There is an error in the JSON string.', n, IsSet(Extra) ? 'Near pos: ' Extra : '')
             }
         }
