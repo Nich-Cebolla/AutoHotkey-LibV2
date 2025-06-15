@@ -38,6 +38,9 @@ class ParamsList extends Array {
             if this[-1].Default && RegExMatch(this[-1].Default, Replacement '(\d+)' Replacement, &Match) {
                 this[-1].Default := Trim(Replaced[Match[1]][0], '`s`t`r`n')
             }
+            if this[-1].Symbol && RegExMatch(this[-1].Symbol, Replacement '(\d+)' Replacement, &Match) {
+                this[-1].Symbol := Trim(Replaced[Match[1]][0], '`s`r`r`n')
+            }
         }
 
         return
