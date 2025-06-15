@@ -12,14 +12,14 @@ class GuiResizer {
      * `Gui.Prototype.OnEvent('Size', Callback)`. This function requires a bit of preparation. See
      * the longer explanation within the source document for more information. Note that
      * `GuiResizer` modifies the `Gui.Prototype.Show` method slightly. This is the change:
-        @example
-        Gui.Prototype.DefineProp('Show', {Call: _Show})
-        _Show(Self, Opt?) {
-            Show := Gui.Prototype.Show
-            this.JustShown := 1
-            Show(Self, Opt ?? unset)
-        }
-        @
+     *  @example
+     *  Gui.Prototype.DefineProp('Show', {Call: _Show})
+     *  _Show(Self, Opt?) {
+     *      Show := Gui.Prototype.Show
+     *      this.JustShown := 1
+     *      Show(Self, Opt ?? unset)
+     *  }
+     *  @
      * @param {Gui} GuiObj - The GUI object that contains the controls to be resized.
      * @param {Integer} [Interval=33] - The interval at which resizing occurs after initiated. Once
      * the `Size` event has been raised, the callback is set to a timer that loops every `Interval`
@@ -180,7 +180,11 @@ class GuiResizer {
         ; GuiResizer.OutputDebug(this, A_ThisFunc, A_LineNumber,
         ; , 'Resize function ticked. Size: W' gw ' H' gh)
         this.IterateCtrlContainers(_Size, _Move, _MoveAndSize)
-        this.Active.LastW := gw, this.Active.LastH := gh
+        if this.HasOwnProp('Callback') {
+            this.Callback.Call(this.GuiObj, this.Active.LastW, this.Active.LastH, gw, gh)
+        }
+        this.Active.LastW := gw
+        this.Active.LastH := gh
 
         _Size(Ctrl) {
             if !Ctrl.HasOwnProp('Resizer') {
@@ -255,6 +259,14 @@ class GuiResizer {
         }
     }
 
+    SetCallback(Callback) {
+        if Callback {
+            this.DefineProp('Callback', { Value: Callback })
+        } else if this.HasOwnProp('Callback') {
+            this.DeleteProp('Callback')
+        }
+    }
+
     /**
      * @description - Assigns the appropriate parameters to controls that are adjacent to one another.
      * The input controls must be aligned along one dimension; this method will not function as
@@ -263,29 +275,29 @@ class GuiResizer {
      * want to be resized along with the GUI window. Be sure to handle any surrounding controls
      * so they don't overlap.
      * Here's some examples:
-
-        ||||| ||||| |||||             |     |||||||
-        ||||| ||||| |||||     - OK    |     |||||||         |||||   - NOT OK
-        ||||| ||||| |||||             |     |||||||         |||||
-        _________________             |     |||||||
-        ||||        ||||              |
-        ||||        ||||     - OK     |         |||||
-        ||||                          |         |||||
-              ||||                    |         |||||
-              ||||                    |
-              ||||                    |
-                                      |
-        @example
-            ; You can run this example to see what it looks like
-            GuiObj := Gui('+Resize -DPIScale')
-            Controls := []
-            Loop 4
-                Controls.Push(GuiObj.Add('Edit', Format('x{} y{} w{} h{} vEdit{}'
-                , 10 + 220 * (A_Index - 1), 10, 200, 400, A_Index)))
-            GuiResizer.SetAdjacentControls(Controls)
-            GuiResizer(GuiObj)
-            GuiObj.Show()
-        @
+     *
+     *  ||||| ||||| |||||             |     |||||||
+     *  ||||| ||||| |||||     - OK    |     |||||||         |||||   - NOT OK
+     *  ||||| ||||| |||||             |     |||||||         |||||
+     *  _________________             |     |||||||
+     *  ||||        ||||              |
+     *  ||||        ||||     - OK     |         |||||
+     *  ||||                          |         |||||
+     *        ||||                    |         |||||
+     *        ||||                    |
+     *        ||||                    |
+     *                                |
+     *  @example
+     *      ; You can run this example to see what it looks like
+     *      GuiObj := Gui('+Resize -DPIScale')
+     *      Controls := []
+     *      Loop 4
+     *          Controls.Push(GuiObj.Add('Edit', Format('x{} y{} w{} h{} vEdit{}'
+     *          , 10 + 220 * (A_Index - 1), 10, 200, 400, A_Index)))
+     *      GuiResizer.SetAdjacentControls(Controls)
+     *      GuiResizer(GuiObj)
+     *      GuiObj.Show()
+     *  @
      * @param {Array} Controls - An array of controls to assign the appropriate parameters to.
      * @param {Boolean} Vertical - If true, the controls are aligned vertically; otherwise, they are aligned horizontally.
      * @param {Boolean} IncludeOpposite - If true, the opposite side of the control will be set to 1; otherwise, it will be set to 0.
