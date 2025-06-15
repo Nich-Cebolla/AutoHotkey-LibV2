@@ -290,6 +290,89 @@ class Pattern {
             '\{(?<name>.*?)\}\)'
         ')'
     )
+
+    /**
+     * Valid characters for Ahk variables and properties.
+     * @memberof Pattern
+     */
+    static AhkAllowedSymbolChars := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F])'
+    /**
+     * Valid characters for Ahk variables and properties excluding digits
+     * @memberof Pattern
+     */
+    static AhkAllowedSymbolCharsNoDigits := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F0-9])'
+    /**
+     * This pattern will match with property:value pairs within AHK object literal definitions.
+     * If used in a loop matching against a string that is an AHK object literal definition beginning
+     * after the open brace and ending before the close brace, this will match will all of the
+     * property:value pairs. This does not recurse into nested objects, but for any properties with
+     * values that are object literals, the "value" subcapture group will be the substring beginning
+     * and ending at the open and close brackets; defining a recursive function to go along with this
+     * is straightforward.
+     */
+    static AhkObjectPropertyValuePair := (
+        '\s*'
+        '(?<property>' this.AhkAllowedSymbolCharsNoDigits this.AhkObjectPropertyValuePair '*?)'
+        '\s*:\s*'
+        '(?<value>'
+            '(?:'
+                '(?:'
+                    '".*?(?<!``)(?:````)*+"'
+                '|'
+                    '(?<bracket1>\((?:[^)(]++|(?&bracket1))*\))'
+                '|'
+                    '(?<bracket2>\[(?:[^\][]++|(?&bracket2))*\])'
+                '|'
+                    '(?<bracket3>\{(?:[^}{]++|(?&bracket3))*\})'
+                ')?'
+                '[^,]*?'
+            ')+?'
+        ')'
+        '\s*(?:,|$)'
+    )
+
+    static JsonPropertyValuePair := (
+        '(?<=\s|^)"(?<name>.+)(?<!\\)(?:\\\\)*+":\s*'
+        '(?<value>'
+                '"(?<string>.*?)(?<!\\)(?:\\\\)*+"(*MARK:string)'
+            '|'
+                '(?<object>\{(?:[^}{]++|(?&object))*\})(*MARK:object)'
+            '|'
+                '(?<array>\[(?:[^\][]++|(?&array))*\])(*MARK:array)'
+            '|'
+                'false(*MARK:false)|true(*MARK:true)|null(*MARK:null)'
+            '|'
+                '(?<n>-?\d++(*MARK:number)(?:\.\d++)?)(?<e>[eE][+-]?\d++)?'
+        ')'
+    )
+
+    static Hexadecimal := '(?<hexadecimal>\b0[xX][0-9A-Fa-f]+\b)'
+
+    /**
+     * This pattern matches a pair of open and close parentheses with any number of nested pairs.
+     * It also skips over quoted strings so even if a quoted string contains an unpaired parenthesis,
+     * it doesn't disrupt the match.
+     */
+    static BracketEx := '(?(DEFINE)(?<quote>(?<!``)(?:``)*+(["`'])(?<text>.*?)(?<!``)(?:````)*+\g{-2}))(?<body>\(((?&quote)|[^"`')(]++|(?&body))*\))'
+
+    /**
+     * This pattern utilizes the above `BracketEx`
+     */
+    static JsonPropertyValuePairEx := (
+        '(?<=\s|^)"(?<name>.+)(?<!\\)(?:\\\\)*+":\s*'
+        '(?<value>'
+                '"(?<string>.*?)(?<!\\)(?:\\\\)*+"(*MARK:string)'
+            '|'
+                '(?<object>\{(?:[^}{]++|(?&object))*\})(*MARK:object)'
+            '|'
+                '(?<array>\[(?:[^\][]++|(?&array))*\])(*MARK:array)'
+            '|'
+                'false(*MARK:false)|true(*MARK:true)|null(*MARK:null)'
+            '|'
+                '(?<n>-?\d++(*MARK:number)(?:\.\d++)?)(?<e>[eE][+-]?\d++)?'
+        ')'
+    )
+
 }
 
 
