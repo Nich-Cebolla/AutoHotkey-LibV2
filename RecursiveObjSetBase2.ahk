@@ -81,5 +81,3 @@ RecursiveObjSetBase2(Subject, Base, RootPath := '$') {
         Stack.Pop()
     }
 }
-
-
