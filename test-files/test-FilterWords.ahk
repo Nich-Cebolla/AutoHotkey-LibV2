@@ -142,6 +142,14 @@ both of the following are true:
 
 The process ignores case and whitespace.
 
+To also ignore any non-word character, change these lines-
+_Input := RegExReplace(Input, '\s', '')
+_Item := RegExReplace(Item, '\s', '')
+
+to-
+_Input := RegExReplace(Input, '\W', '')
+_Item := RegExReplace(Item, '\W', '')
+
 For example, the following would satisfy the condition:
 Item := "This is an example item"
 Input := "Is ample"
