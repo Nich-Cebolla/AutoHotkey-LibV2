@@ -353,7 +353,7 @@ class Pattern {
      * It also skips over quoted strings so even if a quoted string contains an unpaired parenthesis,
      * it doesn't disrupt the match.
      */
-    static BracketEx := '(?(DEFINE)(?<quote>(?<!``)(?:``)*+(["`'])(?<text>.*?)(?<!``)(?:````)*+\g{-2}))(?<body>\(((?&quote)|[^"`')(]++|(?&body))*\))'
+    static BracketEx := '(?(DEFINE)(?<quote>(?<!``)(?:````)*+(["`'])(?<text>.*?)(?<!``)(?:````)*+\g{-2}))(?<body>\(((?&quote)|[^"`')(]++|(?&body))*\))'
 
     /**
      * This pattern utilizes the above `BracketEx`
