@@ -1520,8 +1520,8 @@ class PropsInfo {
             _Exclude(InfoItem) {
                 return InStr(this.Exclude, ',' InfoItem.Name ',')
             }
-            _Filter_1(InfoItem) => !InfoItem.Index
-            _Filter_2(InfoItem) => InfoItem.Index
+            _Filter_1(InfoItem) => InfoItem.Index
+            _Filter_2(InfoItem) => !InfoItem.Index
             _Filter_3(InfoItem) => InfoItem.HasOwnProp('Alt')
             _Filter_4(InfoItem) => !InfoItem.HasOwnProp('Alt')
         }
