@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParse.ahk
     Author: Nich-Cebolla
-    Version: 1.0.1
+    Version: 1.0.2
     License: MIT
 */
 
@@ -385,21 +385,21 @@ class QuickParse {
         ArrayNextChar := Format(NextChar, ']')
         ObjectNextChar := Format(NextChar, '}')
         this.Patterns := {
-            ArrayItem: 'is)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
-          , ArrayNumber: 's)(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?)' ArrayNextChar
-          , ArrayString: 's)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ArrayNextChar
-          , ArrayFalse: 'is)false' ArrayNextChar
-          , ArrayTrue: 'is)true' ArrayNextChar
-          , ArrayNull: 'is)null' ArrayNextChar
+            ArrayItem: 'iS)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
+          , ArrayNumber: 'S)(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?)' ArrayNextChar
+          , ArrayString: 'S)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ArrayNextChar
+          , ArrayFalse: 'iS)false' ArrayNextChar
+          , ArrayTrue: 'iS)true' ArrayNextChar
+          , ArrayNull: 'iS)null' ArrayNextChar
           , ArrayNextChar: ArrayNextChar
-          , ObjectPropName: 'is)\s*"(?<name>.+?)(?<!\\)(?:\\\\)*+":\s*(?<nextchar>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
-          , ObjectNumber: 's)(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?' ObjectNextChar
-          , ObjectString: 's)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ObjectNextChar
-          , ObjectFalse: 'is)false' ObjectNextChar
-          , ObjectTrue: 'is)true' ObjectNextChar
-          , ObjectNull: 'is)null' ObjectNextChar
+          , ObjectPropName: 'iS)\s*"(?<name>.+?)(?<!\\)(?:\\\\)*+":\s*(?<nextchar>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
+          , ObjectNumber: 'S)(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?' ObjectNextChar
+          , ObjectString: 'S)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ObjectNextChar
+          , ObjectFalse: 'iS)false' ObjectNextChar
+          , ObjectTrue: 'iS)true' ObjectNextChar
+          , ObjectNull: 'iS)null' ObjectNextChar
           , ObjectNextChar: ObjectNextChar
-          , ObjectInitialCheck: 's)\s*(?<nextchar>"|\})'
+          , ObjectInitialCheck: 'S)\s*(?<nextchar>"|\})'
         }
     }
 }
