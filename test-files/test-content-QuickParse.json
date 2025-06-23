@@ -1,0 +1,12 @@
+{
+  "Ui.Test1": { "Prop1": "Val1", "Prop2": "Val2" },
+  "Ui.Test2": { "Prop1": [1,2,3,4,5], "Prop2": [{"Prop1": "val1"},{"Prop2": "val2"}]},
+  "Ui.Test3": [{ "Prop1": "Val1", "Prop2": "Val2" },{ "Prop1": "Val1", "Prop2": "Val2" },[{ "Prop1": "Val1", "Prop2": "Val2" },{ "Prop1": "Val1", "Prop2": "Val2" }]],
+  "Ui.Test4": true,
+  "Ui.Test5": false,
+  "Ui.Test6": null,
+  "Ui.Test7": [1,2,3,4,"",6,7],
+  "Ui.Test7": [1,2,3,4,null,6,7],
+  "Ui.Test8": "{\"Prop\":\"val\"}",
+  "Ui.Test9": 10
+}
