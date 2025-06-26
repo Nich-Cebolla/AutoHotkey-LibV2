@@ -80,9 +80,21 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Call` with `Path`.
+     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
+     * whitespace characters so character position values are retained.
      * @returns {*}
      */
-    static Call(Root, CallbackConstructorArray, CallbackConstructorObject, CallbackSetterArray, CallbackSetterObject, Str?, Path?, Encoding?) {
+    static Call(
+        Root
+      , CallbackConstructorArray
+      , CallbackConstructorObject
+      , CallbackSetterArray
+      , CallbackSetterObject
+      , Str?
+      , Path?
+      , Encoding?
+      , RemoveComments := false
+    ) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem1
         , ObjectPropName := QuickParseEx.Patterns.ObjectPropName1
@@ -107,6 +119,16 @@ class QuickParseEx {
                 Str := A_Clipboard
             }
         }
+
+        if RemoveComments {
+            pos := 1
+            PatternRemoveComment := this.PatternRemoveComment
+            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
+                Pos := Match.Pos + Match.Len
+                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
+            }
+        }
+
         if !RegExMatch(Str, '[[{]', &Match) {
             throw ValueError('Invalid JSON.', -1)
         }
@@ -528,9 +550,11 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Find` with `Path`.
+     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
+     * whitespace characters so character position values are retained.
      * @returns {*}
      */
-    static Find(CallbackArray, CallbackObject, Str?, Path?, Encoding?) {
+    static Find(CallbackArray, CallbackObject, Str?, Path?, Encoding?, RemoveComments := false) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem2
         , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
@@ -560,11 +584,13 @@ class QuickParseEx {
             }
         }
 
-        pos := 1
-        PatternRemoveComment := this.PatternRemoveComment
-        while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
-            Pos := Match.Pos + Match.Len
-            Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
+        if RemoveComments {
+            pos := 1
+            PatternRemoveComment := this.PatternRemoveComment
+            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
+                Pos := Match.Pos + Match.Len
+                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
+            }
         }
 
         if !RegExMatch(Str, '[[{]', &Match) {
@@ -921,9 +947,21 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParse` with `Path`.
+     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
+     * whitespace characters so character position values are retained.
      * @returns {*}
      */
-    static Call2(Root, CallbackConstructorArray, CallbackConstructorObject, CallbackSetterArray, CallbackSetterObject, Str?, Path?, Encoding?) {
+    static Call2(
+        Root
+      , CallbackConstructorArray
+      , CallbackConstructorObject
+      , CallbackSetterArray
+      , CallbackSetterObject
+      , Str?
+      , Path?
+      , Encoding?
+      , RemoveComments := false
+    ) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem2
         , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
@@ -948,6 +986,16 @@ class QuickParseEx {
                 Str := A_Clipboard
             }
         }
+
+        if RemoveComments {
+            pos := 1
+            PatternRemoveComment := this.PatternRemoveComment
+            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
+                Pos := Match.Pos + Match.Len
+                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
+            }
+        }
+
         if !RegExMatch(Str, '[[{]', &Match) {
             throw ValueError('Invalid JSON.', -1)
         }
