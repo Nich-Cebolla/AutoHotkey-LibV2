@@ -24,13 +24,9 @@
  */
 class QuickParseEx {
     /**
-     * - Remove comments before calling `QuickParseEx.Call`.
-     * - Leave comments in when calling `QuickParseEx.Find` or `QuickParseEx.Call2`.
-     * @example
-     *  Obj := QuickParseEx(RegExReplace(FileRead(Path), QuickParseEx.PatternRemoveComment, ''))
-     * @
+     * `QuickParseEx` does not support comments at this time.
      */
-    static PatternRemoveComment := 's)(?://.*|(?:\R|^)[ \t]*/\*[\w\W]*?\*/[ \t]*)'
+    ; static PatternRemoveComment := 's)(?://.*|(?:\R|^)[ \t]*/\*[\w\W]*?\*/[ \t]*)'
 
     /**
      * - The callback functions each receive a value that represents the current depth. Consider the
@@ -80,8 +76,6 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Call` with `Path`.
-     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
-     * whitespace characters so character position values are retained.
      * @returns {*}
      */
     static Call(
@@ -93,7 +87,6 @@ class QuickParseEx {
       , Str?
       , Path?
       , Encoding?
-      , RemoveComments := false
     ) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem1
@@ -117,15 +110,6 @@ class QuickParseEx {
                 Str := FileRead(Path, Encoding ?? unset)
             } else {
                 Str := A_Clipboard
-            }
-        }
-
-        if RemoveComments {
-            pos := 1
-            PatternRemoveComment := this.PatternRemoveComment
-            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
-                Pos := Match.Pos + Match.Len
-                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
             }
         }
 
@@ -450,9 +434,6 @@ class QuickParseEx {
      * create the objects.
      * - Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str`
      * and `Path` are unset, the clipboard's contents are used.
-     * - You should not remove comments before calling `QuickParseEx.Find`. If you remove comments
-     * then the character positions will be incorrect. `QuickParseEx.Find` will handle removing
-     * comments for you and will retain the correct character positions.
      * - The callback functions each receive the `Stack` array. The values in the array are objects.
      * You can add properties to the objects do not change or remove the property { __Handler }. The
      * current depth is represented by `Stack.Length`.
@@ -550,11 +531,9 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Find` with `Path`.
-     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
-     * whitespace characters so character position values are retained.
      * @returns {*}
      */
-    static Find(CallbackArray, CallbackObject, Str?, Path?, Encoding?, RemoveComments := false) {
+    static Find(CallbackArray, CallbackObject, Str?, Path?, Encoding?) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem2
         , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
@@ -581,15 +560,6 @@ class QuickParseEx {
                 Str := FileRead(Path, Encoding ?? unset)
             } else {
                 Str := A_Clipboard
-            }
-        }
-
-        if RemoveComments {
-            pos := 1
-            PatternRemoveComment := this.PatternRemoveComment
-            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
-                Pos := Match.Pos + Match.Len
-                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
             }
         }
 
@@ -946,8 +916,6 @@ class QuickParseEx {
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParse` with `Path`.
-     * @param {Boolean} [RemoveComments = false] - If true, comments are removed and replaced with
-     * whitespace characters so character position values are retained.
      * @returns {*}
      */
     static Call2(
@@ -959,7 +927,6 @@ class QuickParseEx {
       , Str?
       , Path?
       , Encoding?
-      , RemoveComments := false
     ) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem2
@@ -983,15 +950,6 @@ class QuickParseEx {
                 Str := FileRead(Path, Encoding ?? unset)
             } else {
                 Str := A_Clipboard
-            }
-        }
-
-        if RemoveComments {
-            pos := 1
-            PatternRemoveComment := this.PatternRemoveComment
-            while RegExMatch(Str, PatternRemoveComment, &Match, Pos) {
-                Pos := Match.Pos + Match.Len
-                Str := StrReplace(Str, Match[0], FillStr[Match.Len], , , 1)
             }
         }
 

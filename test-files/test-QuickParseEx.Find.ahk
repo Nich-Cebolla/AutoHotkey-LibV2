@@ -1,14 +1,14 @@
 ﻿
 #include ..\QuickParseEx.ahk
 
-content := FileRead('example.json')
-; content := '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null }, "prop3": {}, "prop4": [], "prop5": "string" }'
+; content := FileRead('example.json')
+content := '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null }, "prop3": {}, "prop4": [], "prop5": "string", "prop6": -1000 }'
 
 test()
 
 test() {
-    obj := QuickParseEx.Find(ParseSetterArray, ParseSetterObject, , 'example.json')
-    ; obj := QuickParseEx.Find(ParseSetterArray, ParseSetterObject, '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null }, "prop3": {}, "prop4": [], "prop5": "string" }')
+    ; obj := QuickParseEx.Find(ParseSetterArray, ParseSetterObject, , 'example.json')
+    obj := QuickParseEx.Find(ParseSetterArray, ParseSetterObject, '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null }, "prop3": {}, "prop4": [], "prop5": "string", "prop6": -1000 }')
 
     sleep 1
 }
