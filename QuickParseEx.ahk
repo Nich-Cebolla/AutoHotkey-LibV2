@@ -723,7 +723,6 @@ class QuickParseEx {
             Pos := Match.Pos + Match.Len
             if Stack.Length {
                 Active := Stack.Pop()
-                Obj := Active.Obj
                 Active.__Handler.Call()
             }
         }
