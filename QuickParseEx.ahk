@@ -241,7 +241,7 @@ class QuickParseEx {
             if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackSetterArray(Obj, Stack.Length, Number(MatchValue['n'])) {
+            if CallbackSetterArray(Obj, Stack.Length, Number(MatchValue['value'])) {
                 flag_exit := true
             }
             _PrepareNextArr(MatchValue)
@@ -363,7 +363,7 @@ class QuickParseEx {
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackSetterObject(Obj, Match, Stack.Length, Number(MatchValue['n'])) {
+            if CallbackSetterObject(Obj, Match, Stack.Length, Number(MatchValue['value'])) {
                 flag_exit := true
             }
             _PrepareNextObj(MatchValue)
@@ -1081,7 +1081,7 @@ class QuickParseEx {
             if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackSetterArray(Obj, Stack, Match, MatchValue, Number(MatchValue['n'])) {
+            if CallbackSetterArray(Obj, Stack, Match, MatchValue, Number(MatchValue['value'])) {
                 flag_exit := true
             }
             _PrepareNextArr(MatchValue)
@@ -1205,7 +1205,7 @@ class QuickParseEx {
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackSetterObject(Obj, Stack, Match, MatchValue, Number(MatchValue['n'])) {
+            if CallbackSetterObject(Obj, Stack, Match, MatchValue, Number(MatchValue['value'])) {
                 flag_exit := true
             }
             _PrepareNextObj(MatchValue)

@@ -199,7 +199,7 @@ class QuickParse {
             if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            Obj.Push(Number(MatchValue['n']))
+            Obj.Push(Number(MatchValue['value']))
             _PrepareNextArr(MatchValue)
         }
         OnSquareCloseArr(Match, *) {
@@ -303,7 +303,7 @@ class QuickParse {
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            SetValue(Match, Number(MatchValue['n']))
+            SetValue(Match, Number(MatchValue['value']))
             _PrepareNextObj(MatchValue)
         }
         ;@endregion
@@ -386,14 +386,14 @@ class QuickParse {
         ObjectNextChar := Format(NextChar, '}')
         this.Patterns := {
             ArrayItem: 'iS)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
-          , ArrayNumber: 'S)(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?)' ArrayNextChar
+          , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
           , ArrayString: 'S)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ArrayNextChar
           , ArrayFalse: 'iS)false' ArrayNextChar
           , ArrayTrue: 'iS)true' ArrayNextChar
           , ArrayNull: 'iS)null' ArrayNextChar
           , ArrayNextChar: ArrayNextChar
           , ObjectPropName: 'iS)\s*"(?<name>.+?)(?<!\\)(?:\\\\)*+":\s*(?<nextchar>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
-          , ObjectNumber: 'S)(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?' ObjectNextChar
+          , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
           , ObjectString: 'S)(?<=[,:[{\s])"(?<text>.*?)(?<!\\)(?:\\\\)*+"' ObjectNextChar
           , ObjectFalse: 'iS)false' ObjectNextChar
           , ObjectTrue: 'iS)true' ObjectNextChar
