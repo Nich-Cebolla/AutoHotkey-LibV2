@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParseEx.ahk
     Author: Nich-Cebolla
-    Version: 1.1.0
+    Version: 1.1.1
     License: MIT
 */
 ; Required for `QuickParseEx.Find`.
