@@ -435,8 +435,8 @@ class QuickParseEx {
      * - Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str`
      * and `Path` are unset, the clipboard's contents are used.
      * - The callback functions each receive the `Stack` array. The values in the array are objects.
-     * You can add properties to the objects do not change or remove the property { __Handler }. The
-     * current depth is represented by `Stack.Length`.
+     * You can add properties to the objects but do not change or remove the property { __Handler }.
+     * The current depth is represented by `Stack.Length`.
      * - If either callback function returns a nonzero value, `QuickParseEx.Find` will return after
      * completing the current action.
      * - This is how you should handle the fourth parameter:
@@ -453,9 +453,11 @@ class QuickParseEx {
      *      }
      *  }
      * @
+     * - The reason there is not a `CallbackOpenArray` or `CallbackOpenObject` is because those
+     * are handled by `CallbackArray` and `CallbackObject`.
      * - To get a grasp on what values are represented by either `RegExMatchInfo` object passed to
      * the callback functions, you can run "test-files\test-QuickParseEx.Find.ahk" with a debugger.
-     * Set breakpoints on the three `sleep 1` statements and have the "test-files\example.json" opened
+     * Set breakpoints on the five `sleep 1` statements and have the "test-files\example.json" opened
      * in another window. Follow along in the "example.json" with what you see in the `RegExMatchInfo`
      * objects. Here is a short example written out:
      * @example
@@ -480,22 +482,34 @@ class QuickParseEx {
      *   - 1st parameter: Stack.Length == 1
      *   - 2nd parameter: 24, the position of "-" after ", "
      *   - 3rd parameter: "char" = "-"
-     *   - 4th parameter: "value" = "-5e-5"; "char" = ","
-     * - 5. CallbackObject:
+     *   - 4th parameter: "value" = "-5e-5"; "char" = "]"
+     * - 5. CallbackCloseArray:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 30, the position of "]"
+     *   - 3rd parameter: "char" = "]"
+     * - 6. CallbackObject:
      *   - 1st parameter: Stack.Length == 0
      *   - 2nd parameter: 42, the position of "{" after "`"prop2`": "
      *   - 3rd parameter: "name" = "prop2"; "char" = "{"
      *   - 4th parameter: Match.Mark == "novalue"; "char" = "`"", which is the open quote before "prop2_1"
-     * - 6. CallbackObject:
+     * - 7. CallbackObject:
      *   - 1st parameter: Stack.Length == 1
      *   - 2nd parameter: 55, the position of "0"
      *   - 3rd parameter: "name" = "prop2_1"; "char" = "0"
      *   - 4th parameter: "value" = "0.12"; "char" = ","
-     * - 7. CallbackObject:
+     * - 8. CallbackObject:
      *   - 1st parameter: Stack.Length == 1
      *   - 2nd parameter: 72, the position of "n"
      *   - 3rd parameter: "name" = "prop2_2"; "char" = "n"
      *   - 4th parameter: "value" = "null"; "char" = "}"
+     * - 9. CallbackCloseObject:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 77, the position of "}"
+     *   - 3rd parameter: "char" = "}"
+     * - 10. CallbackCloseObject:
+     *   - 1st parameter: Stack.Length == 0
+     *   - 2nd parameter: 79, the position of "}"
+     *   - 3rd parameter: "char" = "}"
      * @param {*} CallbackArray - A `Func` or callable object that is called for each value
      * in a JSON array. The function does not need to return anything. Returning a nonzero
      * value will direct `QuickParseEx.Find` to return. See the notes in the description of
@@ -528,12 +542,38 @@ class QuickParseEx {
      * can check the `Mark` property. If the `Mark` property returns an empty string, then the "value"
      * subcapture group is available. If the `Mark` property returns "novalue", then the "value"
      * subcapture group is not available.
+     * @param {*} CallbackCloseArray - A `Func` or callable object that is called whenever a closing
+     * square bracket that ends a JSON array is encountered. The function does not need to return
+     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
+     * in the description of `QuickParseEx.Find` for some additional details. The function receives
+     * the following values:
+     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
+     * from the stack.
+     * - The character position of the closing bracket.
+     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
+     * returns the closing bracket, which will always be a closing square bracket. The object will
+     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
+     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
+     * `for` loop, e.g. `for name, value in Match`.
+     * @param {*} CallbackCloseObject - A `Func` or callable object that is called whenever a closing
+     * curly bracket that ends a JSON object is encountered. The function does not need to return
+     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
+     * in the description of `QuickParseEx.Find` for some additional details. The function receives
+     * the following values:
+     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
+     * from the stack.
+     * - The character position of the closing bracket.
+     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
+     * returns the closing bracket, which will always be a closing curly bracket. The object will
+     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
+     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
+     * `for` loop, e.g. `for name, value in Match`.
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
      * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Find` with `Path`.
      * @returns {*}
      */
-    static Find(CallbackArray, CallbackObject, Str?, Path?, Encoding?) {
+    static Find(CallbackArray, CallbackObject, CallbackCloseArray, CallbackCloseObject, Str?, Path?, Encoding?) {
         ;@region Initialization
         static ArrayItem := QuickParseEx.Patterns.ArrayItem2
         , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
@@ -578,6 +618,9 @@ class QuickParseEx {
         ;@endregion
 
         while RegExMatch(Str, Pattern, &Match, Pos) {
+            if pos >= 4700 {
+                sleep 1
+            }
             if flag_exit {
                 return Pos
             }
@@ -806,6 +849,9 @@ class QuickParseEx {
             if Match['char'] == ',' {
                 Pattern := ArrayItem
             } else if Match['char'] == ']' {
+                if CallbackCloseArray(Stack, Match.Pos['char'], Match) {
+                    flag_exit := true
+                }
                 if Stack.Length {
                     Stack.Pop().__Handler.Call()
                 }
@@ -819,6 +865,9 @@ class QuickParseEx {
             if Match['char'] == ',' {
                 Pattern := ObjectPropName
             } else if Match['char'] == '}' {
+                if CallbackCloseObject(Stack, Match.Pos['char'], Match) {
+                    flag_exit := true
+                }
                 if Stack.Length {
                     Stack.Pop().__Handler.Call()
                 }
@@ -827,6 +876,9 @@ class QuickParseEx {
         _PrepareNextArr(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == ']' {
+                if CallbackCloseArray(Stack, MatchValue.Pos['char'], MatchValue) {
+                    flag_exit := true
+                }
                 if Stack.Length {
                     Stack.Pop().__Handler.Call()
                 }
@@ -835,6 +887,9 @@ class QuickParseEx {
         _PrepareNextObj(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == '}' {
+                if CallbackCloseObject(Stack, MatchValue.Pos['char'], MatchValue) {
+                    flag_exit := true
+                }
                 if Stack.Length {
                     Stack.Pop().__Handler.Call()
                 }
