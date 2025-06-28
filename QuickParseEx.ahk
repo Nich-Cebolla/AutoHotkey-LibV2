@@ -618,9 +618,6 @@ class QuickParseEx {
         ;@endregion
 
         while RegExMatch(Str, Pattern, &Match, Pos) {
-            if pos >= 4700 {
-                sleep 1
-            }
             if flag_exit {
                 return Pos
             }
