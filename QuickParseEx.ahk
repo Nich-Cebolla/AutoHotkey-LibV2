@@ -4,11 +4,9 @@
     Version: 1.2.0
     License: MIT
 */
-; Required for `QuickParseEx.Find`.
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/FillStr.ahk
-#include *i <FillStr>
 
-; Note the function `FindJsonValue` beneath the class definition. It simplifies using `QuickParseEx.Find`.
+; There's a few more classes beneath `QuickParseEx`. They are helper classes for use with
+; `QuickParseEx.Find`.
 
 /**
  * @classdesc - Parses a JSON string into objects defined by callback functions.
@@ -115,17 +113,16 @@ class QuickParseEx {
             }
         }
 
-        if !RegExMatch(Str, '[[{]', &Match) {
-            throw ValueError('Invalid JSON.', -1)
-        }
-
-        if Match[0] == '[' {
+        posCurly := InStr(Str, '{')
+        posSquare := InStr(Str, '[')
+        if posCurly > posSquare {
             Pattern := ArrayItem
+            Pos := posSquare + 1
         } else {
             Pattern := ObjectPropName
+            Pos := posCurly + 1
         }
         Stack := []
-        Pos := Match.Pos + 1
         Obj := Root
         flag_exit := false
         ;@endregion
@@ -431,478 +428,6 @@ class QuickParseEx {
         ;@endregion
     }
     /**
-     * - `QuickParseEx.Find` can be used to locate the character position of a property or value in
-     * a JSON string. It uses the same parsing logic as `QuickParseEx.Call`, but does not actually
-     * create the objects.
-     * - Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str`
-     * and `Path` are unset, the clipboard's contents are used.
-     * - The callback functions each receive the `Stack` array. The values in the array are objects.
-     * You can add properties to the objects but do not change or remove the property { __Handler }.
-     * The current depth is represented by `Stack.Length`.
-     * - If either callback function returns a nonzero value, `QuickParseEx.Find` will return after
-     * completing the current action.
-     * - This is how you should handle the fourth parameter:
-     * @example
-     *  Callback(Stack, Pos, Match, MatchValue?) {
-     *      if IsSet(MatchValue) {
-     *          ; The "char" subcapture group is always available.
-     *          DoSomethingChar(MatchValue["char"])
-     *          if !MatchValue.Mark {
-     *              ; The "value" subcapture group is available
-     *              ; only if `MatchValue.Mark` is an empty string
-     *              DoSomethingWithValue(MatchValue["value"])
-     *          }
-     *      }
-     *  }
-     * @
-     * - The reason there is not a `CallbackOpenArray` or `CallbackOpenObject` is because those
-     * are handled by `CallbackArray` and `CallbackObject`.
-     * - To get a grasp on what values are represented by either `RegExMatchInfo` object passed to
-     * the callback functions, you can run any of the test functions in
-     * "test-files\test-QuickParseEx.Find.ahk" with a debugger.
-     * Set breakpoints on the `sleep 1` statements. Follow along with what you see in the
-     * `RegExMatchInfo` objects. Here is the function `test3` example written out:
-     * @example
-     *  str := '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null } }'
-     * @
-     * - 1. CallbackObject:
-     *   - 1st parameter: Stack.Length == 0
-     *   - 2nd parameter: 11, the position of the open "["
-     *   - 3rd parameter: "name" = "prop"; "char" = "["
-     *   - 4th parameter: unset
-     * - 2. CallbackArray:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 12, the position of "`"" after "["
-     *   - 3rd parameter: "char" = "`""
-     *   - 4th parameter: "value" = "\n"; "char" = ","
-     * - 3. CallbackArray:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 18, the position of "`"" after ", "
-     *   - 3rd parameter: "char" = "`""
-     *   - 4th parameter: "value" = "\`""; "char" = ","
-     * - 4. CallbackArray:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 24, the position of "-" after ", "
-     *   - 3rd parameter: "char" = "-"
-     *   - 4th parameter: "value" = "-5e-5"; "char" = "]"
-     * - 5. CallbackCloseArray:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 30, the position of "]"
-     *   - 3rd parameter: "char" = "]"
-     * - 6. CallbackObject:
-     *   - 1st parameter: Stack.Length == 0
-     *   - 2nd parameter: 42, the position of "{" after "`"prop2`": "
-     *   - 3rd parameter: "name" = "prop2"; "char" = "{"
-     *   - 4th parameter: Match.Mark == "novalue"; "char" = "`"", which is the open quote before "prop2_1"
-     * - 7. CallbackObject:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 55, the position of "0"
-     *   - 3rd parameter: "name" = "prop2_1"; "char" = "0"
-     *   - 4th parameter: "value" = "0.12"; "char" = ","
-     * - 8. CallbackObject:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 72, the position of "n"
-     *   - 3rd parameter: "name" = "prop2_2"; "char" = "n"
-     *   - 4th parameter: "value" = "null"; "char" = "}"
-     * - 9. CallbackCloseObject:
-     *   - 1st parameter: Stack.Length == 1
-     *   - 2nd parameter: 77, the position of "}"
-     *   - 3rd parameter: "char" = "}"
-     * - 10. CallbackCloseObject:
-     *   - 1st parameter: Stack.Length == 0
-     *   - 2nd parameter: 79, the position of "}"
-     *   - 3rd parameter: "char" = "}"
-     * @param {*} CallbackArray - A `Func` or callable object that is called for each value
-     * in a JSON array. The function does not need to return anything. Returning a nonzero
-     * value will direct `QuickParseEx.Find` to return. See the notes in the description of
-     * `QuickParseEx.Find` for some additional details. The function receives the following values:
-     * - The `Stack` array.
-     * - The character position of the first significant character of the value's substring. This is
-     * the position of the "char" subcapture group indicated in paramter #3 below.
-     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
-     * returns the first significant character of the value in the JSON string.
-     * - The fourth parameter must be optional. A `RegExMatchInfo` object that always has subcapture
-     * group "char" and sometimes has subcapture group "value". "char" returns the next significant
-     * character in the JSON string after the value (and after the closing quotation mark if the
-     * value is a quoted string). To determine whether the object has subcapture group "value", you
-     * can check the `Mark` property. If the `Mark` property returns an empty string, then the "value"
-     * subcapture group is available. If the `Mark` property returns "novalue", then the "value"
-     * subcapture group is not available.
-     * @param {*} CallbackObject - A `Func` or callable object that is called for each value
-     * that is a property of a JSON object. The function does not need to return anything. Returning
-     * a nonzero value will direct `QuickParseEx.Find` to return. See the notes in the description of
-     * `QuickParseEx.Find` for some additional details. The function receives the following values:
-     * - The `Stack` array.
-     * - The character position of the first significant character of the value's substring. This is
-     * the position of the "char" subcapture group indicated in paramter #3 below.
-     * - A `RegExMatchInfo` object that has subcapture groups "char" and "name". The "char" subcapture
-     * group returns the first significant character of the value in the JSON string.
-     * - The fourth parameter must be optional. A `RegExMatchInfo` object that always has subcapture
-     * group "char" and sometimes has subcapture group "value". "char" returns the next significant
-     * character in the JSON string after the value (and after the closing quotation mark if the
-     * value is a quoted string). To determine whether the object has subcapture group "value", you
-     * can check the `Mark` property. If the `Mark` property returns an empty string, then the "value"
-     * subcapture group is available. If the `Mark` property returns "novalue", then the "value"
-     * subcapture group is not available.
-     * @param {*} CallbackCloseArray - A `Func` or callable object that is called whenever a closing
-     * square bracket that ends a JSON array is encountered. The function does not need to return
-     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
-     * in the description of `QuickParseEx.Find` for some additional details. The function receives
-     * the following values:
-     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
-     * from the stack.
-     * - The character position of the closing bracket.
-     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
-     * returns the closing bracket, which will always be a closing square bracket. The object will
-     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
-     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
-     * `for` loop, e.g. `for name, value in Match`.
-     * @param {*} CallbackCloseObject - A `Func` or callable object that is called whenever a closing
-     * curly bracket that ends a JSON object is encountered. The function does not need to return
-     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
-     * in the description of `QuickParseEx.Find` for some additional details. The function receives
-     * the following values:
-     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
-     * from the stack.
-     * - The character position of the closing bracket.
-     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
-     * returns the closing bracket, which will always be a closing curly bracket. The object will
-     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
-     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
-     * `for` loop, e.g. `for name, value in Match`.
-     * @param {String} [Str] - The string to parse.
-     * @param {String} [Path] - The path to the file that contains the JSON content to parse.
-     * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Find` with `Path`.
-     * @returns {*}
-     */
-    static Find(CallbackArray, CallbackObject, CallbackCloseArray, CallbackCloseObject, Str?, Path?, Encoding?) {
-        ;@region Initialization
-        static ArrayItem := QuickParseEx.Patterns.ArrayItem2
-        , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
-        , ArrayNumber := QuickParseEx.Patterns.ArrayNumber
-        , ArrayString := QuickParseEx.Patterns.ArrayString
-        , ArrayFalse := QuickParseEx.Patterns.ArrayFalse
-        , ArrayTrue := QuickParseEx.Patterns.ArrayTrue
-        , ArrayNull := QuickParseEx.Patterns.ArrayNull
-        , ArrayNextChar := QuickParseEx.Patterns.ArrayNextChar
-        , ObjectNumber := QuickParseEx.Patterns.ObjectNumber
-        , ObjectString := QuickParseEx.Patterns.ObjectString
-        , ObjectFalse := QuickParseEx.Patterns.ObjectFalse
-        , ObjectTrue := QuickParseEx.Patterns.ObjectTrue
-        , ObjectNull := QuickParseEx.Patterns.ObjectNull
-        , ObjectNextChar := QuickParseEx.Patterns.ObjectNextChar
-        , ObjectInitialCheck := QuickParseEx.Patterns.ObjectInitialCheck
-
-        if !IsSet(FillStr) {
-            throw Error('The library ``FillStr.ahk`` must be loaded to use ``QuickParseEx.Find``.', -1)
-        }
-
-        if !IsSet(Str) {
-            If IsSet(Path) {
-                Str := FileRead(Path, Encoding ?? unset)
-            } else {
-                Str := A_Clipboard
-            }
-        }
-
-        if !RegExMatch(Str, '[[{]', &Match) {
-            throw ValueError('Invalid JSON.', -1)
-        }
-
-        if Match[0] == '[' {
-            Pattern := ArrayItem
-        } else {
-            Pattern := ObjectPropName
-        }
-        Stack := []
-        Pos := Match.Pos + 1
-        flag_exit := false
-        ;@endregion
-
-        while RegExMatch(Str, Pattern, &Match, Pos) {
-            if flag_exit {
-                return Pos
-            }
-        }
-
-        return Pos
-
-        ;@region Array Callbacks
-        OnQuoteArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ArrayString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextArr(MatchValue)
-        }
-        OnSquareOpenArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if CallbackArray(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
-            }
-            Stack.Push({ __Handler: _GetContextArray })
-            Pattern := ArrayItem
-            Pos++
-        }
-        OnCurlyOpenArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchCheck) {
-                flag_exit := true
-            }
-            if MatchCheck['char'] == '}' {
-                Pos := MatchCheck.Pos + MatchCheck.Len
-                _GetContextArray()
-            } else {
-                Pos++
-                Pattern := ObjectPropName
-                Stack.Push({ __Handler: _GetContextArray })
-            }
-        }
-        OnFalseArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ArrayFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextArr(MatchValue)
-        }
-        OnTrueArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ArrayTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextArr(MatchValue)
-        }
-        OnNullArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ArrayNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextArr(MatchValue)
-        }
-        OnNumberArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Match.Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextArr(MatchValue)
-        }
-        OnSquareCloseArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackArray(Stack, Match.Pos['char'], Match) || CallbackCloseArray(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
-            }
-            Pos := Match.Pos + Match.Len
-            if Stack.Length {
-                Active := Stack.Pop()
-                Active.__Handler.Call()
-            }
-        }
-        ;@endregion
-
-        ;@region Object Callbacks
-        OnQuoteObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextObj(MatchValue)
-        }
-        OnSquareOpenObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if CallbackObject(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
-            }
-            Stack.Push({ __Handler: _GetContextObject })
-            Pattern := ArrayItem
-            Pos++
-        }
-        OnCurlyOpenObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
-                _Throw(1, Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchCheck) {
-                flag_exit := true
-            }
-            if MatchCheck['char'] == '}' {
-                Pos := MatchCheck.Pos + MatchCheck.Len
-                _GetContextObject()
-            } else {
-                Pos++
-                Stack.Push({ __Handler: _GetContextObject })
-            }
-        }
-        OnFalseObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextObj(MatchValue)
-        }
-        OnTrueObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextObj(MatchValue)
-        }
-        OnNullObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextObj(MatchValue)
-        }
-        OnNumberObj(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len - 1
-            if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
-                _Throw(1, Match.Pos)
-            }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
-            }
-            _PrepareNextObj(MatchValue)
-        }
-        ;@endregion
-
-        ;@region Helper Funcs
-        _GetContextArray() {
-            if !RegExMatch(Str, ArrayNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := MatchCheck.Pos + MatchCheck.Len
-            if MatchCheck['char'] == ',' {
-                Pattern := ArrayItem
-            } else if MatchCheck['char'] == ']' {
-                if CallbackCloseArray(Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    flag_exit := true
-                }
-                if Stack.Length {
-                    Stack.Pop().__Handler.Call()
-                }
-            }
-        }
-        _GetContextObject() {
-            if !RegExMatch(Str, ObjectNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := MatchCheck.Pos + MatchCheck.Len
-            if MatchCheck['char'] == ',' {
-                Pattern := ObjectPropName
-            } else if MatchCheck['char'] == '}' {
-                if CallbackCloseObject(Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    flag_exit := true
-                }
-                if Stack.Length {
-                    Stack.Pop().__Handler.Call()
-                }
-            }
-        }
-        _PrepareNextArr(MatchValue) {
-            Pos := MatchValue.Pos + MatchValue.Len
-            if MatchValue['char'] == ']' {
-                if CallbackCloseArray(Stack, MatchValue.Pos['char'], MatchValue) {
-                    flag_exit := true
-                }
-                if Stack.Length {
-                    Stack.Pop().__Handler.Call()
-                }
-            }
-        }
-        _PrepareNextObj(MatchValue) {
-            Pos := MatchValue.Pos + MatchValue.Len
-            if MatchValue['char'] == '}' {
-                if CallbackCloseObject(Stack, MatchValue.Pos['char'], MatchValue) {
-                    flag_exit := true
-                }
-                if Stack.Length {
-                    Stack.Pop().__Handler.Call()
-                }
-            }
-        }
-        _Throw(Code, Extra?, n := -2) {
-            switch Code, 0 {
-                case '1': throw Error('There is an error in the JSON string.', n, IsSet(Extra) ? 'Near pos: ' Extra : '')
-            }
-        }
-        ;@endregion
-    }
-
-    /**
      * - `QuickParseEx.Call2` follows the same parsing logic as `QuickParseEx.Call`, but the callback
      * functions receive the same values as `QuickParseEx.Find` in addition to receiving the object
      * being constructed.
@@ -1007,17 +532,16 @@ class QuickParseEx {
             }
         }
 
-        if !RegExMatch(Str, '[[{]', &Match) {
-            throw ValueError('Invalid JSON.', -1)
-        }
-
-        if Match[0] == '[' {
+        posCurly := InStr(Str, '{')
+        posSquare := InStr(Str, '[')
+        if posCurly > posSquare {
             Pattern := ArrayItem
+            Pos := posSquare + 1
         } else {
             Pattern := ObjectPropName
+            Pos := posCurly + 1
         }
         Stack := []
-        Pos := Match.Pos + 1
         Obj := Root
         flag_exit := false
         ;@endregion
@@ -1324,10 +848,478 @@ class QuickParseEx {
         }
         ;@endregion
     }
+    /**
+     * - `QuickParseEx.Find` can be used to locate the character position of a property or value in
+     * a JSON string. It uses the same parsing logic as `QuickParseEx.Call`, but does not actually
+     * create the objects.
+     * - Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str`
+     * and `Path` are unset, the clipboard's contents are used.
+     * - The callback functions each receive the `Stack` array. The values in the array are objects.
+     * You can add properties to the objects but do not change or remove the property { __Handler }.
+     * The current depth is represented by `Stack.Length`.
+     * - If either callback function returns a nonzero value, `QuickParseEx.Find` will return after
+     * completing the current action.
+     * - This is how you should handle the fourth parameter:
+     * @example
+     *  Callback(Stack, Pos, Match, MatchValue?) {
+     *      if IsSet(MatchValue) {
+     *          ; The "char" subcapture group is always available.
+     *          DoSomethingChar(MatchValue["char"])
+     *          if !MatchValue.Mark {
+     *              ; The "value" subcapture group is available
+     *              ; only if `MatchValue.Mark` is an empty string
+     *              DoSomethingWithValue(MatchValue["value"])
+     *          }
+     *      }
+     *  }
+     * @
+     * - The reason there is not a `CallbackOpenArray` or `CallbackOpenObject` is because those
+     * are handled by `CallbackArray` and `CallbackObject`.
+     * - To get a grasp on what values are represented by either `RegExMatchInfo` object passed to
+     * the callback functions, you can run any of the test functions in
+     * "test-files\test-QuickParseEx.Find.ahk" with a debugger.
+     * Set breakpoints on the `sleep 1` statements. Follow along with what you see in the
+     * `RegExMatchInfo` objects.
+     *
+     * Here is the function `test3` example written out:
+     * @example
+     *  str := '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null } }'
+     * @
+     * - 1. CallbackObject:
+     *   - 1st parameter: Stack.Length == 0
+     *   - 2nd parameter: 11, the position of the open "["
+     *   - 3rd parameter: "name" = "prop"; "char" = "["
+     *   - 4th parameter: unset
+     * - 2. CallbackArray:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 12, the position of "`"" after "["
+     *   - 3rd parameter: "char" = "`""
+     *   - 4th parameter: "value" = "\n"; "char" = ","
+     * - 3. CallbackArray:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 18, the position of "`"" after ", "
+     *   - 3rd parameter: "char" = "`""
+     *   - 4th parameter: "value" = "\`""; "char" = ","
+     * - 4. CallbackArray:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 24, the position of "-" after ", "
+     *   - 3rd parameter: "char" = "-"
+     *   - 4th parameter: "value" = "-5e-5"; "char" = "]"
+     * - 5. CallbackCloseArray:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 30, the position of "]"
+     *   - 3rd parameter: "char" = "]"
+     * - 6. CallbackObject:
+     *   - 1st parameter: Stack.Length == 0
+     *   - 2nd parameter: 42, the position of "{" after "`"prop2`": "
+     *   - 3rd parameter: "name" = "prop2"; "char" = "{"
+     *   - 4th parameter: Match.Mark == "novalue"; "char" = "`"", which is the open quote before "prop2_1"
+     * - 7. CallbackObject:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 55, the position of "0"
+     *   - 3rd parameter: "name" = "prop2_1"; "char" = "0"
+     *   - 4th parameter: "value" = "0.12"; "char" = ","
+     * - 8. CallbackObject:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 72, the position of "n"
+     *   - 3rd parameter: "name" = "prop2_2"; "char" = "n"
+     *   - 4th parameter: "value" = "null"; "char" = "}"
+     * - 9. CallbackCloseObject:
+     *   - 1st parameter: Stack.Length == 1
+     *   - 2nd parameter: 77, the position of "}"
+     *   - 3rd parameter: "char" = "}"
+     * - 10. CallbackCloseObject:
+     *   - 1st parameter: Stack.Length == 0
+     *   - 2nd parameter: 79, the position of "}"
+     *   - 3rd parameter: "char" = "}"
+     * @param {*} CallbackArray - A `Func` or callable object that is called for each value
+     * in a JSON array. The function does not need to return anything. Returning a nonzero
+     * value will direct `QuickParseEx.Find` to return. See the notes in the description of
+     * `QuickParseEx.Find` for some additional details. The function receives the following values:
+     * - The `Stack` array.
+     * - The character position of the first significant character of the value's substring. This is
+     * the position of the "char" subcapture group indicated in paramter #3 below.
+     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
+     * returns the first significant character of the value in the JSON string.
+     * - The fourth parameter must be optional. A `RegExMatchInfo` object that always has subcapture
+     * group "char" and sometimes has subcapture group "value". "char" returns the next significant
+     * character in the JSON string after the value (and after the closing quotation mark if the
+     * value is a quoted string). To determine whether the object has subcapture group "value", you
+     * can check the `Mark` property. If the `Mark` property returns an empty string, then the "value"
+     * subcapture group is available. If the `Mark` property returns "novalue", then the "value"
+     * subcapture group is not available.
+     * @param {*} CallbackObject - A `Func` or callable object that is called for each value
+     * that is a property of a JSON object. The function does not need to return anything. Returning
+     * a nonzero value will direct `QuickParseEx.Find` to return. See the notes in the description of
+     * `QuickParseEx.Find` for some additional details. The function receives the following values:
+     * - The `Stack` array.
+     * - The character position of the first significant character of the value's substring. This is
+     * the position of the "char" subcapture group indicated in paramter #3 below.
+     * - A `RegExMatchInfo` object that has subcapture groups "char" and "name". The "char" subcapture
+     * group returns the first significant character of the value in the JSON string.
+     * - The fourth parameter must be optional. A `RegExMatchInfo` object that always has subcapture
+     * group "char" and sometimes has subcapture group "value". "char" returns the next significant
+     * character in the JSON string after the value (and after the closing quotation mark if the
+     * value is a quoted string). To determine whether the object has subcapture group "value", you
+     * can check the `Mark` property. If the `Mark` property returns an empty string, then the "value"
+     * subcapture group is available. If the `Mark` property returns "novalue", then the "value"
+     * subcapture group is not available.
+     * @param {*} CallbackCloseArray - A `Func` or callable object that is called whenever a closing
+     * square bracket that ends a JSON array is encountered. The function does not need to return
+     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
+     * in the description of `QuickParseEx.Find` for some additional details. The function receives
+     * the following values:
+     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
+     * from the stack.
+     * - The character position of the closing bracket.
+     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
+     * returns the closing bracket, which will always be a closing square bracket. The object will
+     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
+     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
+     * `for` loop, e.g. `for name, value in Match`.
+     * @param {*} CallbackCloseObject - A `Func` or callable object that is called whenever a closing
+     * curly bracket that ends a JSON object is encountered. The function does not need to return
+     * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
+     * in the description of `QuickParseEx.Find` for some additional details. The function receives
+     * the following values:
+     * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
+     * from the stack.
+     * - The character position of the closing bracket.
+     * - A `RegExMatchInfo` object that has a subcapture group "char". The "char" subcapture group
+     * returns the closing bracket, which will always be a closing curly bracket. The object will
+     * sometimes be the same object that is passed to parameter 4 of `CallbackArray` or
+     * `CallbackObject`. The other subcapture groups will vary; to use them, call the object in a
+     * `for` loop, e.g. `for name, value in Match`.
+     * @param {String} [Str] - The string to parse.
+     * @param {String} [Path] - The path to the file that contains the JSON content to parse.
+     * @param {String} [Encoding] - The file encoding to use if calling `QuickParseEx.Find` with `Path`.
+     * @returns {*}
+     */
+    static Find(CallbackArray, CallbackObject, CallbackCloseArray, CallbackCloseObject, Str?, Path?, Encoding?) {
+        ;@region Initialization
+        static ArrayItem := QuickParseEx.Patterns.ArrayItem2
+        , ObjectPropName := QuickParseEx.Patterns.ObjectPropName2
+        , ArrayNumber := QuickParseEx.Patterns.ArrayNumber
+        , ArrayString := QuickParseEx.Patterns.ArrayString
+        , ArrayFalse := QuickParseEx.Patterns.ArrayFalse
+        , ArrayTrue := QuickParseEx.Patterns.ArrayTrue
+        , ArrayNull := QuickParseEx.Patterns.ArrayNull
+        , ArrayNextChar := QuickParseEx.Patterns.ArrayNextChar
+        , ObjectNumber := QuickParseEx.Patterns.ObjectNumber
+        , ObjectString := QuickParseEx.Patterns.ObjectString
+        , ObjectFalse := QuickParseEx.Patterns.ObjectFalse
+        , ObjectTrue := QuickParseEx.Patterns.ObjectTrue
+        , ObjectNull := QuickParseEx.Patterns.ObjectNull
+        , ObjectNextChar := QuickParseEx.Patterns.ObjectNextChar
+        , ObjectInitialCheck := QuickParseEx.Patterns.ObjectInitialCheck
+
+        if !IsSet(Str) {
+            If IsSet(Path) {
+                Str := FileRead(Path, Encoding ?? unset)
+            } else {
+                Str := A_Clipboard
+            }
+        }
+
+        posCurly := InStr(Str, '{')
+        posSquare := InStr(Str, '[')
+        if posCurly > posSquare {
+            Pattern := ArrayItem
+            Pos := posSquare + 1
+        } else {
+            Pattern := ObjectPropName
+            Pos := posCurly + 1
+        }
+        Stack := []
+        flag_exit := false
+        ;@endregion
+
+        while RegExMatch(Str, Pattern, &Match, Pos) {
+            if flag_exit {
+                return Pos
+            }
+        }
+
+        return Pos
+
+        ;@region Array Callbacks
+        OnQuoteArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ArrayString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextArr(MatchValue)
+        }
+        OnSquareOpenArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if CallbackArray(Stack, Match.Pos['char'], Match) {
+                flag_exit := true
+            }
+            Stack.Push({ __Handler: _GetContextArray })
+            Pattern := ArrayItem
+            Pos++
+        }
+        OnCurlyOpenArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchCheck) {
+                flag_exit := true
+            }
+            if MatchCheck['char'] == '}' {
+                Pos := MatchCheck.Pos + MatchCheck.Len
+                _GetContextArray()
+            } else {
+                Pos++
+                Pattern := ObjectPropName
+                Stack.Push({ __Handler: _GetContextArray })
+            }
+        }
+        OnFalseArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ArrayFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextArr(MatchValue)
+        }
+        OnTrueArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ArrayTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextArr(MatchValue)
+        }
+        OnNullArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ArrayNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextArr(MatchValue)
+        }
+        OnNumberArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Match.Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextArr(MatchValue)
+        }
+        OnSquareCloseArr(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackArray(Stack, Match.Pos['char'], Match) || CallbackCloseArray(Stack, Match.Pos['char'], Match) {
+                flag_exit := true
+            }
+            Pos := Match.Pos + Match.Len
+            if Stack.Length {
+                Active := Stack.Pop()
+                Active.__Handler.Call()
+            }
+        }
+        ;@endregion
+
+        ;@region Object Callbacks
+        OnQuoteObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextObj(MatchValue)
+        }
+        OnSquareOpenObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if CallbackObject(Stack, Match.Pos['char'], Match) {
+                flag_exit := true
+            }
+            Stack.Push({ __Handler: _GetContextObject })
+            Pattern := ArrayItem
+            Pos++
+        }
+        OnCurlyOpenObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
+                _Throw(1, Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchCheck) {
+                flag_exit := true
+            }
+            if MatchCheck['char'] == '}' {
+                Pos := MatchCheck.Pos + MatchCheck.Len
+                _GetContextObject()
+            } else {
+                Pos++
+                Stack.Push({ __Handler: _GetContextObject })
+            }
+        }
+        OnFalseObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextObj(MatchValue)
+        }
+        OnTrueObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextObj(MatchValue)
+        }
+        OnNullObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextObj(MatchValue)
+        }
+        OnNumberObj(Match, *) {
+            if Match.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := Match.Pos + Match.Len - 1
+            if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
+                _Throw(1, Match.Pos)
+            }
+            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
+                flag_exit := true
+            }
+            _PrepareNextObj(MatchValue)
+        }
+        ;@endregion
+
+        ;@region Helper Funcs
+        _GetContextArray() {
+            if !RegExMatch(Str, ArrayNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
+                Pattern := ArrayItem
+            } else if MatchCheck['char'] == ']' {
+                if CallbackCloseArray(Stack, MatchCheck.Pos['char'], MatchCheck) {
+                    flag_exit := true
+                }
+                if Stack.Length {
+                    Stack.Pop().__Handler.Call()
+                }
+            }
+        }
+        _GetContextObject() {
+            if !RegExMatch(Str, ObjectNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
+                _Throw(1, Pos)
+            }
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
+                Pattern := ObjectPropName
+            } else if MatchCheck['char'] == '}' {
+                if CallbackCloseObject(Stack, MatchCheck.Pos['char'], MatchCheck) {
+                    flag_exit := true
+                }
+                if Stack.Length {
+                    Stack.Pop().__Handler.Call()
+                }
+            }
+        }
+        _PrepareNextArr(MatchValue) {
+            Pos := MatchValue.Pos + MatchValue.Len
+            if MatchValue['char'] == ']' {
+                if CallbackCloseArray(Stack, MatchValue.Pos['char'], MatchValue) {
+                    flag_exit := true
+                }
+                if Stack.Length {
+                    Stack.Pop().__Handler.Call()
+                }
+            }
+        }
+        _PrepareNextObj(MatchValue) {
+            Pos := MatchValue.Pos + MatchValue.Len
+            if MatchValue['char'] == '}' {
+                if CallbackCloseObject(Stack, MatchValue.Pos['char'], MatchValue) {
+                    flag_exit := true
+                }
+                if Stack.Length {
+                    Stack.Pop().__Handler.Call()
+                }
+            }
+        }
+        _Throw(Code, Extra?, n := -2) {
+            switch Code, 0 {
+                case '1': throw Error('There is an error in the JSON string.', n, IsSet(Extra) ? 'Near pos: ' Extra : '')
+            }
+        }
+        ;@endregion
+    }
 
     static __New() {
         this.DeleteProp('__New')
-        SignficantChars := '["{[ftn\d{}-]'
+        ; SignficantChars := '["{[ftn\d{}-]'
         NextChar := '(?:\s*(?<char>,|\{}))'
         ArrayNextChar := Format(NextChar, ']')
         ObjectNextChar := Format(NextChar, '}')
@@ -1367,22 +1359,17 @@ class JsonValueFinder extends Map {
      * @param {String} [Str] - The JSON string.
      * @param {String} [Path] - The path to the file containing the JSON string.
      * @param {String} [Encoding] - The encoding to use when reading `Path`.
+     * @param {String} [CaseSense = false] - The value to set to `JsonValueFinderObj.CaseSense`.
+     * This also gets applied to `JsonValueFinderObj.Nams` when `JsonValueFinder.Prototype.Call`
+     * is called.
      */
-    __New(Str?, Path?, Encoding?) {
+    __New(Str?, Path?, Encoding?, CaseSense := false) {
         if IsSet(Str) {
-            protoBase := { Content: Str }
+            this.SetPrototypes({ Content: Str })
         } else {
-            protoBase := { Content: FileRead(Path, Encoding ?? unset) }
+            this.SetPrototypes({ Content: FileRead(Path, Encoding ?? unset) })
         }
-        ObjSetBase(protoBase, FindValueBase.Prototype)
-        for name in ['Object', 'Primitive', 'String'] {
-            this.Prototype%name% := _proto := {}
-            ObjSetBase(_proto, protoBase)
-            proto := FindValue%name%.Prototype
-            for prop in proto.OwnProps() {
-                _proto.DefineProp(prop, proto.GetOwnPropDesc(prop))
-            }
-        }
+        this.CaseSense := CaseSense
     }
     /**
      * @description - Finds one or more root-level properties by name.
@@ -1394,6 +1381,8 @@ class JsonValueFinder extends Map {
      * included in the `Names` parameter>`.
      * - The "keys" are the names themselves, and the values are instances of one of `FindValueObject`,
      * `FindValuePrimitive`, or `FindValueString`.
+     * - If `JsonValueFinderObj.Names` is already set from a previous call, it is overwritten when
+     * `JsonValueFinder.Prototype.Call` is called again.
      * @example
      *  json := '{ "prop1": "val1", "prop2": { "prop3": "val3" }, "prop4": [ "val4" ] }'
      *  finder := JsonValueFinder(json)
@@ -1411,19 +1400,22 @@ class JsonValueFinder extends Map {
      *  MsgBox(SubStr(json, finder.Get('prop1').ValueStart, finder.Get('prop1').ValueEnd - finder.Get('prop1').ValueStart)) ; "val1"
      * @
      * @param {String|*} Names - Either a single name as string, or an object that returns the names
-     * when called in a `for` loop (such as an array or map object).
-     * @param [CaseSense = true] - Directs the function to treat the names as case sensitive or not.
-     * `CaseSense` is ignored if `Names` is a map object.
+     * when called in a `for` loop (such as an array or map object). If `Names` is a `Map` object,
+     * and if the `Names.CaseSense !== JsonValueFinderObj.CaseSense`, a new `Map` object is created
+     * and the names are added from `Names` to the new object.
      */
-    Call(Names, CaseSense := true) {
+    Call(Names) {
         this.Result := ''
-        if Names is Map {
+        if Names is Map && Names.CaseSense == this.CaseSense {
             this.Names := Names
         } else if IsObject(Names) {
             if HasMethod(Names, '__Enum') {
                 m := Map()
-                m.CaseSense := CaseSense
+                m.CaseSense := this.CaseSense = 'On' ? 1 : 0
                 for name in Names {
+                    if m.Has(name) {
+                        throw Error('Duplicate name included in ``Names``.', -1, name)
+                    }
                     m.Set(name, 1)
                 }
                 this.Names := m
@@ -1432,7 +1424,7 @@ class JsonValueFinder extends Map {
             }
         } else {
             this.Names := Map()
-            this.Names.CaseSense := CaseSense
+            this.Names.CaseSense := this.CaseSense = 'On' ? 1 : 0
             this.Names.Set(Names, 1)
         }
         QuickParseEx.Find(
@@ -1500,6 +1492,17 @@ class JsonValueFinder extends Map {
                 this.Names.Delete(Match['name'])
                 this.Result := { Match: Match }
                 ObjSetBase(this.Result, this.PrototypeObject)
+            }
+        }
+    }
+    SetPrototypes(protoBase) {
+        ObjSetBase(protoBase, FindValueBase.Prototype)
+        for name in ['Object', 'Primitive', 'String'] {
+            this.Prototype%name% := _proto := {}
+            ObjSetBase(_proto, protoBase)
+            proto := FindValue%name%.Prototype
+            for prop in proto.OwnProps() {
+                _proto.DefineProp(prop, proto.GetOwnPropDesc(prop))
             }
         }
     }
