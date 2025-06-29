@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
 
@@ -41,7 +41,7 @@ class PathObj {
         this.Count := 1
         this.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot'))
     }
-    Call() {
+    Call(*) {
         o := this
         p := ''
         loop {
@@ -53,16 +53,19 @@ class PathObj {
         return o.Name p
     }
     MakeProp(Name) {
+        static desc := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp')
         ObjSetBase(Segment := { Name: Name, Count: this.Count + 1 }, this)
-        Segment.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp'))
+        Segment.DefineProp('GetPathSegment', desc)
         return Segment
     }
     MakeItem(Name) {
+        static descNumber := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number')
+        , descString := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String')
         ObjSetBase(Segment := { Name: Name, Count: this.Count + 1 }, this)
         if IsNumber(Name) {
-            Segment.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number'))
+            Segment.DefineProp('GetPathSegment', descNumber)
         } else {
-            Segment.DefineProp('GetPathSegment', PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String'))
+            Segment.DefineProp('GetPathSegment', descString)
         }
         return Segment
     }
