@@ -110,6 +110,9 @@ class DirCreateEx {
         }
     }
     class Result {
+        GetError() {
+            return this.ErrorDirCreate || this.ErrorFileExist
+        }
         ShowGui() {
             s := ''
             for prop in ['ErrorDirCreate', 'ErrorDirDelete', 'ErrorFileExist'] {
