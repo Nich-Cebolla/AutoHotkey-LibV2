@@ -1,4 +1,10 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ValidateJson.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
 class ValidateJson {
 
     /**
@@ -34,12 +40,14 @@ class ValidateJson {
         }
         Str := Trim(Str, '`r`n`s`t')
 
-        posCurly := InStr(Str, '{')
-        posSquare := InStr(Str, '[')
-        if Min(posCurly || 1, posSquare || 1) !== 1 {
-            return Error('The first non-whitespace character is not an open bracket.', -1)
+        if RegExMatch(Str, '[[{]', &Match) {
+            if Match.Pos !== 1 {
+                return Error('The first non-whitespace character is not an open bracket.', -1)
+            }
+        } else {
+            return Error('The string is missing an open brace.', -1)
         }
-        if posCurly > posSquare {
+        if Match[0] == '[' {
             Pattern := ArrayItem
         } else {
             Pattern := ObjectPropName
@@ -311,19 +319,19 @@ class ValidateJson {
         ArrayNextChar := Format(NextChar, ']')
         ObjectNextChar := Format(NextChar, '}')
         this.Patterns := {
-            ArrayItem: 'iJS)\s*(?:(?<char>")(?COnQuoteArr)|(?<char>\{)(?COnCurlyOpenArr)|(?<char>\[)(?COnSquareOpenArr)|(?<char>f)(?COnFalseArr)|(?<char>t)(?COnTrueArr)|(?<char>n)(?COnNullArr)|(?<char>[\d-])(?COnNumberArr)|(?<char>\])(?COnSquareCloseArr))'
+            ArrayItem: 'JS)\s*(?:(?<char>")(?COnQuoteArr)|(?<char>\{)(?COnCurlyOpenArr)|(?<char>\[)(?COnSquareOpenArr)|(?<char>f)(?COnFalseArr)|(?<char>t)(?COnTrueArr)|(?<char>n)(?COnNullArr)|(?<char>[\d-])(?COnNumberArr)|(?<char>\])(?COnSquareCloseArr))'
           , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
-          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ArrayNextChar
-          , ArrayFalse: 'iS)(?<value>false)' ArrayNextChar
-          , ArrayTrue: 'iS)(?<value>true)' ArrayNextChar
-          , ArrayNull: 'iS)(?<value>null)' ArrayNextChar
+          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ArrayNextChar
+          , ArrayFalse: 'S)(?<value>false)' ArrayNextChar
+          , ArrayTrue: 'S)(?<value>true)' ArrayNextChar
+          , ArrayNull: 'S)(?<value>null)' ArrayNextChar
           , ArrayNextChar: ArrayNextChar
-          , ObjectPropName: 'iJS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)":\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
+          , ObjectPropName: 'JS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
           , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
-          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ObjectNextChar
-          , ObjectFalse: 'iS)(?<value>false)' ObjectNextChar
-          , ObjectTrue: 'iS)(?<value>true)' ObjectNextChar
-          , ObjectNull: 'iS)(?<value>null)' ObjectNextChar
+          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ObjectNextChar
+          , ObjectFalse: 'S)(?<value>false)' ObjectNextChar
+          , ObjectTrue: 'S)(?<value>true)' ObjectNextChar
+          , ObjectNull: 'S)(?<value>null)' ObjectNextChar
           , ObjectNextChar: ObjectNextChar
           , ObjectInitialCheck: 'S)(*MARK:novalue)\s*(?<char>"|\})'
         }
