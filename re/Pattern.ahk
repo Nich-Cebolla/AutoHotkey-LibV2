@@ -36,10 +36,10 @@ class Pattern {
      * your function can react. Run the example file "Example-bracket-callouts.ahk" to see
      * what this looks like.
      */
-    static BracketCurly := '(?<full>\{(?:[^}{]++|(?-2))*\})'
+    static BracketCurly := '(\{(?:[^}{]++|(?-1))*\})'
     ; Using named backreference: '(?<bracket>\{(?:[^}{]++|(?&bracket))*\})'
-    static BracketRound := '(?<full>\((?:[^)(]++|(?-2))*\))'
-    static BracketSquare := '(?<full>\[(?:[^\][]++|(?-2))*\])'
+    static BracketRound := '(\((?:[^)(]++|(?-1))*\))'
+    static BracketSquare := '(\[(?:[^\][]++|(?-1))*\])'
 
     /**
      * @property {String} ContinuationSectionAhk - Matches any syntactically correct

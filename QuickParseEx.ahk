@@ -1,12 +1,14 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParseEx.ahk
     Author: Nich-Cebolla
-    Version: 1.1.1
+    Version: 1.2.0
     License: MIT
 */
 ; Required for `QuickParseEx.Find`.
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/FillStr.ahk
 #include *i <FillStr>
+
+; Note the function `FindJsonValue` beneath the class definition. It simplifies using `QuickParseEx.Find`.
 
 /**
  * @classdesc - Parses a JSON string into objects defined by callback functions.
@@ -1349,4 +1351,135 @@ class QuickParseEx {
           , ObjectInitialCheck: 'S)(*MARK:novalue)\s*(?<char>"|\})'
         }
     }
+}
+
+
+class JsonValueFinder extends Map {
+    __New(Str?, Path?, Encoding?) {
+        if IsSet(Str) {
+            protoBase := { Content: Str }
+        } else {
+            protoBase := { Content: FileRead(Path, Encoding ?? unset) }
+        }
+        ObjSetBase(protoBase, FindValueBase.Prototype)
+        for name in ['Object', 'Primitive', 'String'] {
+            this.Prototype%name% := _proto := {}
+            ObjSetBase(_proto, protoBase)
+            proto := FindValue%name%.Prototype
+            for prop in proto.OwnProps() {
+                _proto.DefineProp(prop, proto.GetOwnPropDesc(prop))
+            }
+        }
+    }
+    Call(Names, CaseSense := true) {
+        this.Result := ''
+        if Names is Map {
+            this.Names := Names
+        } else if IsObject(Names) {
+            if HasMethod(Names, '__Enum') {
+                m := Map()
+                m.CaseSense := CaseSense
+                for name in Names {
+                    m.Set(name, 1)
+                }
+                this.Names := m
+            } else {
+                throw Error('If ``Names`` is an object, it must have a method ``__Enum``.', -1)
+            }
+        } else {
+            this.Names := Map()
+            this.Names.CaseSense := CaseSense
+            this.Names.Set(Names, 1)
+        }
+        QuickParseEx.Find(
+            (*) => ''
+          , ObjBindMethod(this, 'CallbackObject')
+          , ObjBindMethod(this, 'CallbackClose')
+          , ObjBindMethod(this, 'CallbackClose')
+          , this.PrototypeObject.Content
+        )
+    }
+    CallbackClose(Stack, Pos, Match) {
+        if Stack.Length == 1 && this.Result {
+            this.Result.MatchValue := Match
+            this.Set(this.Result.Name, this.Result)
+            if this.Names.Count {
+                this.Result := ''
+            } else {
+                this.DeleteProp('Result')
+                return 1
+            }
+        }
+    }
+    CallbackObject(Stack, Pos, Match, MatchValue?) {
+        if !this.Result && !Stack.Length && this.Names.Has(Match['name']) {
+            if IsSet(MatchValue) {
+                if MatchValue.Mark {
+                    if MatchValue['char'] == '}' {
+                        ; empty object
+                        this.Names.Delete(Match['name'])
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        ObjSetBase(this.Get(Match['name']), this.ProtypeObject)
+                        if !this.Names.Count {
+                            this.DeleteProp('Result')
+                            return 1
+                        }
+                    } else {
+                        ; open curly bracket
+                        this.Names.Delete(Match['name'])
+                        this.Result := { Match: Match }
+                        ObjSetBase(this.Result, this.ProtypeObject)
+                    }
+                } else {
+                    ; primitive value
+                    if Match['char'] == '"' {
+                        ; quoted string
+                        this.Names.Delete(Match['name'])
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        ObjSetBase(this.Get(Match['name']), this.ProtypeString)
+                        if !this.Names.Count {
+                            this.DeleteProp('Result')
+                            return 1
+                        }
+                    } else {
+                        this.Names.Delete(Match['name'])
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        ObjSetBase(this.Get(Match['name']), this.ProtypePrimitive)
+                        if !this.Names.Count {
+                            this.DeleteProp('Result')
+                            return 1
+                        }
+                    }
+                }
+            } else {
+                ; open square bracket
+                this.Names.Delete(Match['name'])
+                this.Result := { Match: Match }
+                ObjSetBase(this.Result, this.ProtypeObject)
+            }
+        }
+    }
+}
+
+class FindValueBase {
+    Name => this.Match['name']
+    NameEnd => this.Match.Pos['name'] + this.Match.Len['name']
+    NameLen => this.Match.Len['name']
+    NameStart => this.Match.Pos['name']
+    Value => SubStr(this.Content, this.ValueStart, this.ValueEnd)
+}
+class FindValueObject extends FindValueBase {
+    ValueEnd => this.MatchValue.Pos['char']
+    ValueLen => this.MatchValue.Pos['char'] - this.Match.Pos['char']
+    ValueStart => this.Match.Pos['char']
+}
+class FindValuePrimitive extends FindValueBase {
+    ValueEnd => this.MatchValue.Pos['value'] + this.MatchValue.Len['value']
+    ValueLen => this.MatchValue.Len['value']
+    ValueStart => this.MatchValue.Pos['value']
+}
+class FindValueString extends FindValueBase {
+    ValueEnd => this.MatchValue.Pos['value'] + this.MatchValue.Len['value'] + 1
+    ValueLen => this.MatchValue.Len['value'] + 2
+    ValueStart => this.MatchValue.Pos['value'] - 1
 }
