@@ -458,10 +458,10 @@ class QuickParseEx {
      * - The reason there is not a `CallbackOpenArray` or `CallbackOpenObject` is because those
      * are handled by `CallbackArray` and `CallbackObject`.
      * - To get a grasp on what values are represented by either `RegExMatchInfo` object passed to
-     * the callback functions, you can run "test-files\test-QuickParseEx.Find.ahk" with a debugger.
-     * Set breakpoints on the five `sleep 1` statements and have the "test-files\example.json" opened
-     * in another window. Follow along in the "example.json" with what you see in the `RegExMatchInfo`
-     * objects. Here is a short example written out:
+     * the callback functions, you can run any of the test functions in
+     * "test-files\test-QuickParseEx.Find.ahk" with a debugger.
+     * Set breakpoints on the `sleep 1` statements. Follow along with what you see in the
+     * `RegExMatchInfo` objects. Here is the function `test3` example written out:
      * @example
      *  str := '{ "prop": ["\n", "\"", -5e-5 ], "prop2": { "prop2_1": 0.12, "prop2_2": null } }'
      * @
@@ -729,7 +729,7 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match) {
+            if CallbackArray(Stack, Match.Pos['char'], Match) || CallbackCloseArray(Stack, Match.Pos['char'], Match) {
                 flag_exit := true
             }
             Pos := Match.Pos + Match.Len
@@ -841,14 +841,14 @@ class QuickParseEx {
 
         ;@region Helper Funcs
         _GetContextArray() {
-            if !RegExMatch(Str, ArrayNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ArrayNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
                 Pattern := ArrayItem
-            } else if Match['char'] == ']' {
-                if CallbackCloseArray(Stack, Match.Pos['char'], Match) {
+            } else if MatchCheck['char'] == ']' {
+                if CallbackCloseArray(Stack, MatchCheck.Pos['char'], MatchCheck) {
                     flag_exit := true
                 }
                 if Stack.Length {
@@ -857,14 +857,14 @@ class QuickParseEx {
             }
         }
         _GetContextObject() {
-            if !RegExMatch(Str, ObjectNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ObjectNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
                 Pattern := ObjectPropName
-            } else if Match['char'] == '}' {
-                if CallbackCloseObject(Stack, Match.Pos['char'], Match) {
+            } else if MatchCheck['char'] == '}' {
+                if CallbackCloseObject(Stack, MatchCheck.Pos['char'], MatchCheck) {
                     flag_exit := true
                 }
                 if Stack.Length {
@@ -1268,13 +1268,13 @@ class QuickParseEx {
 
         ;@region Helper Funcs
         _GetContextArray() {
-            if !RegExMatch(Str, ArrayNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ArrayNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
                 Pattern := ArrayItem
-            } else if Match['char'] == ']' {
+            } else if MatchCheck['char'] == ']' {
                 if Stack.Length {
                     Active := Stack.Pop()
                     Obj := Active.Obj
@@ -1283,13 +1283,13 @@ class QuickParseEx {
             }
         }
         _GetContextObject() {
-            if !RegExMatch(Str, ObjectNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ObjectNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ',' {
                 Pattern := ObjectPropName
-            } else if Match['char'] == '}' {
+            } else if MatchCheck['char'] == '}' {
                 if Stack.Length {
                     Active := Stack.Pop()
                     Obj := Active.Obj
@@ -1335,15 +1335,15 @@ class QuickParseEx {
             ArrayItem1: 'iS)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
           , ArrayItem2: 'iJS)\s*(?:(?<char>")(?COnQuoteArr)|(?<char>\{)(?COnCurlyOpenArr)|(?<char>\[)(?COnSquareOpenArr)|(?<char>f)(?COnFalseArr)|(?<char>t)(?COnTrueArr)|(?<char>n)(?COnNullArr)|(?<char>[\d-])(?COnNumberArr)|(?<char>\])(?COnSquareCloseArr))'
           , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
-          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?)(?<!\\)(?:\\\\)*+"' ArrayNextChar
+          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ArrayNextChar
           , ArrayFalse: 'iS)(?<value>false)' ArrayNextChar
           , ArrayTrue: 'iS)(?<value>true)' ArrayNextChar
           , ArrayNull: 'iS)(?<value>null)' ArrayNextChar
           , ArrayNextChar: ArrayNextChar
-          , ObjectPropName1: 'iS)\s*"(?<name>.+?)(?<!\\)(?:\\\\)*+":\s*(?<char>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
-          , ObjectPropName2: 'iJS)\s*"(?<name>.+?)(?<!\\)(?:\\\\)*+":\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
+          , ObjectPropName1: 'iS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)":\s*(?<char>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
+          , ObjectPropName2: 'iJS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)":\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
           , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
-          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?)(?<!\\)(?:\\\\)*+"' ObjectNextChar
+          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ObjectNextChar
           , ObjectFalse: 'iS)(?<value>false)' ObjectNextChar
           , ObjectTrue: 'iS)(?<value>true)' ObjectNextChar
           , ObjectNull: 'iS)(?<value>null)' ObjectNextChar
@@ -1353,8 +1353,21 @@ class QuickParseEx {
     }
 }
 
-
+/**
+ * @classdesc - `JsonValueFinder` is a helper class that simplifies using `QuickParseEx.Find` to
+ * find root-level properties by name. `JsonValueFinder` cannot be used to find anything else.
+ */
 class JsonValueFinder extends Map {
+    /**
+     * - Only one of `Str` or `Path` are necessary.
+     * - Instances of `JsonValueFinder` are `Map` objects. To use, first create the object then
+     * call the object.
+     * @see {@link JsonValueFinder#Call} for further details.
+     * @class
+     * @param {String} [Str] - The JSON string.
+     * @param {String} [Path] - The path to the file containing the JSON string.
+     * @param {String} [Encoding] - The encoding to use when reading `Path`.
+     */
     __New(Str?, Path?, Encoding?) {
         if IsSet(Str) {
             protoBase := { Content: Str }
@@ -1371,6 +1384,37 @@ class JsonValueFinder extends Map {
             }
         }
     }
+    /**
+     * @description - Finds one or more root-level properties by name.
+     * - After `JsonValueFinder.Prototype.Call` returns, you can check the `JsonValueFinderObj.Names`
+     * property for any properties that were not found. During the course of
+     * `JsonValueFinder.Prototype.Call`, each time a name is found it is removed from
+     * `JsonValueFinderObj.Names` and added to `JsonValueFinderObj`. If all names were found,
+     * `JsonValueFinderObj.Names.Count == 0` and `JsonValueFinderObj.Count == <the quantity of names
+     * included in the `Names` parameter>`.
+     * - The "keys" are the names themselves, and the values are instances of one of `FindValueObject`,
+     * `FindValuePrimitive`, or `FindValueString`.
+     * @example
+     *  json := '{ "prop1": "val1", "prop2": { "prop3": "val3" }, "prop4": [ "val4" ] }'
+     *  finder := JsonValueFinder(json)
+     *  names := ['prop1', 'prop2', 'prop3', 'prop4']
+     *  finder(names)
+     *  ; This is `1` because 'prop3' was not found because it is not a property of the root object.
+     *  MsgBox(finder.Names.Count) ; 1
+     *  MsgBox(finder.Names.Has('prop3')) ; 1
+     *  MsgBox(finder.Count) ; 3
+     *  MsgBox(finder.Get('prop1').Value) ; "val1"
+     *  MsgBox(finder.Get('prop2').Value) ; { "prop3": "val3" }
+     *  MsgBox(finder.Get('prop4').Value) ; [ "val4" ]
+     *  MsgBox(finder.Get('prop1').NameLen) ; 5
+     *  MsgBox(SubStr(json, finder.Get('prop1').NameEnd - 1, 2)) ; 1"
+     *  MsgBox(SubStr(json, finder.Get('prop1').ValueStart, finder.Get('prop1').ValueEnd - finder.Get('prop1').ValueStart)) ; "val1"
+     * @
+     * @param {String|*} Names - Either a single name as string, or an object that returns the names
+     * when called in a `for` loop (such as an array or map object).
+     * @param [CaseSense = true] - Directs the function to treat the names as case sensitive or not.
+     * `CaseSense` is ignored if `Names` is a map object.
+     */
     Call(Names, CaseSense := true) {
         this.Result := ''
         if Names is Map {
@@ -1419,7 +1463,7 @@ class JsonValueFinder extends Map {
                         ; empty object
                         this.Names.Delete(Match['name'])
                         this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
-                        ObjSetBase(this.Get(Match['name']), this.ProtypeObject)
+                        ObjSetBase(this.Get(Match['name']), this.PrototypeObject)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
                             return 1
@@ -1428,7 +1472,7 @@ class JsonValueFinder extends Map {
                         ; open curly bracket
                         this.Names.Delete(Match['name'])
                         this.Result := { Match: Match }
-                        ObjSetBase(this.Result, this.ProtypeObject)
+                        ObjSetBase(this.Result, this.PrototypeObject)
                     }
                 } else {
                     ; primitive value
@@ -1436,7 +1480,7 @@ class JsonValueFinder extends Map {
                         ; quoted string
                         this.Names.Delete(Match['name'])
                         this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
-                        ObjSetBase(this.Get(Match['name']), this.ProtypeString)
+                        ObjSetBase(this.Get(Match['name']), this.PrototypeString)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
                             return 1
@@ -1444,7 +1488,7 @@ class JsonValueFinder extends Map {
                     } else {
                         this.Names.Delete(Match['name'])
                         this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
-                        ObjSetBase(this.Get(Match['name']), this.ProtypePrimitive)
+                        ObjSetBase(this.Get(Match['name']), this.PrototypePrimitive)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
                             return 1
@@ -1455,7 +1499,7 @@ class JsonValueFinder extends Map {
                 ; open square bracket
                 this.Names.Delete(Match['name'])
                 this.Result := { Match: Match }
-                ObjSetBase(this.Result, this.ProtypeObject)
+                ObjSetBase(this.Result, this.PrototypeObject)
             }
         }
     }
@@ -1466,11 +1510,11 @@ class FindValueBase {
     NameEnd => this.Match.Pos['name'] + this.Match.Len['name']
     NameLen => this.Match.Len['name']
     NameStart => this.Match.Pos['name']
-    Value => SubStr(this.Content, this.ValueStart, this.ValueEnd)
+    Value => SubStr(this.Content, this.ValueStart, this.ValueLen)
 }
 class FindValueObject extends FindValueBase {
-    ValueEnd => this.MatchValue.Pos['char']
-    ValueLen => this.MatchValue.Pos['char'] - this.Match.Pos['char']
+    ValueEnd => this.MatchValue.Pos['char'] + 1
+    ValueLen => this.MatchValue.Pos['char'] - this.Match.Pos['char'] + 1
     ValueStart => this.Match.Pos['char']
 }
 class FindValuePrimitive extends FindValueBase {

@@ -200,5 +200,26 @@
                 "OOO": "OOO"
             }
         }
-    }
+    },
+    "String": "\\\r\\\n\\\t\\\"\\",
+    "Number1": 100000,
+    "Number2": -100000,
+    "Number3": 5e5,
+    "Number4": 5e-5,
+    "Number5": -5E5,
+    "Number6": -0.12E-2,
+    "Number7": 10.10,
+    "False": false,
+    "Null": null,
+    "True": true,
+    "Object1": {},
+    "Object2": { "arr": [] },
+    "Object3": { "arr": [{}] },
+    "Object4": { "arr": [{},[]] },
+    "Object5": { "obj": {} },
+    "Array1": [],
+    "Array2": [{}],
+    "Array3": [[]],
+    "Array4": [[],{}],
+    "Array5": [[[]],{ "arr": [] }]
 }
