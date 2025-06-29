@@ -76,7 +76,7 @@ test3() {
     sleep 1
 
 
-    CallbackArray(Stack, Pos, Match, MatchValue?) {
+    CallbackArray(Controller, Stack, Pos, Match, MatchValue?) {
         i++
         value := values[i]
         _Check(A_ThisFunc, value, Stack, Pos, Match)
@@ -93,7 +93,7 @@ test3() {
         }
     }
 
-    CallbackObject(Stack, Pos, Match, MatchValue?) {
+    CallbackObject(Controller, Stack, Pos, Match, MatchValue?) {
         i++
         value := values[i]
         _Check(A_ThisFunc, value, Stack, Pos, Match)
@@ -110,13 +110,13 @@ test3() {
         }
     }
 
-    CallbackCloseArray(Stack, Pos, Match) {
+    CallbackCloseArray(Controller, Stack, Pos, Match) {
         i++
         value := values[i]
         _Check(A_ThisFunc, value, Stack, Pos, Match)
     }
 
-    CallbackCloseObject(Stack, Pos, Match) {
+    CallbackCloseObject(Controller, Stack, Pos, Match) {
         i++
         value := values[i]
         _Check(A_ThisFunc, value, Stack, Pos, Match)
@@ -159,7 +159,7 @@ test3() {
 
 }
 
-ParseFindArray(Stack, Pos, Match, MatchValue?) {
+ParseFindArray(Controller, Stack, Pos, Match, MatchValue?) {
     global content
     ch := SubStr(content, pos, 1)
     if ch !== Match['char'] {
@@ -168,7 +168,7 @@ ParseFindArray(Stack, Pos, Match, MatchValue?) {
     sleep 1
 }
 
-ParseFindObject(Stack, Pos, Match, MatchValue?) {
+ParseFindObject(Controller, Stack, Pos, Match, MatchValue?) {
     global content
     ch := SubStr(content, pos, 1)
     if ch !== Match['char'] {
@@ -177,7 +177,7 @@ ParseFindObject(Stack, Pos, Match, MatchValue?) {
     sleep 1
 }
 
-ParseFindCloseArray(Stack, Pos, Match) {
+ParseFindCloseArray(Controller, Stack, Pos, Match) {
     global content
     ch := SubStr(content, pos, 1)
     if ch !== Match['char'] {
@@ -186,7 +186,7 @@ ParseFindCloseArray(Stack, Pos, Match) {
     sleep 1
 }
 
-ParseFindCloseObject(Stack, Pos, Match) {
+ParseFindCloseObject(Controller, Stack, Pos, Match) {
     global content
     ch := SubStr(content, pos, 1)
     if ch !== Match['char'] {

@@ -1,9 +1,11 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParseEx.ahk
     Author: Nich-Cebolla
-    Version: 1.2.0
+    Version: 1.2.1
     License: MIT
 */
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
+#include <PathObj>
 
 ; There's a few more classes beneath `QuickParseEx`. They are helper classes for use with
 ; `QuickParseEx.Find`.
@@ -876,13 +878,31 @@ class QuickParseEx {
      * - `QuickParseEx.Find` can be used to locate the character position of a property or value in
      * a JSON string. It uses the same parsing logic as `QuickParseEx.Call`, but does not actually
      * create the objects.
+     *
      * - Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str`
      * and `Path` are unset, the clipboard's contents are used.
-     * - The callback functions each receive the `Stack` array. The values in the array are objects.
-     * You can add properties to the objects but do not change or remove the property { __Handler }.
+     *
+     * - The callback functions each receive the `Controller` object. The `Controller` has two properties,
+     * { Index, Path }.
+     *   - `Controller.Index` is an integer representing the index of the most recently encountered
+     * value relative to the parent object. For example, in the string
+     * '{ "Prop1": "Val1", "Prop2": "Val2", "Prop3": { "Prop4": "Val4" } }',
+     * "Val1" is at index 1, "Val2" is at index 2, the object $.Prop3 is at index 3, and "Val4" is
+     * at index 1 because each object retains its own index. It works the same way for array
+     * items.
+     *   - `Controller.Path` is a `PathObj` object, which simplifies keeping track of object paths
+     * using a string representation of the path. To get the current path, just call the property,
+     * i.e. `Controller.Path()`, and it returns the object path as a string.
+     * @see {@link PathObj}.
+     *
+     * - The callback functions each receive the `Stack` array. The values in the array are the
+     * `Controller` objects that are ancestors of the `Controller` object passed to the first parameter.
+     * You can add properties to the objects but do not change any of { Index, Path, __Handler }.
      * The current depth is represented by `Stack.Length`.
-     * - If either callback function returns a nonzero value, `QuickParseEx.Find` will return after
+     *
+     * - If a callback function returns a nonzero value, `QuickParseEx.Find` will return after
      * completing the current action.
+     *
      * - This is how you should handle the fourth parameter:
      * @example
      *  Callback(Stack, Pos, Match, MatchValue?) {
@@ -960,6 +980,7 @@ class QuickParseEx {
      * in a JSON array. The function does not need to return anything. Returning a nonzero
      * value will direct `QuickParseEx.Find` to return. See the notes in the description of
      * `QuickParseEx.Find` for some additional details. The function receives the following values:
+     * - The `Controller` object. See the description above {@link QuickParseEx.Find}.
      * - The `Stack` array.
      * - The character position of the first significant character of the value's substring. This is
      * the position of the "char" subcapture group indicated in paramter #3 below.
@@ -976,6 +997,7 @@ class QuickParseEx {
      * that is a property of a JSON object. The function does not need to return anything. Returning
      * a nonzero value will direct `QuickParseEx.Find` to return. See the notes in the description of
      * `QuickParseEx.Find` for some additional details. The function receives the following values:
+     * - The `Controller` object. See the description above {@link QuickParseEx.Find}.
      * - The `Stack` array.
      * - The character position of the first significant character of the value's substring. This is
      * the position of the "char" subcapture group indicated in paramter #3 below.
@@ -993,6 +1015,7 @@ class QuickParseEx {
      * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
      * in the description of `QuickParseEx.Find` for some additional details. The function receives
      * the following values:
+     * - The `Controller` object. See the description above {@link QuickParseEx.Find}.
      * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
      * from the stack.
      * - The character position of the closing bracket.
@@ -1006,6 +1029,7 @@ class QuickParseEx {
      * anything. Returning a nonzero value will direct `QuickParseEx.Find` to return. See the notes
      * in the description of `QuickParseEx.Find` for some additional details. The function receives
      * the following values:
+     * - The `Controller` object. See the description above {@link QuickParseEx.Find}.
      * - The `Stack` array. `Stack.Length` is equal to the depth before removing the active object
      * from the stack.
      * - The character position of the closing bracket.
@@ -1044,7 +1068,6 @@ class QuickParseEx {
                 Str := A_Clipboard
             }
         }
-
         posCurly := InStr(Str, '{')
         posSquare := InStr(Str, '[')
         if posCurly {
@@ -1066,14 +1089,13 @@ class QuickParseEx {
         } else {
             throw Error('Missing open bracket.', -1)
         }
-        Stack := []
         flag_exit := false
+        Stack := []
+        Controller := { Index: 0, Path: PathObj() }
         ;@endregion
 
         while RegExMatch(Str, Pattern, &Match, Pos) {
-            if flag_exit {
-                return Pos
-            }
+            continue
         }
 
         return Pos
@@ -1083,12 +1105,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ArrayString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1096,11 +1119,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
-            if CallbackArray(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match) {
+                return -1
             }
-            Stack.Push({ __Handler: _GetContextArray })
+            Controller.__Handler := _GetContextArray
+            _GetControllerArray(Controller.Index)
             Pattern := ArrayItem
             Pos++
         }
@@ -1108,12 +1133,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchCheck) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchCheck) {
+                return -1
             }
             if MatchCheck['char'] == '}' {
                 Pos := MatchCheck.Pos + MatchCheck.Len
@@ -1121,19 +1147,21 @@ class QuickParseEx {
             } else {
                 Pos++
                 Pattern := ObjectPropName
-                Stack.Push({ __Handler: _GetContextArray })
+                Controller.__Handler := _GetContextArray
+                _GetControllerArray(Controller.Index)
             }
         }
         OnFalseArr(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ArrayFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1141,12 +1169,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ArrayTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1154,12 +1183,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ArrayNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1167,12 +1197,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ArrayNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1180,13 +1211,14 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackArray(Stack, Match.Pos['char'], Match) || CallbackCloseArray(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
+            Controller.Index++
+            if CallbackArray(Controller, Stack, Match.Pos['char'], Match) || CallbackCloseArray(Controller, Stack, Match.Pos['char'], Match) {
+                return -1
             }
             Pos := Match.Pos + Match.Len
             if Stack.Length {
-                Active := Stack.Pop()
-                Active.__Handler.Call()
+                Controller := Stack.Pop()
+                Controller.__Handler.Call()
             }
         }
         ;@endregion
@@ -1196,12 +1228,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectString, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1209,11 +1242,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
-            if CallbackObject(Stack, Match.Pos['char'], Match) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match) {
+                return -1
             }
-            Stack.Push({ __Handler: _GetContextObject })
+            Controller.__Handler := _GetContextObject
+            _GetControllerObject(Match)
             Pattern := ArrayItem
             Pos++
         }
@@ -1221,31 +1256,34 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
                 _Throw(1, Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchCheck) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchCheck) {
+                return -1
             }
             if MatchCheck['char'] == '}' {
                 Pos := MatchCheck.Pos + MatchCheck.Len
                 _GetContextObject()
             } else {
                 Pos++
-                Stack.Push({ __Handler: _GetContextObject })
+                Controller.__Handler := _GetContextObject
+                _GetControllerObject(Match)
             }
         }
         OnFalseObj(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1253,12 +1291,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1266,12 +1305,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1279,12 +1319,13 @@ class QuickParseEx {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            if CallbackObject(Stack, Match.Pos['char'], Match, MatchValue) {
-                flag_exit := true
+            if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
+                return -1
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1299,11 +1340,12 @@ class QuickParseEx {
             if MatchCheck['char'] == ',' {
                 Pattern := ArrayItem
             } else if MatchCheck['char'] == ']' {
-                if CallbackCloseArray(Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    flag_exit := true
+                if CallbackCloseArray(Controller, Stack, MatchCheck.Pos['char'], MatchCheck) {
+                    return -1
                 }
                 if Stack.Length {
-                    Stack.Pop().__Handler.Call()
+                    Controller := Stack.Pop()
+                    Controller.__Handler.Call()
                 }
             }
         }
@@ -1315,33 +1357,44 @@ class QuickParseEx {
             if MatchCheck['char'] == ',' {
                 Pattern := ObjectPropName
             } else if MatchCheck['char'] == '}' {
-                if CallbackCloseObject(Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    flag_exit := true
+                if CallbackCloseObject(Controller, Stack, MatchCheck.Pos['char'], MatchCheck) {
+                    return -1
                 }
                 if Stack.Length {
-                    Stack.Pop().__Handler.Call()
+                    Controller := Stack.Pop()
+                    Controller.__Handler.Call()
                 }
             }
+        }
+        _GetControllerArray(Index) {
+            Stack.Push(Controller)
+            Controller := { Index: 0, Path: Controller.Path.MakeItem(Index) }
+        }
+        _GetControllerObject(Match) {
+            Stack.Push(Controller)
+            Controller := { Index: 0, Path: Controller.Path.MakeProp(Match['name']) }
         }
         _PrepareNextArr(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == ']' {
-                if CallbackCloseArray(Stack, MatchValue.Pos['char'], MatchValue) {
-                    flag_exit := true
+                if CallbackCloseArray(Controller, Stack, MatchValue.Pos['char'], MatchValue) {
+                    return -1
                 }
                 if Stack.Length {
-                    Stack.Pop().__Handler.Call()
+                    Controller := Stack.Pop()
+                    Controller.__Handler.Call()
                 }
             }
         }
         _PrepareNextObj(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == '}' {
-                if CallbackCloseObject(Stack, MatchValue.Pos['char'], MatchValue) {
-                    flag_exit := true
+                if CallbackCloseObject(Controller, Stack, MatchValue.Pos['char'], MatchValue) {
+                    return -1
                 }
                 if Stack.Length {
-                    Stack.Pop().__Handler.Call()
+                    Controller := Stack.Pop()
+                    Controller.__Handler.Call()
                 }
             }
         }
@@ -1440,7 +1493,7 @@ class JsonValueFinder extends Map {
      * and if the `Names.CaseSense !== JsonValueFinderObj.CaseSense`, a new `Map` object is created
      * and the names are added from `Names` to the new object.
      */
-    Call(Names) {
+    FindRootProps(Names) {
         this.Result := ''
         if Names is Map && Names.CaseSense == this.CaseSense {
             this.Names := Names
@@ -1471,7 +1524,7 @@ class JsonValueFinder extends Map {
           , this.PrototypeObject.Content
         )
     }
-    CallbackClose(Stack, Pos, Match) {
+    CallbackClose(Controller, Stack, Pos, Match) {
         if Stack.Length == 1 && this.Result {
             this.Result.MatchValue := Match
             this.Set(this.Result.Name, this.Result)
@@ -1483,14 +1536,14 @@ class JsonValueFinder extends Map {
             }
         }
     }
-    CallbackObject(Stack, Pos, Match, MatchValue?) {
+    CallbackObject(Controller, Stack, Pos, Match, MatchValue?) {
         if !this.Result && !Stack.Length && this.Names.Has(Match['name']) {
             if IsSet(MatchValue) {
                 if MatchValue.Mark {
                     if MatchValue['char'] == '}' {
                         ; empty object
                         this.Names.Delete(Match['name'])
-                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue, Index: Controller.Index, Path: Controller.Path })
                         ObjSetBase(this.Get(Match['name']), this.PrototypeObject)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
@@ -1499,7 +1552,7 @@ class JsonValueFinder extends Map {
                     } else {
                         ; open curly bracket
                         this.Names.Delete(Match['name'])
-                        this.Result := { Match: Match }
+                        this.Result := { Match: Match, Index: Controller.Index, Path: Controller.Path }
                         ObjSetBase(this.Result, this.PrototypeObject)
                     }
                 } else {
@@ -1507,7 +1560,7 @@ class JsonValueFinder extends Map {
                     if Match['char'] == '"' {
                         ; quoted string
                         this.Names.Delete(Match['name'])
-                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue, Index: Controller.Index, Path: Controller.Path })
                         ObjSetBase(this.Get(Match['name']), this.PrototypeString)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
@@ -1515,7 +1568,7 @@ class JsonValueFinder extends Map {
                         }
                     } else {
                         this.Names.Delete(Match['name'])
-                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue })
+                        this.Set(Match['name'], { Match: Match, MatchValue: MatchValue, Index: Controller.Index, Path: Controller.Path })
                         ObjSetBase(this.Get(Match['name']), this.PrototypePrimitive)
                         if !this.Names.Count {
                             this.DeleteProp('Result')
@@ -1526,7 +1579,7 @@ class JsonValueFinder extends Map {
             } else {
                 ; open square bracket
                 this.Names.Delete(Match['name'])
-                this.Result := { Match: Match }
+                this.Result := { Match: Match, Index: Controller.Index, Path: Controller.Path }
                 ObjSetBase(this.Result, this.PrototypeObject)
             }
         }
@@ -1542,6 +1595,8 @@ class JsonValueFinder extends Map {
             }
         }
     }
+
+    Content => this.PrototypeObject.Content
 }
 
 class FindValueBase {
