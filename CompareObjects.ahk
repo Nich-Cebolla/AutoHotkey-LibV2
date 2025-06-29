@@ -1,4 +1,10 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/CompareObjects.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
 /**
  * @description - Recursively compares the own properties and items of the input objects. If the
  * two objects or any nested objects are not the same as its counterpart, an error is thrown. If
@@ -30,9 +36,19 @@ CompareObjects(obj1, obj2) {
             }
         }
         for item in list {
-            val1 := obj1.%item%
-            val2 := obj2.%item%
-            _CompareVal(&val1, &val2)
+            val1 := unset
+            val2 := unset
+            try {
+                val1 := obj1.%item%
+            }
+            try {
+                val2 := obj2.%item%
+            }
+            if IsSet(val1) == IsSet(val2) {
+                _CompareVal(&val1, &val2)
+            } else {
+                throw Error('Only one object encountered an error when accessing the property.', -1, item)
+            }
         }
         if HasMethod(obj1, '__Enum') {
             if HasMethod(obj2, '__Enum') {
@@ -40,10 +56,14 @@ CompareObjects(obj1, obj2) {
                 list2 := Map()
                 list1.CaseSense := list2.CaseSense := false
                 for key, val in obj1 {
-                    list1.Set(key, val)
+                    if IsSet(val) {
+                        list1.Set(key, val)
+                    }
                 }
                 for key, val in obj2 {
-                    list2.Set(key, val)
+                    if IsSet(val) {
+                        list2.Set(key, val)
+                    }
                 }
                 if list1.Count !== list2.Count {
                     throw Error('Inequal number of items.', -1)
