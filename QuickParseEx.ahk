@@ -1493,7 +1493,7 @@ class JsonValueFinder extends Map {
      * and if the `Names.CaseSense !== JsonValueFinderObj.CaseSense`, a new `Map` object is created
      * and the names are added from `Names` to the new object.
      */
-    FindRootProps(Names) {
+    Call(Names) {
         this.Result := ''
         if Names is Map && Names.CaseSense == this.CaseSense {
             this.Names := Names
