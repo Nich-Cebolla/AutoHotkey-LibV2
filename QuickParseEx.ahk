@@ -115,12 +115,24 @@ class QuickParseEx {
 
         posCurly := InStr(Str, '{')
         posSquare := InStr(Str, '[')
-        if posCurly > posSquare {
+        if posCurly {
+            if posSquare {
+                if posCurly > posSquare {
+                    Pattern := ArrayItem
+                    Pos := posSquare + 1
+                } else {
+                    Pattern := ObjectPropName
+                    Pos := posCurly + 1
+                }
+            } else {
+                Pattern := ObjectPropName
+                Pos := posCurly + 1
+            }
+        } else if posSquare {
             Pattern := ArrayItem
             Pos := posSquare + 1
         } else {
-            Pattern := ObjectPropName
-            Pos := posCurly + 1
+            throw Error('Missing open bracket.', -1)
         }
         Stack := []
         Obj := Root
@@ -534,12 +546,24 @@ class QuickParseEx {
 
         posCurly := InStr(Str, '{')
         posSquare := InStr(Str, '[')
-        if posCurly > posSquare {
+        if posCurly {
+            if posSquare {
+                if posCurly > posSquare {
+                    Pattern := ArrayItem
+                    Pos := posSquare + 1
+                } else {
+                    Pattern := ObjectPropName
+                    Pos := posCurly + 1
+                }
+            } else {
+                Pattern := ObjectPropName
+                Pos := posCurly + 1
+            }
+        } else if posSquare {
             Pattern := ArrayItem
             Pos := posSquare + 1
         } else {
-            Pattern := ObjectPropName
-            Pos := posCurly + 1
+            throw Error('Missing open bracket.', -1)
         }
         Stack := []
         Obj := Root
@@ -1023,12 +1047,24 @@ class QuickParseEx {
 
         posCurly := InStr(Str, '{')
         posSquare := InStr(Str, '[')
-        if posCurly > posSquare {
+        if posCurly {
+            if posSquare {
+                if posCurly > posSquare {
+                    Pattern := ArrayItem
+                    Pos := posSquare + 1
+                } else {
+                    Pattern := ObjectPropName
+                    Pos := posCurly + 1
+                }
+            } else {
+                Pattern := ObjectPropName
+                Pos := posCurly + 1
+            }
+        } else if posSquare {
             Pattern := ArrayItem
             Pos := posSquare + 1
         } else {
-            Pattern := ObjectPropName
-            Pos := posCurly + 1
+            throw Error('Missing open bracket.', -1)
         }
         Stack := []
         flag_exit := false
@@ -1324,21 +1360,21 @@ class QuickParseEx {
         ArrayNextChar := Format(NextChar, ']')
         ObjectNextChar := Format(NextChar, '}')
         this.Patterns := {
-            ArrayItem1: 'iS)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
-          , ArrayItem2: 'iJS)\s*(?:(?<char>")(?COnQuoteArr)|(?<char>\{)(?COnCurlyOpenArr)|(?<char>\[)(?COnSquareOpenArr)|(?<char>f)(?COnFalseArr)|(?<char>t)(?COnTrueArr)|(?<char>n)(?COnNullArr)|(?<char>[\d-])(?COnNumberArr)|(?<char>\])(?COnSquareCloseArr))'
+            ArrayItem1: 'S)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
+          , ArrayItem2: 'JS)\s*(?:(?<char>")(?COnQuoteArr)|(?<char>\{)(?COnCurlyOpenArr)|(?<char>\[)(?COnSquareOpenArr)|(?<char>f)(?COnFalseArr)|(?<char>t)(?COnTrueArr)|(?<char>n)(?COnNullArr)|(?<char>[\d-])(?COnNumberArr)|(?<char>\])(?COnSquareCloseArr))'
           , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
-          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ArrayNextChar
-          , ArrayFalse: 'iS)(?<value>false)' ArrayNextChar
-          , ArrayTrue: 'iS)(?<value>true)' ArrayNextChar
-          , ArrayNull: 'iS)(?<value>null)' ArrayNextChar
+          , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ArrayNextChar
+          , ArrayFalse: 'S)(?<value>false)' ArrayNextChar
+          , ArrayTrue: 'S)(?<value>true)' ArrayNextChar
+          , ArrayNull: 'S)(?<value>null)' ArrayNextChar
           , ArrayNextChar: ArrayNextChar
-          , ObjectPropName1: 'iS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)":\s*(?<char>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
-          , ObjectPropName2: 'iJS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)":\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
+          , ObjectPropName1: 'S)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*(?<char>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
+          , ObjectPropName2: 'JS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*(?:(?<char>")(?COnQuoteObj)|(?<char>\{)(?COnCurlyOpenObj)|(?<char>\[)(?COnSquareOpenObj)|(?<char>f)(?COnFalseObj)|(?<char>t)(?COnTrueObj)|(?<char>n)(?COnNullObj)|(?<char>[\d-])(?COnNumberObj))'
           , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
-          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"' ObjectNextChar
-          , ObjectFalse: 'iS)(?<value>false)' ObjectNextChar
-          , ObjectTrue: 'iS)(?<value>true)' ObjectNextChar
-          , ObjectNull: 'iS)(?<value>null)' ObjectNextChar
+          , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ObjectNextChar
+          , ObjectFalse: 'S)(?<value>false)' ObjectNextChar
+          , ObjectTrue: 'S)(?<value>true)' ObjectNextChar
+          , ObjectNull: 'S)(?<value>null)' ObjectNextChar
           , ObjectNextChar: ObjectNextChar
           , ObjectInitialCheck: 'S)(*MARK:novalue)\s*(?<char>"|\})'
         }
