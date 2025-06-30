@@ -1095,7 +1095,9 @@ class QuickParseEx {
         ;@endregion
 
         while RegExMatch(Str, Pattern, &Match, Pos) {
-            continue
+            if flag_exit {
+                break
+            }
         }
 
         return Pos
@@ -1111,7 +1113,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1122,7 +1124,7 @@ class QuickParseEx {
             Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match) {
-                return -1
+                flag_exit := true
             }
             Controller.__Handler := _GetContextArray
             _GetControllerArray(Controller.Index)
@@ -1139,7 +1141,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchCheck) {
-                return -1
+                flag_exit := true
             }
             if MatchCheck['char'] == '}' {
                 Pos := MatchCheck.Pos + MatchCheck.Len
@@ -1161,7 +1163,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1175,7 +1177,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1189,7 +1191,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1203,7 +1205,7 @@ class QuickParseEx {
                 _Throw(1, Match.Pos)
             }
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextArr(MatchValue)
         }
@@ -1213,7 +1215,7 @@ class QuickParseEx {
             }
             Controller.Index++
             if CallbackArray(Controller, Stack, Match.Pos['char'], Match) || CallbackCloseArray(Controller, Stack, Match.Pos['char'], Match) {
-                return -1
+                flag_exit := true
             }
             Pos := Match.Pos + Match.Len
             if Stack.Length {
@@ -1234,7 +1236,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1245,7 +1247,7 @@ class QuickParseEx {
             Controller.Index++
             Pos := Match.Pos + Match.Len - 1
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match) {
-                return -1
+                flag_exit := true
             }
             Controller.__Handler := _GetContextObject
             _GetControllerObject(Match)
@@ -1262,7 +1264,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchCheck) {
-                return -1
+                flag_exit := true
             }
             if MatchCheck['char'] == '}' {
                 Pos := MatchCheck.Pos + MatchCheck.Len
@@ -1283,7 +1285,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1297,7 +1299,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1311,7 +1313,7 @@ class QuickParseEx {
                 _Throw(1, Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1325,7 +1327,7 @@ class QuickParseEx {
                 _Throw(1, Match.Pos)
             }
             if CallbackObject(Controller, Stack, Match.Pos['char'], Match, MatchValue) {
-                return -1
+                flag_exit := true
             }
             _PrepareNextObj(MatchValue)
         }
@@ -1341,7 +1343,7 @@ class QuickParseEx {
                 Pattern := ArrayItem
             } else if MatchCheck['char'] == ']' {
                 if CallbackCloseArray(Controller, Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    return -1
+                    flag_exit := true
                 }
                 if Stack.Length {
                     Controller := Stack.Pop()
@@ -1358,7 +1360,7 @@ class QuickParseEx {
                 Pattern := ObjectPropName
             } else if MatchCheck['char'] == '}' {
                 if CallbackCloseObject(Controller, Stack, MatchCheck.Pos['char'], MatchCheck) {
-                    return -1
+                    flag_exit := true
                 }
                 if Stack.Length {
                     Controller := Stack.Pop()
@@ -1378,7 +1380,7 @@ class QuickParseEx {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == ']' {
                 if CallbackCloseArray(Controller, Stack, MatchValue.Pos['char'], MatchValue) {
-                    return -1
+                    flag_exit := true
                 }
                 if Stack.Length {
                     Controller := Stack.Pop()
@@ -1390,7 +1392,7 @@ class QuickParseEx {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == '}' {
                 if CallbackCloseObject(Controller, Stack, MatchValue.Pos['char'], MatchValue) {
-                    return -1
+                    flag_exit := true
                 }
                 if Stack.Length {
                     Controller := Stack.Pop()
