@@ -44,7 +44,7 @@ class RectHighlight extends Gui {
      * duration then will auto-hide after the duration passes.
      * - If zero, the highlighted area will be visible indefinitely.
      *
-     * @see RectHighlight.Prototype.Call for more information about toggling visibility and using the
+     * @see {@link RectHighlight#Call} for more information about toggling visibility and using the
      * timer.
      *
      * Use `Hide` or `Show` (built-in Gui methods) to toggle visibility independently from the timer.
