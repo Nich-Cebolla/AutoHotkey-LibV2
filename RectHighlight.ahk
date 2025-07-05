@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
 
@@ -536,7 +536,10 @@ class RectHighlight extends Gui {
 
     Obj {
         Get => this.Options.Obj
-        Set => this.Options.Obj := Value
+        Set {
+            this.Options.Obj := Value
+            this.SetRegion(false)
+        }
     }
 
     OffsetB {
