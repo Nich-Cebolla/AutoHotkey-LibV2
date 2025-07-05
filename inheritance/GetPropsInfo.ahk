@@ -1540,16 +1540,16 @@ class PropsInfo {
                     }
                 }
                 if IsSet(r) {
-                    this.__Delete(r.Index)
+                    this.__MapDelete(r.Index)
                 } else {
                     throw UnsetItemError('The function passed to ``Key`` is not in the filter.', -1)
                 }
             } else if IsObject(Key) {
                 r := this.Get(Key.Index)
-                this.__Delete(Key.Index)
+                this.__MapDelete(Key.Index)
             } else if IsNumber(Key) {
                 r := this.Get(Key)
-                this.__Delete(Key)
+                this.__MapDelete(Key)
             } else {
                 for Fn in this {
                     if Fn.Name == Key {
@@ -1558,7 +1558,7 @@ class PropsInfo {
                     }
                 }
                 if IsSet(r) {
-                    this.__Delete(r.Index)
+                    this.__MapDelete(r.Index)
                 } else {
                     throw UnsetItemError('The filter does not contain a function with that name.', -2, Key)
                 }
@@ -1577,7 +1577,7 @@ class PropsInfo {
 
         static __New() {
             this.DeleteProp('__New')
-            this.Prototype.DefineProp('__Delete', Map.Prototype.GetOwnPropDesc('Delete'))
+            this.Prototype.DefineProp('__MapDelete', Map.Prototype.GetOwnPropDesc('Delete'))
         }
     }
 
