@@ -64,7 +64,7 @@ class RectHighlight extends Gui {
      */
     static Call(Obj?, Options?, ShowImmediately := true) {
         ObjSetBase(G := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000'), this.Prototype)
-        G.Timer := G.Visible := false
+        G.Timer := false
         ; Some gui methods return incorrect values if the window was never shown.
         G.Show()
         G.Hide()
