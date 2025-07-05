@@ -1,5 +1,5 @@
 
-# Inheritance - v1.4.0
+# Inheritance - v1.4.1
 
 ## Table of Contents
 
@@ -410,6 +410,10 @@ These are the general concepts that `Inheritance` builds from:
 - Inheritance.ahk - A short script that calls `#include` for each of "ClassFactory.ahk", "GetBaseObjects.ahk" , "GetPropDesc.ahk", "GetPropsInfo.ahk", and "Inheritance_Shared.ahk".
 
 ## Changelog
+
+2025-07-04 - 1.4.1
+- Fixed `PropsInfo.Prototype.FilterActive`. It now no longer attempts to call `PropsInfo.Prototype.FilterActivateFromCache`.
+- Fixed `PropsInfo.FilterGroup.Prototype.__Delete`. It is renamed to `PropsInfo.FilterGroup.Prototype.__MapDelete`.
 
 2025-06-06 - 1.4.0
 - Added `PropsInfo.Prototype.Delete`.

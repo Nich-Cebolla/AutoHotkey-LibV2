@@ -1,4 +1,4 @@
-[color=#800000][size=165][b]Inheritance[/b] - v1.4.0[/size][/color]
+[color=#800000][size=165][b]Inheritance[/b] - v1.4.1[/size][/color]
 
 [color=#800000][size=145][b]Table of Contents[/b][/size][/color]
 [list=I][*]Introduction
@@ -97,7 +97,7 @@ Github link: [url]https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/inh
 [list][*][color=#000000][size=100]Excluded - A comma-delimited list of properties that are not exposed by the [c]PropsInfo[/c] object. This does not included properties that are excluded by the active filter. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]InheritanceDepth - The number of base objects that have properties represented in the collection. This does not include the root object. (Added in 1.4.0)[/size][/color]
   [*][color=#000000][size=100]Filter - A [c]Map[/c] object where the key is an index as integer and the value is the [c]PropsInfo.Filter[/c] object created by calling [c]PropsInfoObj.FilterAdd[/c].[/size][/color]
-  [*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c] and if [c]<nonzero value>[/c] is the name of a cached filter, it will call [c]PropsInfoObj.FilterActivateFromCache(Value)[/c]; else it will call [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], it will call [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
+  [*][color=#000000][size=100]FilterActive - Initially [c]0[/c]. If you set [c]PropsInfoObj.FilterActive := <nonzero value>[/c], calls [c]PropsInfoObj.FilterActivate[/c]. If you set [c]PropsInfoObj.FilterActive := <falsy value>[/c], calls [c]PropsInfoObj.FilterDeactivate[/c].[/size][/color]
   [*][color=#000000][size=100]StringMode - Initially [c]0[/c]. If you set [c]PropsInfoObj.StringMode := <nonzero value>[/c], "string mode" becomes active on the [c]PropsInfo[/c] object. While [c]PropsInfoObj.StringMode == 1[/c], the [c]PropsInfo[/c] object behaves like an array of property names as string. The following are influenced by string mode: [c]__Enum[/c], [c]Get[/c], [c]__Item[/c]. By extension, the proxies are also influenced by string mode, though not directly.[/size][/color][/list]
 
 [color=#000000][size=100]The following properties are read-only, and are included to prevent an error when passing a [c]PropsInfo[/c] object to a function that expects an array or map.[/size][/color]
