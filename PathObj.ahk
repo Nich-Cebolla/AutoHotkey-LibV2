@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
     Author: Nich-Cebolla
-    Version: 1.1.1
+    Version: 1.1.2
     License: MIT
 */
 
@@ -65,7 +65,7 @@
  * @
  */
 class PathObj {
-    static InitialBufferSize := 32768
+    static InitialBufferSize := 256
     static __New() {
         this.DeleteProp('__New')
         this.hModule := DllCall('LoadLibrary', 'Str', 'msvcrt.dll', 'Ptr')
@@ -109,9 +109,9 @@ class PathObj {
                 }
                 o := o.Base
             }
-            this.DefineProp('__Path', { Value: { buf: buf, offset: offset } })
+            this.DefineProp('__Path', { Value: StrGet(buf.Ptr + offset) })
         }
-        return StrGet(this.__Path.buf.Ptr + this.__Path.offset)
+        return this.__Path
     }
     MakeProp(Name) {
         static desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
@@ -146,23 +146,26 @@ class PathObj {
                 }
                 o := o.Base
             }
-            this.DefineProp('__Path_U', { Value: { buf: buf, offset: offset } })
+            this.DefineProp('__Path_U', { Value: StrGet(buf.Ptr + offset) })
         }
-        return StrGet(this.__Path_U.buf.Ptr + this.__Path_U.offset)
+        return this.__Path_U
     }
     __GetPathSegmentItem_Number(buf, &offset) {
         bytes := StrPut(this.Name) + 2 ; -2 for null terminator, then +4 for the brackets
         if bytes > offset {
             count := buf.Size - offset
-            buf.Size *= 2
-            DllCall(
-                'msvcrt.dll\memmove'
-              , 'ptr', buf.Ptr + buf.Size - count
-              , 'ptr', buf.Ptr + offset
-              , 'int', count
-              , 'ptr'
-            )
-            offset := buf.Size - count
+            while bytes > offset {
+                PathObj.InitialBufferSize *= 2
+                buf.Size *= 2
+                DllCall(
+                    PathObj.memmove
+                  , 'ptr', buf.Ptr + buf.Size - count
+                  , 'ptr', buf.Ptr + offset
+                  , 'int', count
+                  , 'ptr'
+                )
+                offset := buf.Size - count
+            }
         }
         offset -= bytes
         StrPut('[' this.Name ']', buf.Ptr + offset, bytes / 2)
@@ -180,9 +183,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -205,9 +209,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -230,9 +235,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -259,9 +265,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -278,9 +285,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -297,9 +305,10 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
+                PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    'msvcrt.dll\memmove'
+                    PathObj.memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
