@@ -295,12 +295,12 @@ class Pattern {
      * Valid characters for Ahk variables and properties.
      * @memberof Pattern
      */
-    static AhkAllowedSymbolChars := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F])'
+    static AhkAllowedSymbolChars := '(?:[\p{L}_0-9]|[^\x00-\x7F\x80-\x9F])'
     /**
      * Valid characters for Ahk variables and properties excluding digits
      * @memberof Pattern
      */
-    static AhkAllowedSymbolCharsNoDigits := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F0-9])'
+    static AhkAllowedSymbolCharsNoDigits := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F])'
     /**
      * This pattern will match with property:value pairs within AHK object literal definitions.
      * If used in a loop matching against a string that is an AHK object literal definition beginning
