@@ -21,7 +21,7 @@ ParseConstructorArray(*) {
 }
 
 ParseSetterObject(Obj, MatchName, Depth, Value?) {
-    if Depth {
+    if Depth > 1 {
         Obj.DefineProp(MatchName['name'], { Value: Value ?? '' })
     } else {
         Obj.Set(MatchName['name'], Value ?? '')

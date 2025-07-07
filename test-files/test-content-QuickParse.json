@@ -5,7 +5,6 @@
   "Ui.Test4": true,
   "Ui.Test5": false,
   "Ui.Test6": null,
-  "Ui.Test7": [1,2,3,4,"",6,7],
   "Ui.Test7": [1,2,3,4,null,6,7],
   "Ui.Test8": "{\"Prop\":\"val\"}",
   "Ui.Test9": 10

@@ -13,7 +13,7 @@ test()
 test() {
     finder := JsonValueFinder(, 'example.json')
     content := FileRead('example.json')
-    if finder.PrototypeObject.Base.Content !== content {
+    if finder.Proto.Content !== content {
         throw Error('Invalid content.', -1)
     }
     names := Map()

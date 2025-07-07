@@ -23,14 +23,14 @@ ParseConstructorArray(*) {
     return []
 }
 
-ParseSetterObject(Obj, Stack, Match, MatchValue?, Value?) {
-    if Stack.Length {
+ParseSetterObject(Obj, Controller, Stack, Pos, Match, Value?, MatchValue?) {
+    if Stack.Length > 1 {
         Obj.DefineProp(Match['name'], { Value: Value ?? '' })
     } else {
         Obj.Set(Match['name'], Value ?? '')
     }
 }
 
-ParseSetterArray(Obj, Stack, Match, MatchValue?, Value?) {
+ParseSetterArray(Obj, Controller, Stack, Pos, Match, Value?, MatchValue?) {
     Obj.Push(Value ?? unset)
 }
