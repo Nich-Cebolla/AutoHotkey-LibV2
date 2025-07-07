@@ -83,12 +83,14 @@ class PathObj {
      * syntax, there are no characters which have AHK escape sequences that can be used within a
      * property name, and so this should generally be left `false` to save processing time.
      * `PathObj.Prototype.Unescaped` is unaffected by this option.
+     * @param {String} [QuoteChar = "`""] - The quote character to use for item keys.
      */
-    __New(Name := '$', EscapePropNames := false) {
+    __New(Name := '$', EscapePropNames := false, QuoteChar := '"') {
         static desc := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot1')
         , desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot_U')
         , propdesc := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp1')
         this.Name := Name
+        this.QuoteChar := QuoteChar
         this.DefineProp('GetPathSegment', desc)
         this.DefineProp('GetPathSegment_U', desc_u)
         if EscapePropNames {
@@ -169,7 +171,7 @@ class PathObj {
     ;@region Escaped
     __GetPathSegmentItem_String1(buf, &offset) {
         static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String2')
-        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), '"', '``"'), '`t', '``t') })
+        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
         this.DefineProp('GetPathSegment', desc2)
         this.GetPathSegment(buf, &offset)
     }
@@ -190,11 +192,11 @@ class PathObj {
             }
         }
         offset -= bytes
-        StrPut('["' this.NameEscaped '"]', buf.Ptr + offset, bytes / 2)
+        StrPut('[' this.QuoteChar this.NameEscaped this.QuoteChar ']', buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentProp1(buf, &offset) {
         static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp2')
-        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), '"', '``"'), '`t', '``t') })
+        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
         this.DefineProp('GetPathSegment', desc2)
         this.GetPathSegment(buf, &offset)
     }
@@ -219,7 +221,7 @@ class PathObj {
     }
     __GetPathSegmentRoot1(buf, &offset) {
         static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot2')
-        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), '"', '``"'), '`t', '``t') })
+        this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
         this.DefineProp('GetPathSegment', desc2)
         return this.GetPathSegment(buf, &offset)
     }
@@ -269,7 +271,7 @@ class PathObj {
             }
         }
         offset -= bytes
-        StrPut('["' this.Name '"]', buf.Ptr + offset, bytes / 2)
+        StrPut('[' this.QuoteChar this.__NamePartialEscaped this.QuoteChar ']', buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentProp_U(buf, &offset) {
         bytes := StrPut(this.Name) ; -2 for null terminator, then +2 for the period
