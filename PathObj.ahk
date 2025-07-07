@@ -113,14 +113,14 @@ class PathObj {
         }
         return StrGet(this.__Path.buf.Ptr + this.__Path.offset)
     }
-    MakeProp(&Name) {
+    MakeProp(Name) {
         static desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
         ObjSetBase(Segment := { Name: Name }, this)
         Segment.DefineProp('GetPathSegment', this.propdesc)
         Segment.DefineProp('GetPathSegment_U', desc_u)
         return Segment
     }
-    MakeItem(&Name) {
+    MakeItem(Name) {
         static descNumber := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number')
         , descString := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String1')
         , descString_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U1')
