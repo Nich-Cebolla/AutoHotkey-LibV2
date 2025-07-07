@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParse.ahk
     Author: Nich-Cebolla
-    Version: 1.0.3
+    Version: 1.0.4
     License: MIT
 */
 
@@ -54,7 +54,6 @@ class QuickParse {
         , ObjectTrue := QuickParse.Patterns.ObjectTrue
         , ObjectNull := QuickParse.Patterns.ObjectNull
         , ObjectNextChar := QuickParse.Patterns.ObjectNextChar
-        , ObjectInitialCheck := QuickParse.Patterns.ObjectInitialCheck
 
         if !IsSet(Str) {
             If IsSet(Path) {
@@ -63,16 +62,20 @@ class QuickParse {
                 Str := A_Clipboard
             }
         }
-        if !RegExMatch(Str, '[[{]', &Match) {
-            throw ValueError('Invalid JSON.', -1)
-        }
+
         if AsMap {
-            GetObj := MapCaseSense ? Map : _GetObj
-            SetValue := _SetProp1
+            CallbackConstructorObject := MapCaseSense ? Map : _GetObj
+            CallbackSetterObject := _SetProp1
         } else {
-            GetObj := Object
-            SetValue := _SetProp2
+            CallbackConstructorObject := Object
+            CallbackSetterObject := _SetProp2
         }
+
+        if !RegExMatch(Str, '\[|\{', &Match) {
+            throw Error('Missing open bracket.', -1)
+        }
+
+        Pos := Match.Pos + 1
 
         if IsSet(Root) {
             if Match[0] == '[' {
@@ -82,26 +85,31 @@ class QuickParse {
                         ' bracket.', -1)
                 }
                 Pattern := ArrayItem
-                Obj := Root
             } else {
                 if AsMap && !HasMethod(Root, 'Set') {
                     throw ValueError('The value passed to the ``Root`` parameter is required to have'
                         ' a ``Set`` method when ``AsMap`` is true.', -1)
                 }
                 Pattern := ObjectPropName
-                Obj := Root
             }
         } else {
             if Match[0] == '[' {
-                Root := Obj := []
+                Root := []
                 Pattern := ArrayItem
             } else {
-                Root := Obj := GetObj()
+                Root := CallbackConstructorObject()
                 Pattern := ObjectPropName
             }
         }
-        Stack := []
-        Pos := Match.Pos + 1
+
+        Controller := { Obj: Root, __Handler: (*) => }
+        Stack := ['']
+        Obj := Root
+        ; Used when unescaping json escape sequences.
+        charOrd := 0xFFFD
+        while InStr(Str, Chr(charOrd)) {
+            charOrd++
+        }
         ;@endregion
 
         while RegExMatch(Str, Pattern, &Match, Pos) {
@@ -120,8 +128,8 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             if InStr(MatchValue['value'], '\') {
-                Obj.Push(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['value'], '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), '\\', '\'))
-            } else if MatchValue['value'] && MatchValue['value'] !== '""' {
+                Obj.Push(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['value'], '\\', Chr(charOrd)), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), Chr(charOrd), '\'))
+            } else if MatchValue['value'] !== '""' {
                 Obj.Push(MatchValue['value'])
             } else {
                 Obj.Push('')
@@ -132,30 +140,33 @@ class QuickParse {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len - 1
-            Obj.Push([])
-            Stack.Push({ Obj: Obj, Handler: _GetContextArray })
-            Obj := Obj[-1]
-            Pattern := ArrayItem
-            Pos++
+            Pos := Match.Pos + Match.Len
+            _obj := []
+            Obj.Push(_obj)
+            if Match['close'] {
+                _GetContextArray()
+            } else {
+                Controller.__Handler := _GetContextArray
+                Stack.Push(Controller)
+                Obj := _obj
+                Controller := { Obj: Obj }
+            }
         }
         OnCurlyOpenArr(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len - 1
-            Obj.Push(GetObj())
-            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
-                _Throw(1, Pos)
-            }
-            if MatchCheck['char'] == '}' {
-                Pos := MatchCheck.Pos + MatchCheck.Len
+            Pos := Match.Pos + Match.Len
+            _obj := CallbackConstructorObject()
+            Obj.Push(_obj)
+            if Match['close'] {
                 _GetContextArray()
             } else {
-                Pos++
+                Controller.__Handler := _GetContextArray
+                Stack.Push(Controller)
+                Obj := _obj
+                Controller := { Obj: Obj }
                 Pattern := ObjectPropName
-                Stack.Push({ Obj: Obj, Handler: _GetContextArray })
-                Obj := Obj[-1]
             }
         }
         OnFalseArr(Match, *) {
@@ -163,10 +174,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            Obj.Push(0)
             if !RegExMatch(Str, ArrayFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Obj.Push(0)
             _PrepareNextArr(MatchValue)
         }
         OnTrueArr(Match, *) {
@@ -174,10 +185,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            Obj.Push(1)
             if !RegExMatch(Str, ArrayTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Obj.Push(1)
             _PrepareNextArr(MatchValue)
         }
         OnNullArr(Match, *) {
@@ -185,10 +196,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            Obj.Push(unset)
             if !RegExMatch(Str, ArrayNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            Obj.Push(unset)
             _PrepareNextArr(MatchValue)
         }
         OnNumberArr(Match, *) {
@@ -202,17 +213,6 @@ class QuickParse {
             Obj.Push(Number(MatchValue['value']))
             _PrepareNextArr(MatchValue)
         }
-        OnSquareCloseArr(Match, *) {
-            if Match.Pos !== Pos {
-                _Throw(1, Pos)
-            }
-            Pos := Match.Pos + Match.Len
-            if Stack.Length {
-                Active := Stack.Pop()
-                Obj := Active.Obj
-                Active.Handler.Call()
-            }
-        }
         ;@endregion
 
         ;@region Object Callbacks
@@ -225,11 +225,11 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             if InStr(MatchValue['value'], '\') {
-                SetValue(Match, StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['value'], '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), '\\', '\'))
+                CallbackSetterObject(Match, StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(MatchValue['value'], '\\', Chr(charOrd)), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), Chr(charOrd), '\'))
             } else if MatchValue['value'] && MatchValue['value'] !== '""' {
-                SetValue(Match, MatchValue['value'])
+                CallbackSetterObject(Match, MatchValue['value'])
             } else {
-                SetValue(Match, '')
+                CallbackSetterObject(Match, '')
             }
             _PrepareNextObj(MatchValue)
         }
@@ -237,29 +237,33 @@ class QuickParse {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len - 1
-            SetValue(Match, _obj := [])
-            Stack.Push({ Obj: Obj, Handler: _GetContextObject })
-            Obj := _obj
-            Pattern := ArrayItem
-            Pos++
+            Pos := Match.Pos + Match.Len
+            _obj := []
+            CallbackSetterObject(Match, _obj)
+            if Match['close'] {
+                _GetContextObject()
+            } else {
+                Controller.__Handler := _GetContextObject
+                Stack.Push(Controller)
+                Obj := _obj
+                Controller := { Obj: Obj }
+                Pattern := ArrayItem
+            }
         }
         OnCurlyOpenObj(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len - 1
-            SetValue(Match, _obj := GetObj())
-            if !RegExMatch(Str, ObjectInitialCheck, &MatchCheck, Pos) || MatchCheck.Pos !== Pos + 1 {
-                _Throw(1, Pos)
-            }
-            if MatchCheck['char'] == '}' {
-                Pos := MatchCheck.Pos + MatchCheck.Len
+            Pos := Match.Pos + Match.Len
+            _obj :=  CallbackConstructorObject()
+            CallbackSetterObject(Match, _obj)
+            if Match['close'] {
                 _GetContextObject()
             } else {
-                Pos++
-                Stack.Push({ Obj: Obj, Handler: _GetContextObject })
+                Controller.__Handler := _GetContextObject
+                Stack.Push(Controller)
                 Obj := _obj
+                Controller := { Obj: Obj }
             }
         }
         OnFalseObj(Match, *) {
@@ -267,10 +271,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match, 0)
             if !RegExMatch(Str, ObjectFalse, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            CallbackSetterObject(Match, 0)
             _PrepareNextObj(MatchValue)
         }
         OnTrueObj(Match, *) {
@@ -278,10 +282,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match, 1)
             if !RegExMatch(Str, ObjectTrue, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            CallbackSetterObject(Match, 1)
             _PrepareNextObj(MatchValue)
         }
         OnNullObj(Match, *) {
@@ -289,10 +293,10 @@ class QuickParse {
                 _Throw(1, Pos)
             }
             Pos := Match.Pos + Match.Len - 1
-            SetValue(Match, '')
             if !RegExMatch(Str, ObjectNull, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Pos)
             }
+            CallbackSetterObject(Match, '')
             _PrepareNextObj(MatchValue)
         }
         OnNumberObj(Match, *) {
@@ -303,40 +307,42 @@ class QuickParse {
             if !RegExMatch(Str, ObjectNumber, &MatchValue, Pos) || MatchValue.Pos !== Pos {
                 _Throw(1, Match.Pos)
             }
-            SetValue(Match, Number(MatchValue['value']))
+            CallbackSetterObject(Match, Number(MatchValue['value']))
             _PrepareNextObj(MatchValue)
         }
         ;@endregion
 
         ;@region Helper Funcs
         _GetContextArray() {
-            if !RegExMatch(Str, ArrayNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ArrayNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
-                Pattern := ArrayItem
-            } else if Match['char'] == ']' {
-                if Stack.Length {
-                    Active := Stack.Pop()
-                    Obj := Active.Obj
-                    Active.Handler.Call()
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == ']' {
+                Controller := Stack.Pop()
+                if !Controller {
+                    return
                 }
+                Obj := Controller.Obj
+                Controller.__Handler.Call()
+            } else {
+                Pattern := ArrayItem
             }
         }
         _GetContextObject() {
-            if !RegExMatch(Str, ObjectNextChar, &Match, Pos) || Match.Pos !== Pos {
+            if !RegExMatch(Str, ObjectNextChar, &MatchCheck, Pos) || MatchCheck.Pos !== Pos {
                 _Throw(1, Pos)
             }
-            Pos := Match.Pos + Match.Len
-            if Match['char'] == ',' {
-                Pattern := ObjectPropName
-            } else if Match['char'] == '}' {
-                if Stack.Length {
-                    Active := Stack.Pop()
-                    Obj := Active.Obj
-                    Active.Handler.Call()
+            Pos := MatchCheck.Pos + MatchCheck.Len
+            if MatchCheck['char'] == '}' {
+                Controller := Stack.Pop()
+                if !Controller {
+                    return
                 }
+                Obj := Controller.Obj
+                Controller.__Handler.Call()
+            } else {
+                Pattern := ObjectPropName
             }
         }
         _GetObj() {
@@ -347,21 +353,23 @@ class QuickParse {
         _PrepareNextArr(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == ']' {
-                if Stack.Length {
-                    Active := Stack.Pop()
-                    Obj := Active.Obj
-                    Active.Handler.Call()
+                Controller := Stack.Pop()
+                if !Controller {
+                    return
                 }
+                Obj := Controller.Obj
+                Controller.__Handler.Call()
             }
         }
         _PrepareNextObj(MatchValue) {
             Pos := MatchValue.Pos + MatchValue.Len
             if MatchValue['char'] == '}' {
-                if Stack.Length {
-                    Active := Stack.Pop()
-                    Obj := Active.Obj
-                    Active.Handler.Call()
+                Controller := Stack.Pop()
+                if !Controller {
+                    return
                 }
+                Obj := Controller.Obj
+                Controller.__Handler.Call()
             }
         }
         _SetProp1(MatchName, Value) {
@@ -381,25 +389,34 @@ class QuickParse {
     static __New() {
         this.DeleteProp('__New')
         ; SignficantChars := '["{[ftn\d{}-]'
-        NextChar := '(?:\s*(?<char>,|\{}))'
-        ArrayNextChar := Format(NextChar, ']')
-        ObjectNextChar := Format(NextChar, '}')
+        ArrayNextChar := '\s*(?<char>,|\])'
+        ObjectNextChar := '\s*(?<char>,|\})'
+        SignificantChars := (
+            '(?:'
+                '(?<char>")(?COnQuote{1})'
+                '|(?<char>\{)(?<close>\s*\})?(?COnCurlyOpen{1})'
+                '|(?<char>\[)(?<close>\s*\])?(?COnSquareOpen{1})'
+                '|(?<char>f)(?COnFalse{1})'
+                '|(?<char>t)(?COnTrue{1})'
+                '|(?<char>n)(?COnNull{1})'
+                '|(?<char>[\d-])(?COnNumber{1})'
+            ')'
+        )
         this.Patterns := {
-            ArrayItem: 'S)\s*(?<char>"(?COnQuoteArr)|\{(?COnCurlyOpenArr)|\[(?COnSquareOpenArr)|f(?COnFalseArr)|t(?COnTrueArr)|n(?COnNullArr)|[\d-](?COnNumberArr)|\](?COnSquareCloseArr))'
+            ArrayItem: 'JS)\s*' Format(SignificantChars, 'Arr')
           , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
           , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ArrayNextChar
           , ArrayFalse: 'S)(?<value>false)' ArrayNextChar
           , ArrayTrue: 'S)(?<value>true)' ArrayNextChar
           , ArrayNull: 'S)(?<value>null)' ArrayNextChar
-          , ArrayNextChar: ArrayNextChar
-          , ObjectPropName: 'S)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*(?<char>"(?COnQuoteObj)|\{(?COnCurlyOpenObj)|\[(?COnSquareOpenObj)|f(?COnFalseObj)|t(?COnTrueObj)|n(?COnNullObj)|[\d-](?COnNumberObj))'
+          , ArrayNextChar: 'S)' ArrayNextChar
+          , ObjectPropName: 'JS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*' Format(SignificantChars, 'Obj')
           , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
           , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ObjectNextChar
           , ObjectFalse: 'S)(?<value>false)' ObjectNextChar
           , ObjectTrue: 'S)(?<value>true)' ObjectNextChar
           , ObjectNull: 'S)(?<value>null)' ObjectNextChar
-          , ObjectNextChar: ObjectNextChar
-          , ObjectInitialCheck: 'S)(*MARK:novalue)\s*(?<char>"|\})'
+          , ObjectNextChar: 'S)' ObjectNextChar
         }
     }
 }
