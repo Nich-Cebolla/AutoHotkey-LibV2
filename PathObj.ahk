@@ -1,7 +1,7 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
     Author: Nich-Cebolla
-    Version: 1.1.0
+    Version: 1.1.1
     License: MIT
 */
 
@@ -96,29 +96,32 @@ class PathObj {
         }
     }
     Call(*) {
-        o := this
-        buf := Buffer(PathObj.InitialBufferSize)
-        offset := PathObj.InitialBufferSize - 2
-        NumPut('ushort', 0, buf, offset) ; null terminator
-        loop {
-            if o.GetPathSegment(buf, &offset) {
-                break
+        if !this.HasOwnProp('__Path') {
+            o := this
+            buf := Buffer(PathObj.InitialBufferSize)
+            offset := PathObj.InitialBufferSize - 2
+            NumPut('ushort', 0, buf, offset) ; null terminator
+            loop {
+                if o.GetPathSegment(buf, &offset) {
+                    break
+                }
+                o := o.Base
             }
-            o := o.Base
+            this.DefineProp('__Path', { Value: { buf: buf, offset: offset } })
         }
-        return StrGet(buf.Ptr + offset)
+        return StrGet(this.__Path.buf.Ptr + this.__Path.offset)
     }
-    MakeProp(Name) {
+    MakeProp(&Name) {
         static desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
         ObjSetBase(Segment := { Name: Name }, this)
         Segment.DefineProp('GetPathSegment', this.propdesc)
         Segment.DefineProp('GetPathSegment_U', desc_u)
         return Segment
     }
-    MakeItem(Name) {
+    MakeItem(&Name) {
         static descNumber := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number')
         , descString := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String1')
-        , descString_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U')
+        , descString_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U1')
         ObjSetBase(Segment := { Name: Name }, this)
         if IsNumber(Name) {
             Segment.DefineProp('GetPathSegment', descNumber)
@@ -130,17 +133,20 @@ class PathObj {
         return Segment
     }
     Unescaped(*) {
-        o := this
-        buf := Buffer(PathObj.InitialBufferSize)
-        offset := PathObj.InitialBufferSize - 2
-        NumPut('ushort', 0, buf, offset) ; null terminator
-        loop {
-            if o.GetPathSegment_U(buf, &offset) {
-                break
+        if !this.HasOwnProp('__Path_U') {
+            o := this
+            buf := Buffer(PathObj.InitialBufferSize)
+            offset := PathObj.InitialBufferSize - 2
+            NumPut('ushort', 0, buf, offset) ; null terminator
+            loop {
+                if o.GetPathSegment_U(buf, &offset) {
+                    break
+                }
+                o := o.Base
             }
-            o := o.Base
+            this.DefineProp('__Path_U', { Value: { buf: buf, offset: offset } })
         }
-        return StrGet(buf.Ptr + offset)
+        return StrGet(this.__Path_U.buf.Ptr + this.__Path_U.offset)
     }
     __GetPathSegmentItem_Number(buf, &offset) {
         bytes := StrPut(this.Name) + 2 ; -2 for null terminator, then +4 for the brackets
@@ -240,8 +246,14 @@ class PathObj {
     ;@endregion
 
     ;@region Unescaped
-    __GetPathSegmentItem_String_U(buf, &offset) {
-        bytes := StrPut(this.Name) + 6 ; -2 for null terminator, then +4 for the brackets and +4 for the quotes
+    __GetPathSegmentItem_String_U1(buf, &offset) {
+        static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U2')
+        this.DefineProp('__NamePartialEscaped', { Value: StrReplace(this.Name, this.QuoteChar, '``' this.QuoteChar) })
+        this.DefineProp('GetPathSegment', desc2)
+        this.GetPathSegment(buf, &offset)
+    }
+    __GetPathSegmentItem_String_U2(buf, &offset) {
+        bytes := StrPut(this.__NamePartialEscaped) + 6 ; -2 for null terminator, then +4 for the brackets and +4 for the quotes
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
