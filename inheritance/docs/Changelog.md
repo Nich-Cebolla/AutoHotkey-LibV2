@@ -1,4 +1,7 @@
 
+2025-07-11 - 1.4.2
+- Fixed an error in `GetPropsInfo` causing excluded properties to not be skipped.
+
 2025-07-04 - 1.4.1
 - Fixed `PropsInfo.Prototype.FilterActive`. It now no longer attempts to call `PropsInfo.Prototype.FilterActivateFromCache`.
 - Fixed `PropsInfo.FilterGroup.Prototype.__Delete`. It is renamed to `PropsInfo.FilterGroup.Prototype.__MapDelete`.

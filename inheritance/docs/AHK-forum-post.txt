@@ -1,4 +1,4 @@
-[color=#800000][size=165][b]Inheritance[/b] - v1.4.1[/size][/color]
+[color=#800000][size=165][b]Inheritance[/b] - v1.4.2[/size][/color]
 
 [color=#800000][size=145][b]Table of Contents[/b][/size][/color]
 [list=I][*]Introduction

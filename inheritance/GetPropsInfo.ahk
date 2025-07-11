@@ -1,7 +1,6 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/
     Author: Nich-Cebolla
-    Version: 1.4.1
     License: MIT
 */
 
@@ -116,6 +115,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
                         if !InStr(Excluded, ',' Prop ',') {
                             Excluded .= Prop ','
                         }
+                        continue
                     }
                     ; It's an existing property
                     ObjSetBase(Item := ObjGetOwnPropDesc(b, Prop), r.Base)
@@ -144,6 +144,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
                 if !InStr(Excluded, ',' Prop ',') {
                     Excluded .= Prop ','
                 }
+                continue
             }
             ObjSetBase(ItemBase := {
                 /**
