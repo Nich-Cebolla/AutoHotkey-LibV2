@@ -109,6 +109,33 @@ class Pattern {
     static RootPath := '(?<dir>(?:(?<drive>[a-zA-Z]):\\)?(?:[^\r\n\\/:*?"<>|]++\\?)+)\\(?<file>[^\r\n\\/:*?"<>|]+?)\.(?<ext>\w+)\b'
 
     /**
+     * @description - Matches with a root path or relative path that begins with "..\".
+     *
+     * This won't match correctly with a relative path that begins with a directory or file name.
+     * Needs more work for that.
+     */
+    static RootOrRelativePath := (
+        'J)'
+        '(?<dir>'
+            '(?:'
+                '(?<drive>[a-zA-Z])'
+                ':'
+            '|'
+                '\.\.'
+            '|'
+                '(?:[^ \r\n\\/:*?"<>|]++\\?)+'
+            ')'
+            '\\'
+            '(?:[^\r\n\\/:*?"<>|]++\\?)+'
+        ')'
+        '\\'
+        '(?<file>[^\r\n\\/:*?"<>|]+?)'
+        '\.'
+        '(?<ext>\w+)'
+        '\b'
+    )
+
+    /**
      * @description - Constructs one of the Bracket patterns dynamically using an input character.
      * @param {String} BracketChar - The open bracket character.
      * @returns {String} - The regular expression pattern.
