@@ -1,9 +1,12 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/GetRelativePath.ahk
     Author: Nich-Cebolla
-    Version: 1.0.0
+    Version: 1.0.1
     License: MIT
 */
+
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ResolveRelativePath.ahk
+#include <ResolveRelativePath>
 
 /**
  * @description - Converts a path into a relative path.
@@ -19,8 +22,9 @@
  * - `RelativeTo` can also be relative. If it is a relative path, `RelativeTo` will be resolved relative
  * to the working directory.
  * - The path does not need to exist.
- * @returns {String|Integer} - If successful, returns the new relative path.
- * - If the input `Path` and input `RelativeTo` are located on different drives, returns `1`.
+ * @returns {String} - If successful, returns the new relative path.
+ * @throws {ValueError} - If the paths are on different drives.
+ * @throws {ValueError} - If `Path` does not resolve as relative to `RelativeTo`.
  */
 GetRelativePath(Path, RelativeTo?) {
     if !IsSet(RelativeTo) {
@@ -32,50 +36,49 @@ GetRelativePath(Path, RelativeTo?) {
     RelativeTo := StrReplace(RelativeTo, '/', '\')
     SplitPath(Path, , &pDir, &pExt, &pName, &pDrive)
     if !pDrive {
-        _ResolvePath(&Path)
+        ResolveRelativePathRef(&Path)
         SplitPath(Path, , &pDir, &pExt, &pName, &pDrive)
     }
     SplitPath(RelativeTo, , &rDir, , &rName, &rDrive)
     if !rDrive {
-        _ResolvePath(&RelativeTo)
+        ResolveRelativePathRef(&RelativeTo)
         SplitPath(RelativeTo, , &rDir, , &rName, &rDrive)
     }
+    if Path = RelativeTo {
+        return ''
+    }
     if pDrive !== rDrive {
-        return 1
+        throw ValueError('The paths must be within the same drive.', -1)
     }
     pSplit := StrSplit(Path, '\')
-    if !pSplit[-1] {
-        pSplit.Pop()
-    }
     rSplit := StrSplit(RelativeTo, '\')
-    if !rSplit[-1] {
-        rSplit.Pop()
-    }
-    i := 1
-    low := Min(pSplit.Length, rSplit.Length)
-    loop {
-        if i >= low || pSplit[i] != rSplit[i] {
-            break
+    i := 0
+    if pSplit.Length > rSplit.Length {
+        loop rSplit.Length {
+            ++i
+            if pSplit[i] != rSplit[i] {
+                throw ValueError('``Path`` does not evaluate as relative to ``RelativeTo``.', -1, Path)
+            }
         }
-        ++i
+    } else {
+        loop pSplit.Length {
+            ++i
+            if pSplit[i] != rSplit[i] {
+                break
+            }
+        }
     }
     s := ''
-    k := i - 1
+    k := i
     while ++k <= rSplit.Length {
         s .= '..\'
     }
-    while i <= pSplit.Length {
-        s .= pSplit[i++] '\'
+    while ++i <= pSplit.Length {
+        s .= pSplit[i] '\'
     }
-    return Trim(s, '\')
-
-    _ResolvePath(&_Path) {
-        w := A_WorkingDir
-        while SubStr(_Path, 1, 3) == '..\' {
-            w := SubStr(w, 1, InStr(w, '\', , , -1) - 1)
-            _Path := SubStr(_Path, 4)
-        }
-        _Path := StrReplace(w '\' _Path, '\\', '\')
+    if flag_bs {
+        return SubStr(s, 1, -1)
+    } else {
+        return StrReplace(SubStr(s, 1, -1), '\', '/')
     }
-
 }
