@@ -1138,10 +1138,6 @@ class PropsInfo {
         }
     }
 
-    __Delete() {
-        this.Dispose()
-    }
-
     /**
      * @description - `__Enum` is influenced by both string mode and any active filters. It can
      * be called in either 1-param mode or 2-param mode.
