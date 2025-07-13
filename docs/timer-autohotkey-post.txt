@@ -181,6 +181,9 @@ class Timer extends Array {
             this.RemoveAt(1, this.HistoryReleaseCount)
         }
     }
+    __Delete() {
+        this.Stop()
+    }
     Count => this.__Count
 
     /**

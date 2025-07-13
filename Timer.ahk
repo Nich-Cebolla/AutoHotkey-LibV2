@@ -1,4 +1,5 @@
-﻿/*
+﻿
+/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Timer.ahk
     AutoHotkey post: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=138178
     Author: Nich-Cebolla
@@ -146,6 +147,9 @@ class Timer extends Array {
         if this.HistoryMaxItems > 0 && this.Length > this.HistoryMaxItems {
             this.RemoveAt(1, this.HistoryReleaseCount)
         }
+    }
+    __Delete() {
+        this.Stop()
     }
     Count => this.__Count
 
