@@ -4,7 +4,7 @@
 SetThreadDpiAwareness__Call(Obj, Name, Params) {
     Split := StrSplit(Name, '_')
     if Obj.HasMethod(Split[1]) && Split[2] = 'S' {
-        DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT, 'ptr')
+        DllCall('SetThreadDpiAwarenessContext', 'ptr', DPI_AWARENESS_CONTEXT_DEFAULT ?? -4, 'ptr')
         if Params.Length {
             return Obj.%Split[1]%(Params*)
         } else {

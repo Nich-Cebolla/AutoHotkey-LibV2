@@ -62,11 +62,104 @@ BreakLongComments(Str?, Path?, MaxLen := 100, MinLen := 90, CommentOperator := '
 }
 
 
+/*
 if A_ScriptFullPath == A_LineFile {
-    A_Clipboard := BreakLongComments()
+    A_Clipboard := BreakLongComments('    ')
     OM := CoordMode('Mouse', 'Screen')
     OT := CoordMode('Tooltip', 'Screen')
-    MouseGetPos(&x, &y)
+    MouseGetpos(&x, &y)
+    Tooltip('Done', x, y)
+    sleep 1500
+}
+*/
+
+/**
+ * @param {String} [Indent = ""] - The literal string to prefix each line with, not including the
+ * single space character that offsets the "*" from the indentation.
+ */
+BreakLongJsdoc(Indent := '', Str?, Path?, MaxLen := 100, MinLen := 85, LineEnding := '`n', Encoding?) {
+    if IsSet(Str) {
+        split := StrSplit(Str, '`n', '`r`n`s`t')
+    } else if IsSet(Path) {
+        split := StrSplit(FileRead(Path, Encoding ?? unset), '`n', '`r`n`s`t')
+    } else {
+        split := StrSplit(A_Clipboard, '`n', '`r`n`s`t')
+    }
+    _indentLen1 := StrLen(Indent) + 3
+    _indentLen2 := _indentLen1 + 2
+    if _indentLen2 > MaxLen {
+        throw ValueError('The indentation length is greater than the maximum length.', -1)
+    }
+    _maxLen1 := MaxLen - _indentLen1
+    _maxLen2 := _maxLen1 + 2
+    _indent1 := Indent ' * '
+    _indent2 := _indent1 '  '
+    Str := ''
+    for line in split {
+        lineLen := StrLen(line)
+        if SubStr(line, 1, 1) == '*' {
+            if lineLen == 1 {
+                line := ''
+            } else {
+                line := Trim(SubStr(line, 2), '`s')
+            }
+        }
+        if !line {
+            if Str {
+                Str .= Indent ' *' LineEnding
+            }
+            continue
+        }
+        if lineLen > _maxLen1 {
+            pos := 1
+            flag_first := true
+            _max := _maxLen1
+            _indent := _indent1
+            _indentLen := _indentLen1
+            loop {
+                if _max + pos >= lineLen {
+                    s := Trim(SubStr(line, pos, lineLen - pos), '`s')
+                    if s {
+                        s := _indent s LineEnding
+                    }
+                    Str .= s
+                    outputdebug(s '`n')
+                    break
+                }
+                posEnd := InStr(SubStr(line, 1, _max + pos), '`s', , , -1)
+                outputdebug(substr(line, pos, _max) '`n')
+                if posEnd - pos + _indentLen < MinLen {
+                    s := _indent Trim(SubStr(line, pos, _max), '`s') LineEnding
+                    Str .= s
+                    outputdebug(s '`n')
+                    pos += _max
+                } else {
+                    s := _indent Trim(SubStr(line, pos, posEnd - pos), '`s') LineEnding
+                    Str .= s
+                    outputdebug(s '`n')
+                    pos := posEnd
+                }
+                if flag_first {
+                    _max := _maxLen2
+                    _indent := _indent2
+                    _indentLen := _indentLen2
+                    flag_first := false
+                }
+            }
+        } else {
+            s := _indent1 Trim(line, '`s') LineEnding
+            Outputdebug(s '`n')
+            Str .= s
+        }
+    }
+    return Str
+}
+
+if A_ScriptFullPath == A_LineFile {
+    A_Clipboard := BreakLongJsdoc('    ')
+    OM := CoordMode('Mouse', 'Screen')
+    OT := CoordMode('Tooltip', 'Screen')
+    MouseGetpos(&x, &y)
     Tooltip('Done', x, y)
     sleep 1500
 }

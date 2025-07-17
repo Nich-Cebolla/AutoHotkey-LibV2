@@ -474,21 +474,22 @@ class Align {
 
     /**
      * @description - Standardizes a group's width to the largest width in the group.
-     * @param {Array} List - An array of windows to be standardized. This function assumes there are
+     * @param {Array|Map} List - An array of windows to be standardized. This function assumes there are
      * no unset indices.
      */
     static GroupWidth(List) {
-        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', List.Length, 'ptr')) {
+        if !(hDwp := DllCall('BeginDeferWindowPos', 'int', List.Capacity, 'ptr')) {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
-        List[-1].GetPos(, , &GW, &H)
-        Params := [{ H: H, hWnd: List[-1].hWnd }]
-        Params.Capacity := List.Length
-        loop List.Length - 1 {
-            List[A_Index].GetPos(, , &W, &H)
-            Params.Push({ H: H, hWnd: List[A_Index].hWnd })
-            if W > GW
+        GW := 0
+        Params := []
+        Params.Capacity := List.Capacity
+        for k, Value in List {
+            Value.GetPos(, , &W, &H)
+            Params.Push({ H: H, hWnd: Value.hWnd })
+            if W > GW {
                 GW := W
+            }
         }
         for ps in Params {
             if !(hDwp := DllCall('DeferWindowPos'
