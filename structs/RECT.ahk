@@ -1,8 +1,13 @@
-﻿
-#Include Point.ahk
-#include ..\SetThreadDPIAwareness__Call.ahk
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
 
-
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+#Include <Point>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/SetThreadDPIAwareness__Call.ahk
+#include <SetThreadDPIAwareness__Call>
 
 class WinRect extends Rect {
     static __New() {
@@ -460,94 +465,6 @@ class Rect extends RectBase {
         rc := Rect()
         if DLLCall('User32.dll\IntersectRect', 'ptr', rc, 'ptr', Rc1.Ptr + Offset1, 'ptr', Rc2.Ptr + Offset2) {
             return rc
-        }
-    }
-
-    /**
-     * @description - Reorders the objects in an array according to the input options.
-     * @example
-     *  List := [
-     *      { L: 100, T: 100, Name: 1 }
-     *    , { L: 100, T: 150, Name: 2 }
-     *    , { L: 200, T: 100, Name: 3 }
-     *    , { L: 200, T: 150, Name: 4 }
-     *  ]
-     *  Rect.Order(List, L2R := true, T2B := true, 'H')
-     *  OutputDebug(_GetOrder()) ; 1 2 3 4
-     *  Rect.Order(List, L2R := true, T2B := true, 'V')
-     *  OutputDebug(_GetOrder()) ; 1 3 2 4
-     *  Rect.Order(List, L2R := false, T2B := true, 'H')
-     *  OutputDebug(_GetOrder()) ; 3 4 1 2
-     *  Rect.Order(List, L2R := false, T2B := false, 'H')
-     *  OutputDebug(_GetOrder()) ; 4 3 2 1
-     *
-     *  _GetOrder() {
-     *      for item in List {
-     *          Str .= item.Name ' '
-     *      }
-     *      return Trim(Str, ' ')
-     *  }
-     * @
-     * @param {Array} List - The array containing the objects to be ordered.
-     * @param {String} [Primary='X'] - Determines which axis is primarily considered when ordering
-     * the objects. When comparing two objects, if their positions along the Primary axis are
-     * equal, then the alternate axis is compared and used to break the tie. Otherwise, the alternate
-     * axis is ignored for that pair.
-     * - X: Check horizontal first.
-     * - Y: Check vertical first.
-     * @param {Boolean} [LeftToRight=true] - If true, the objects are ordered in ascending order
-     * along the X axis when the X axis is compared.
-     * @param {Boolean} [TopToBottom=true] - If true, the objects are ordered in ascending order
-     * along the Y axis when the Y axis is compared.
-     * @param {Func} [LeftGetter=(Obj) => Obj.L] - A function that retrieves the left value from the objects.
-     * @param {Func} [TopGetter=(Obj) => Obj.T] - A function that retrieves the top value from the objects.
-     */
-    static Order(List, Primary := 'X', LeftToRight := true, TopToBottom := true
-    , LeftGetter := (Obj) => Obj.L, TopGetter := (Obj) => Obj.T) {
-        ConditionH := LeftToRight ? (a, b) => LeftGetter(a) < LeftGetter(b) : (a, b) => LeftGetter(a) > LeftGetter(b)
-        ConditionV := TopToBottom ? (a, b) => TopGetter(a) < TopGetter(b) : (a, b) => TopGetter(a) > TopGetter(b)
-        if Primary = 'X' {
-            _InsertionSort(List, _ConditionFnH)
-        } else if Primary = 'Y' {
-            _InsertionSort(List, _ConditionFnV)
-        } else {
-            throw ValueError('Unexpected ``Primary`` value.', -1, Primary)
-        }
-
-        return
-
-        _InsertionSort(Arr, CompareFn) {
-            i := 1
-            loop Arr.Length - 1 {
-                Current := Arr[++i]
-                j := i - 1
-                loop j {
-                    if CompareFn(Arr[j], Current) < 0
-                        break
-                    Arr[j + 1] := Arr[j--]
-                }
-                Arr[j + 1] := Current
-            }
-        }
-        _ConditionFnH(a, b) {
-            if a.L == b.L {
-                if ConditionV(a, b) {
-                    return -1
-                }
-            } else if ConditionH(a, b) {
-                return -1
-            }
-            return 1
-        }
-        _ConditionFnV(a, b) {
-            if a.T == b.T {
-                if ConditionH(a, b) {
-                    return -1
-                }
-            } else if ConditionV(a, b) {
-                return -1
-            }
-            return 1
         }
     }
 

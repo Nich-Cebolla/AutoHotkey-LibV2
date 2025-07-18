@@ -1,4 +1,12 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/POINT.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+#include <Rect>
+
 class Point extends Buffer {
         static FromMouse() {
             pt := Point()

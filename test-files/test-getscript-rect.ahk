@@ -1,10 +1,11 @@
 ﻿
 ; I have not released TestInterface yet, you cannot run this test.
 #include <TestInterfaceConfig>
+#include <ResolveRelativePath>
+SplitPath(A_LineFile, , &Dir)
+SetWorkingDir(Dir)
 
 ; #include any scripts
-; Note - you have to change the name of the classes because they conflict with classes in "Display"
-; at least until you merge them.
 #include ..\structs\Rect.ahk
 #include ..\structs\Point.ahk
 #include ..\structs\WindowInfo.ahk
@@ -91,7 +92,7 @@ RecursiveGetFiles(Dirs, opt := 'FR', paths?) {
 
 ; ~~~ End paths
 
-Content := FileRead(A_ScriptFullPath)
+Content := FileRead(A_LineFile)
 pos1 := InStr(Content, '; ~~~ End include')
 pos2 := InStr(Content, '; ~~~ End filters')
 Indent := '`s`s`s`s`s`s`s`s'
@@ -137,8 +138,9 @@ while RegExMatch(codeHeader,
 codeHeader .= '`n' codeHeaderPart
 
 AllSubjects := Map()
-
+z := 0
 for path in paths {
+    z++
     if path is RegExMatchInfo {
         if path['drive'] {
             fullPath := path[0]
@@ -153,9 +155,7 @@ for path in paths {
         if Drive {
             fullPath := path
         } else {
-            loop Files path {
-                fullPath := A_LoopFileFullPath
-            }
+            fullPath := ResolveRelativePath(path)
         }
     }
     AllSubjects.Set(fullPath, obj := {})

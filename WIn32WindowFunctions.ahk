@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/WIn32WindowFunctions.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 
 AllowSetForegroundWindow(PID?) {
     if !DllCall('AllowSetForegroundProcess', 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
