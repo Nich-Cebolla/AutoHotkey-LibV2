@@ -520,18 +520,26 @@ class RectBase extends Buffer {
             Proto.DefineProp('__Call', { Call: SetThreadDpiAwareness__Call })
         }
         Proto.DefineProp(Prefix 'B', { Get: RECT_GetCoordinate.Bind(12 + Offset) })
+        Proto.DefineProp(Prefix 'Bottom', { Get: RECT_GetCoordinate.Bind(12 + Offset) })
         Proto.DefineProp(Prefix 'BR', { Get: RECT_GetPoint.Bind('R', 'B') })
+        Proto.DefineProp(Prefix 'BottomRight', { Get: RECT_GetPoint.Bind('R', 'B') })
         Proto.DefineProp(Prefix 'Dpi', { Get: RECT_GetDpi.Bind(Offset) })
         Proto.DefineProp(Prefix 'H', { Get: RECT_GetLength.Bind('B', 'T') })
+        Proto.DefineProp(Prefix 'Height', { Get: RECT_GetLength.Bind('B', 'T') })
         Proto.DefineProp(Prefix 'Intersect', { Call: RECT_Intersect.Bind(Offset) })
         Proto.DefineProp(Prefix 'L', { Get: RECT_GetCoordinate.Bind(Offset) })
+        Proto.DefineProp(Prefix 'Left', { Get: RECT_GetCoordinate.Bind(Offset) })
         Proto.DefineProp(Prefix 'MidX', { Get: RECT_GetSegment.Bind('R', 'L', 2) })
         Proto.DefineProp(Prefix 'MidY', { Get: RECT_GetSegment.Bind('B', 'T', 2) })
         Proto.DefineProp(Prefix 'R', { Get: RECT_GetCoordinate.Bind(8 + Offset) })
+        Proto.DefineProp(Prefix 'Right', { Get: RECT_GetCoordinate.Bind(8 + Offset) })
         Proto.DefineProp(Prefix 'T', { Get: RECT_GetCoordinate.Bind(4 + Offset) })
+        Proto.DefineProp(Prefix 'Top', { Get: RECT_GetCoordinate.Bind(4 + Offset) })
         Proto.DefineProp(Prefix 'TL', { Get: RECT_GetPoint.Bind('L', 'T') })
+        Proto.DefineProp(Prefix 'TopLeft', { Get: RECT_GetPoint.Bind('L', 'T') })
         Proto.DefineProp(Prefix 'Union', { Call: RECT_Union.Bind(Offset) })
         Proto.DefineProp(Prefix 'W', { Get: RECT_GetLength.Bind('R', 'L') })
+        Proto.DefineProp(Prefix 'Width', { Get: RECT_GetLength.Bind('R', 'L') })
         Proto.DefineProp(Prefix 'X', { Get: RECT_GetCoordinate.Bind(Offset) })
         Proto.DefineProp(Prefix 'Y', { Get: RECT_GetCoordinate.Bind(4 + Offset) })
 
@@ -587,7 +595,7 @@ class RectBase extends Buffer {
      * If false, the function creates a new object.
      * @returns {Rect}
      */
-    ToClient(_Offset, Self, Hwnd, InPlace := false) {
+    ToClient(Hwnd, InPlace := false) {
         rc := InPlace ? this : Rect()
         if !DllCall('ScreenToClient', 'ptr', Hwnd, 'ptr', rc.ptr, 'int') {
             throw OSError()
@@ -637,8 +645,8 @@ RECT_GetDpi(_Offset, Self) {
         return DpiX
     }
 }
-RECT_GetLength(Dimension1, Dimension2, Self) => Self.%Dimension2% - Self.%Dimension1%
-RECT_GetSegment(Dimension2, Dimension1, Divisor, Self, DecimalPlaces := 0) => Round((Self.%Dimension2% - Self.%Dimension1%) / Divisor, DecimalPlaces)
+RECT_GetLength(Dimension1, Dimension2, Self) => Self.%Dimension1% - Self.%Dimension2%
+RECT_GetSegment(Dimension1, Dimension2, Divisor, Self, DecimalPlaces := 0) => Round((Self.%Dimension1% - Self.%Dimension2%) / Divisor, DecimalPlaces)
 RECT_GetPoint(Dimension1, Dimension2, Self) => Point(Self.%Dimension1%, Self.%Dimension2%)
 RECT_Intersect(_Offset, Self, Rc, Offset := 0) {
     _rc := Rect()
