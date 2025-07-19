@@ -27,11 +27,11 @@ BeginDeferWindowPos(InitialCount := 2) {
 }
 
 ChildWindowFromPoint(Hwnd, X, Y) {
-    return DllCall('ChildWindowFromPoint', 'ptr', Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall('ChildWindowFromPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 
 ChildWindowFromPointEx(Hwnd, X, Y, flags := 0) {
-    return DllCall('ChildWindowFromPointEx', 'ptr', Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
+    return DllCall('ChildWindowFromPointEx', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'int', flags, 'ptr')
 }
 
 /**
@@ -55,7 +55,7 @@ ChildWindowFromPointEx(Hwnd, X, Y, flags := 0) {
  * have changed.
  */
 DeferWindowPos(hWinPosInfo, Hwnd, X, Y, W, H, uFlags := 0, HwndInsertAfter := 0) {
-    return DllCall('DeferWindowPos', 'ptr', hWinPosInfo, 'ptr', Hwnd, 'ptr', HwndInsertAfter
+    return DllCall('DeferWindowPos', 'ptr', hWinPosInfo, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', IsObject(HwndInsertAfter) ? HwndInsertAfter.Hwnd : HwndInsertAfter
     , 'int', X, 'int', Y, 'int', W, 'int', H, 'uint', uFlags, 'ptr')
 }
 
@@ -71,7 +71,7 @@ EndDeferWindowPos(hDwp) {
 
 EnumChildWindows(HwndParent, Callback, lParam := 0) {
     cb := CallbackCreate(Callback)
-    result := DllCall('EnumChildWindows', 'ptr', HwndParent, 'ptr', cb, 'uint', lParam, 'int')
+    result := DllCall('EnumChildWindows', 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', cb, 'uint', lParam, 'int')
     CallbackFree(cb)
     return result
 }
@@ -109,7 +109,7 @@ GetActiveWindow() {
  * - 3 : Retrieves the owned root window by walking the chain of parent and owner windows returned by GetParent.
  */
 GetAncestor(Hwnd, Flags) {
-    return DllCall('GetAncestor', 'ptr', Hwnd, 'uint', Flags, 'ptr')
+    return DllCall('GetAncestor', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Flags, 'ptr')
 }
 
 /**
@@ -120,12 +120,12 @@ GetAncestor(Hwnd, Flags) {
  */
 GetChildrenBoundingRect(Hwnd) {
     rects := [Buffer(16), Buffer(16), Buffer(16)]
-    DllCall('EnumChildWindows', 'ptr', Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+    DllCall('EnumChildWindows', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
     CallbackFree(cb)
     return rects[1]
 
     _EnumChildWindowsProc(Hwnd) {
-        DllCall('GetWindowRect', 'ptr', Hwnd, 'ptr', rects[1], 'int')
+        DllCall('GetWindowRect', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', rects[1], 'int')
         DllCall('UnionRect', 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
         rects.Push(rects.RemoveAt(1))
         return 1
@@ -136,7 +136,7 @@ GetDesktopWindow() {
     return DllCall('GetDesktopWindow', 'ptr')
 }
 
-GetDpi(Hwnd) => DllCall('GetDpiForWindow', 'ptr', Hwnd, 'int')
+GetDpi(Hwnd) => DllCall('GetDpiForWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 
 /**
  * @param Cmd -
@@ -144,11 +144,11 @@ GetDpi(Hwnd) => DllCall('GetDpiForWindow', 'ptr', Hwnd, 'int')
  * - 3 : Returns a handle to the window above the given window.
  */
 GetNextWindow(Hwnd, Cmd) {
-    return DllCall('GetNextWindow', 'ptr', Hwnd, 'uint', Cmd, 'ptr')
+    return DllCall('GetNextWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
 }
 
 GetParent(Hwnd) {
-    return DllCall('GetParent', 'ptr', Hwnd, 'ptr')
+    return DllCall('GetParent', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
 }
 
 GetShellWindow() {
@@ -156,7 +156,7 @@ GetShellWindow() {
 }
 
 GetTopWindow(Hwnd := 0) {
-    return DllCall('GetTopWindow', 'ptr', Hwnd, 'ptr')
+    return DllCall('GetTopWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
 }
 
 /**
@@ -194,15 +194,15 @@ GetTopWindow(Hwnd := 0) {
  *  For more information, see Owned Windows.
  */
 GetWindow(Hwnd, Cmd) {
-    return DllCall('GetWindow', 'ptr', Hwnd, 'uint', Cmd, 'ptr')
+    return DllCall('GetWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
 }
 
 IsChild(HwndParent, HwndChild) {
-    return DllCall('IsChild', 'ptr', HwndParent, 'ptr', HwndChild, 'int')
+    return DllCall('IsChild', 'ptr', IsObject(HwndParent) ? HwndParent.Hwnd : HwndParent, 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'int')
 }
 
 IsVisible(Hwnd) {
-    return DllCall('IsWindowVisible', 'Ptr', Hwnd, 'int')
+    return DllCall('IsWindowVisible', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 
 LargestRectanglePreservingAspectRatio(W1, H1, &W2, &H2) {
@@ -236,7 +236,7 @@ LockSetForegroundWindow(code) {
  * @param {Integer} [H] - The new Height of the window.
  */
 MoveScaled(Hwnd, X?, Y?, W?, H?) {
-    OriginalDpi := DllCall('GetDpiForWindow', 'ptr', Hwnd, 'int')
+    OriginalDpi := DllCall('GetDpiForWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
     NewDpi := IsSet(X) || IsSet(Y) ? dMon.Dpi.Pt(X, Y) : OriginalDpi
     if !NewDpi {
         NewDpi := dMon.Dpi.Pt(X * 96 / A_ScreenDpi, Y * 96 / A_ScreenDpi)
@@ -279,19 +279,19 @@ PathFromTitle(Hwnd) {
 }
 
 PhysicalToLogicalPoint(Hwnd, X, Y) {
-    return DllCall('PhysicalToLogicalPoint', 'ptr', Hwnd, 'ptr', Point(X, y), 'ptr')
+    return DllCall('PhysicalToLogicalPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr', Point(X, y), 'ptr')
 }
 
 RealChildWindowFromPoint(Hwnd, X, Y) {
-    return DllCall('RealChildWindowFromPoint', 'ptr', Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
+    return DllCall('RealChildWindowFromPoint', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr')
 }
 
 SetActiveWindow(Hwnd) {
-    return DllCall('SetActiveWindow', 'ptr', Hwnd, 'int')
+    return DllCall('SetActiveWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 
 SetForegroundWindow(Hwnd) {
-    return DllCall('SetForegroundWindow', 'ptr', Hwnd, 'int')
+    return DllCall('SetForegroundWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
 }
 
 /**
@@ -300,5 +300,11 @@ SetForegroundWindow(Hwnd) {
  * @returns {Integer} - The handle to the previous parent window.
  */
 SetParent(HwndChild, HwndNewParent := 0) {
-    return DllCall('SetParent', 'ptr', HwndChild, 'ptr', HwndNewParent, 'ptr')
+    return DllCall('SetParent', 'ptr', IsObject(HwndChild) ? HwndChild.Hwnd : HwndChild, 'ptr', IsObject(HwndNewParent) ? HwndNewParent.Hwnd : HwndNewParent, 'ptr')
 }
+
+BringWindowToTop(Hwnd) {
+    return DllCall('BringWindowToTop', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
+}
+
+GetForegroundWindow() => DllCall('GetForegroundWindow', 'ptr')
