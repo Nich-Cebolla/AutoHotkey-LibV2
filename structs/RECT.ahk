@@ -1417,11 +1417,11 @@ WinRectMove(wrc, X := 0, Y := 0, W := 0, H := 0, InsertAfter := 0, Flags := 0) {
 
 WinRectUpdate(wrc) {
     if HasProp(wrc, 'Client') && wrc.Client {
-        if !DllCall(RectBase.GetWindowRect, 'ptr', win.Hwnd, 'ptr', win, 'int') {
+        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
             throw OSError()
         }
     } else {
-        if !DllCall(RectBase.GetWindowRect, 'ptr', win.Hwnd, 'ptr', win, 'int') {
+        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
             throw OSError()
         }
     }
