@@ -251,10 +251,10 @@ class Window32 {
     /**
      * @description - Sets a callback that updates the object's property "Hwnd" when
      * `Window32.Prototype.Call` is called. By default, `Window32.Prototype.Call` does not
-     * update the "Hwnd" property, and instead calls `GetWindow32` with the current "Hwnd". When
+     * update the "Hwnd" property, and instead calls `GetWindowRect` with the current "Hwnd". When
      * `Window32.Prototype.SetCallback` is called, a new method "Call" is defined that calls
      * the callback function and uses the return value to update the property "Hwnd", then calls
-     * `GetWindow32` using that new handle. To remove the callback and return the "Call" method
+     * `GetWindowRect` using that new handle. To remove the callback and return the "Call" method
      * to its original functionality, pass zero or an empty string to `Callback`.
      *
      * This library includes a number of functions that are useful for this, each beginning with
