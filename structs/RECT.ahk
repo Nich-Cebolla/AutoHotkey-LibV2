@@ -72,7 +72,7 @@
 ;@region Window32 cls
 
 /**
- * Calls `GetWindow32`. The object has a number of properties to make using it easier.
+ * Calls `GetWindowRect`. The object has a number of properties to make using it easier.
  * - cbSize - 0:4 - The size of this structure.
  * - rcWindow - 4:16 - The coordinates of the window.
  * - rcClient - 20:16 - THe coordinates of the client area.
@@ -244,7 +244,7 @@ class Window32 {
         this.MakeWinRectObjects()
     }
     Call() {
-        if !DllCall(RectBase.GetWindow32, 'ptr', this.Hwnd, 'ptr', this, 'int') {
+        if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int') {
             throw OSError()
         }
     }
@@ -324,8 +324,8 @@ class Window32 {
      *
      * @param {*} Callback - A `Func` or callable object that accepts the `Window32` object as its
      * only parameter, and that returns a new "Hwnd" value. If the callback returns zero or an empty
-     * string, the property "Hwnd" will not be updated and `GetWindow32` will not be called.
-     * If the callback returns an integer, the property "Hwnd" is updated and `GetWindow32` is
+     * string, the property "Hwnd" will not be updated and `GetWindowRect` will not be called.
+     * If the callback returns an integer, the property "Hwnd" is updated and `GetWindowRect` is
      * called. If the callback returns another type of value, a TypeError is thrown.
      */
     SetCallback(Callback) {
@@ -344,7 +344,7 @@ class Window32 {
             } else {
                 throw TypeError('Invalid ``Hwnd`` returned.', -1, Type(hwnd))
             }
-            if !DllCall(RectBase.GetWindow32, 'ptr', this.Hwnd, 'ptr', this, 'int') {
+            if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int') {
                 throw OSError()
             }
         }
@@ -656,7 +656,7 @@ class Point {
     ClickDrag(WhichButton, X?, Y?, Speed?, Relative?) => MouseClickDrag(WhichButton, this.X, this.Y, X ?? this.X, Y ?? this.Y, Speed ?? unset, Relative ?? Unset)
     MouseMove(Speed?, Relative?) => MouseMove(this.X, this.Y, Speed ?? Unset, Relative ?? unset)
     GetPixel(Mode?) {
-
+        return PixelGetColor(this.X, this.Y, Mode ?? unset)
     }
     /**
      * @param {Integer} Id -
