@@ -9,6 +9,14 @@
 */
 
 /**
+
+        Introduction
+
+    This library provides AHK functions and methods that call common User32.dll functions related to
+    RECTs, POINTs, and windows.
+
+        Using a buffer
+
     This library is designed to allow RECT members of any struct at an arbitrary, static offset
     to make use of the functions. For example, consider the WINDOWINFO struct. There are two
     members that are RECTs: rcWindow at offset 4, and rcClient at offset 20. To avoid repetitive
@@ -36,9 +44,12 @@
             this.ClientRect := WinRect(this.Hwnd, this.Buffer, this.Offset + 20, true)
         }
     @
+
     Though separate AHK objects, the objects set to `this.Rect` and `this.ClientRect` both make use
     of the same buffer. Whenever the values of the WINDOWINFO struct are changed, the changes are
     reflected by the AHK objects as well.
+
+        Inheriting the class methods
 
     The classes `Point`, `RectBase`, `WinRect`, and `WindowInfo` each have a static method "Make"
     which accept a class object as a paremeter and define all relevant methods on the class'
@@ -79,11 +90,13 @@
         }
     @
 
-    With the above example, the native AHK Gui objects created by calling `MyClass()` will also
+    With the above example, the AHK Gui objects created by calling `MyClass()` will also
     have the methods offered by this library.
 
     Understand that ONLY the instance methods are copied over, NOT the static methods like
     `WinRect.FromDesktop`, `WinRect.FromForeground`, etc.
+
+        Thread dpi awareness
 
     Whenever one of the static methods "Make" are called, the class object and the class' prototype
     object will also be defined with a "__Call" method (unless the prototype already has a "__Call"
@@ -103,12 +116,15 @@
             throw Error('Window not found.', -1)
         }
         wrc := WinRect(hwnd)
-        ; This sets the dpi awareness context to -3 prior to performing the action
+        ; This sets the dpi awareness context to -4 prior to performing the action
         wrc.GetPos_S(&x, &y, &w, &h)
     @
 
-    To improve performance, the `RectBase` class object looks up and caches the addresses of the
-    various dll functions.
+        Dll function addresses
+
+    To improve performance, the first time a dll function is called from this library, the address
+    is cached on `RectBase.Addresses`. The module handles are cached on `RectBase.Modules`. To
+    release the handles and free the memory, call `RectBase.UnloadAll`.
 */
 
 /**
@@ -556,6 +572,9 @@ class Point {
     }
     static Make(Cls, Prefix := '', Suffix := '') {
         Proto := Cls.Prototype
+        if !HasMethod(Cls, '__Call') {
+            Cls.DefineProp('__Call', { Call: RectSetThreadDpiAwareness__Call })
+        }
         if !HasMethod(Proto, '__Call') {
             Proto.DefineProp('__Call', { Call: RectSetThreadDpiAwareness__Call })
         }
@@ -576,7 +595,6 @@ class Point {
         Proto.DefineProp(Prefix 'Y' Suffix, { Get: RectGetCoordinate.Bind(4), Set: RectSetCoordinate.Bind(4) })
         Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
         Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
-
     }
     __New(X := 0, Y := 0, Buf?, Offset := 0) {
         if IsSet(Buf) {
