@@ -7,8 +7,6 @@ SetWorkingDir(Dir)
 
 ; #include any scripts
 #include ..\..\structs\Rect.ahk
-#include ..\..\structs\Point.ahk
-#include ..\..\structs\WindowInfo.ahk
 
 ; ~~~ End include
 
