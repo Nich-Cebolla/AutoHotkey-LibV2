@@ -244,7 +244,7 @@ class Window32 {
         this.MakeWinRectObjects()
     }
     Call() {
-        if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int') {
+        if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
             throw OSError()
         }
     }
@@ -344,7 +344,7 @@ class Window32 {
             } else {
                 throw TypeError('Invalid ``Hwnd`` returned.', -1, Type(hwnd))
             }
-            if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int') {
+            if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
                 throw OSError()
             }
         }
@@ -718,7 +718,6 @@ class Point {
 
 
 ;@region Point funcs
-
 
 PtClone(pt) => Point(pt.X, pt.Y)
 PtGetCursorPos(pt) => DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int')
