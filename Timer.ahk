@@ -45,7 +45,7 @@ class Timer extends Array {
     }
     /**
      * @class
-     * @param {*} Callback - A `Func` or callable object to call when the timer is active.
+     * @param {...*} Callbacks - Zero or more `Func` or callable object to call when the timer is active.
      * @param {Integer} Period - The period (milliseconds) at which `Callback` is called when the
      * timer is active.
      * @param {Integer} [Priority = 0] - The value passed to the `Priority` parameter of `SetTimer`.
@@ -90,9 +90,7 @@ class Timer extends Array {
         this.Status := 2
         this.LastActionStart := A_TickCount
         for cb in this.Callbacks {
-            if cb() {
-                break
-            }
+            cb()
         }
         this.LastActionEnd := A_TickCount
         this.Status := 1
@@ -151,13 +149,10 @@ class Timer extends Array {
         }
         this.Status := 2
         this.Push({ Start: A_TickCount, Result: Result := [] })
-        Result.Capacity := 100
+        Result.Capacity := this.Callbacks.Length
         for cb in this.Callbacks {
-            if cb(&Value) {
-                break
-            }
+            Result.Push(cb())
         }
-        Result.Result := this.Callback.Call()
         Result.End := A_TickCount
         this.Status := 1
         Result.Index := this.__Count++
