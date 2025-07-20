@@ -12,85 +12,46 @@
     This library is designed to allow RECT members of any struct at an arbitrary, static offset
     to make use of the functions. For example, consider the WINDOWINFO struct. There are two
     members that are RECTs: rcWindow at offset 4, and rcClient at offset 20. To avoid repetitive
-    code and unnecessary work, the `WindowInfo` class in file WindowInfo.ahk initializes instances
-    like this:
+    code and unnecessary work, the `WindowInfo` class initializes instances like this:
     @example
-        __New(Hwnd := 0) {
+        __New(Hwnd := 0, Buf?, Offset := 0) {
             this.Hwnd := Hwnd
-            this.Buffer := Buffer(60)
-            NumPut('uint', 60, this.Buffer)
-            this()
-            this.Rect := WinRect.FromPtr(this.Ptr + 4)
-            this.ClientRect := WinRect.FromPtr(this.Ptr + 20)
+            if IsSet(Buf) {
+                if Buf.Size < 60 + Offset {
+                    throw Error('The buffer`'s size is insufficient. The size must be 60 + offset or greater.', -1)
+                }
+                this.Buffer := Buf
+            } else {
+                this.Buffer := Buffer(60 + Offset)
+            }
+            this.Offset := Offset
+            NumPut('uint', 60, this.Buffer, this.Offset)
+            this.MakeWinRectObjects()
+        }
+        MakeWinRectObjects() {
+            if this.Hwnd {
+                this()
+            }
+            this.Rect := WinRect(this.Hwnd, this.Buffer, this.Offset + 4, false)
+            this.ClientRect := WinRect(this.Hwnd, this.Buffer, this.Offset + 20, true)
         }
     @
-    The objects can then make use of the existing buffer, and will be updated along with the other
-    members whenever the `WindowInfo` object itself is updated. My original design was to define
-    the classes as `Buffer` objects, and manipulate them by defining some preset offset. That approach
-    was more complicated and less flexible than this approach, because not only can this approach
-    still use a native AHK `Buffer` object, it can also use objects obtained from external code
-    by specifying at what pointer offset the RECT is located.
+    Though separate AHK objects, the objects set to `this.Rect` and `this.ClientRect` both make use
+    of the same buffer. Whenever the values of the WINDOWINFO struct are changed, the changes are
+    reflected by the AHK objects as well.
 
-    If you use a pointer obtained externally, your code is responsible for ensuring that the `Rect`
-    object associated with it is invalidated and destroyed when the memory is released.
-    Calling the "Dispose" method on any objects from a class in this library (Point, Rect, WinRect,
-    or WindowInfo) is sufficient. If your code does not use a pointer to an object created externally,
-    then you do not need to worry about this because this library handles it for you.
-
-    To add to the flexibility offered by this library, each class has a static method "Make" which
-    accepts a class object as a parameter, then defines the relevant methods on the class' prototype.
-    @example
-        class Rect {
-            L {
-                Get => NumGet(this, 'int', 0)
-                Set => NumPut('int', Value, this, 0)
-            }
-            T {
-                Get => NumGet(this, 'int', 4)
-                Set => NumPut('int', Value, this, 4)
-            }
-            ; ... etc
-        }
-    @
-    This creates multiple, separate function objects all doing essentially the same thing. This library
-    follows this approach instead:
-    @example
-        class RectBase {
-            static Make(Cls) {
-                Proto := Cls.Prototype
-                Proto.DefineProp('L', { Get: RectGetCoordinate.Bind(0), Set: RectSetCoordinate.Bind(0) })
-                Proto.DefineProp('T', { Get: RectGetCoordinate.Bind(4), Set: RectSetCoordinate.Bind(4) })
-                ; ... etc
-            }
-        }
-    @
-    The impact on memory usage is unclear to me because we are still creating new function objects,
-    two `BoundFunc` objects for each property. But there are two benefits to this approach:
-
-    - The base `Func` is the same for each property. This will save time if something needs updated
-    in a function's logic or some feature is added beacuse the code only needs updated in one location.
-    Though RECT-related functions are pretty straightforward, I found this to be a good exercise for
-    applying this principle elsewhere.
-
-    - Other classes can make use of the methods without requiring that class to inherit from `RectBase`
-    or `Point` or `WinRect` or `WindowInfo`. AHK's object model is a single-inheritance model. This
-    can make it complicated when we want an object to share properties or methods from two or more
-    separate classes. With this library's approach, not only can we still define a class to inherit
-    from one of the library's classes, with one simple function call we can define the methods on a
-    separate class that does not inherit from one of the classes as well. Maximum flexibility :thumb:.
-
-    Because properties { L, T, R, B, W, H } are defined with both a getter and setter, more complex
-    functions don't need to rely on offsets and can instead access the values using the relevant
-    property. When defining classes to inherit from one of this library's classes, or to make use of
-    a static method "Make", your code does not need to be concerned about the ptr offsets and can
-    make use of these properties directly.
+    The classes `Point`, `RectBase`, `WinRect`, and `WindowInfo` each have a static method "Make"
+    which accept a class object as a paremeter and define all relevant methods on the class'
+    prototype. With this approach, other classes can make use of the methods without requiring that
+    class to inherit from the source. This action is performed inherently for each of `Point`,
+    `Rect`, `WinRect`, and `WindowInfo`.
 
     Note that the static method "Make" only defines the methods relevant to that specific class,
     not any class that it inherits from. For example, the static `WinRect.Make` defines all the
     relevant "WinRect" functions, but not the "Rect" functions. When we make an instance of
     `WinRect`, the instance object will have all of the "WinRect" and "Rect" methods because
-    `WinRect` inherits from `Rect`. However, if I defined some other class and only called `WinRect.Make(cls)`
-    then that class will be missing half of its methods and will throw errors.
+    `WinRect` inherits from `Rect`. However, if I defined some other class and only called
+    `WinRect.Make(cls)` then that class will be missing half of its methods and will throw errors.
 
     This an example of how to correctly define a class that inherits from any arbitrary class, and
     that makes use of the methods available from this library.
@@ -145,6 +106,9 @@
         ; This sets the dpi awareness context to -3 prior to performing the action
         wrc.GetPos_S(&x, &y, &w, &h)
     @
+
+    To improve performance, the `RectBase` class object looks up and caches the addresses of the
+    various dll functions.
 */
 
 /**
@@ -214,20 +178,6 @@ class WindowInfo {
         )
         this.Make(this)
     }
-    static FromPtr(Ptr, Hwnd := 0) {
-        ObjAddRef(Ptr)
-        winfo := { Ptr: Ptr, Size: 60, Hwnd: Hwnd }
-        winfo.DefineProp('__Delete', { Call: RectDeletePtr })
-        ObjSetBase(winfo, this.Prototype)
-        winfo.__MakeWindowRectObjects()
-        return winfo
-    }
-    static FromBuffer(Buf, Hwnd := 0) {
-        winfo := { Buffer: buf, Hwnd: Hwnd }
-        ObjSetBase(winfo, this.Prototype)
-        winfo.__MakeWindowRectObjects()
-        return winfo
-    }
     static Make(Cls, Prefix := '', Suffix := '') {
         Proto := Cls.Prototype
         if !HasMethod(Cls, '__Call') {
@@ -247,12 +197,22 @@ class WindowInfo {
         Proto.DefineProp(Prefix 'HasExStyle' Suffix, { Call: WindowInfoHasExStyle })
         Proto.DefineProp(Prefix 'HasStyle' Suffix, { Call: WindowInfoHasStyle })
         Proto.DefineProp(Prefix 'MoveClient' Suffix, { Call: WindowInfoMoveClient })
+        Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
+        Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
     }
-    __New(Hwnd := 0) {
+    __New(Hwnd := 0, Buf?, Offset := 0) {
         this.Hwnd := Hwnd
-        this.Buffer := Buffer(60)
-        NumPut('uint', 60, this.Buffer)
-        this.__MakeWindowRectObjects()
+        if IsSet(Buf) {
+            if Buf.Size < 60 + Offset {
+                throw Error('The buffer`'s size is insufficient. The size must be 60 + offset or greater.', -1)
+            }
+            this.Buffer := Buf
+        } else {
+            this.Buffer := Buffer(60 + Offset)
+        }
+        this.Offset := Offset
+        NumPut('uint', 60, this.Buffer, this.Offset)
+        this.MakeWinRectObjects()
     }
     Call() {
         if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
@@ -265,12 +225,12 @@ class WindowInfo {
      * update the "Hwnd" property, and instead calls `GetWindowInfo` with the current "Hwnd". When
      * `WindowInfo.Prototype.SetCallback` is called, a new method "Call" is defined that calls
      * the callback function and uses the return value to update the property "Hwnd", then calls
-     * `GetWindowInfo` using that new Hwnd. To remove the callback and return the "Call" method
+     * `GetWindowInfo` using that new handle. To remove the callback and return the "Call" method
      * to its original functionality, pass zero or an empty string to `Callback`.
      *
      * This library includes a number of functions that are useful for this, each beginning with
-     * "WindowInfoCallback". However, your code will likely benefit from knowing when no "Hwnd" is
-     * returned by one of the functions, so your code can respond in some type of way. To write your
+     * "WindowInfoCallback". However, your code will likely benefit from knowing when no window handle
+     * is returned by one of the functions, so your code can respond in some type of way. To write your
      * own function that makes use of any of the built-in functions, you can define it this way:
      *
      * If your code does not need the `WindowInfo` object, exclude it using the "*" operator:
@@ -307,7 +267,7 @@ class WindowInfo {
      *  winfo := WindowInfo(hwnd)
      *  winfo.SetCallback(MyHelperFunc)
      *  winfo()
-     *  MsgBox(winfo.Hwnd == hwnd) ; 0
+     *  MsgBox(winfo.Hwnd == hwnd) ; 0 or 1 depending if a parent window exists
      * @
      *
      * @param {*} Callback - A `Func` or callable object that accepts the `WindowInfo` object as its
@@ -337,20 +297,18 @@ class WindowInfo {
             }
         }
     }
-    __MakeWindowRectObjects() {
+    MakeWinRectObjects() {
         if this.Hwnd {
             this()
         }
-        this.Rect := WinRect.FromPtr(this.Ptr + 4)
-        this.ClientRect := WinRect.FromPtr(this.Ptr + 20)
+        this.Rect := WinRect(this.Hwnd, this.Buffer, this.Offset + 4, false)
+        this.ClientRect := WinRect(this.Hwnd, this.Buffer, this.Offset + 20, true)
     }
     Atom => NumGet(this, 56, 'short')
     BorderHeight => NumGet(this, 52, 'int')
     BorderWidth => NumGet(this, 48, 'int')
     CreatorVersion => NumGet(this, 58, 'short')
     ExStyle => NumGet(this, 40, 'uint')
-    Ptr => this.Buffer.Ptr
-    Size => this.Buffer.Size
     Status => NumGet(this, 44, 'int')
     Style => NumGet(this, 36, 'uint')
 }
@@ -360,34 +318,25 @@ class WinRect extends Rect {
         this.DeleteProp('__New')
         this.Make(this)
     }
-    static FromDesktop(ClientRect := false) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), ClientRect)
-    static FromForeground(ClientRect := false) => this(DllCall(RectBase.GetForegroundWindow, 'ptr'), ClientRect)
+    static FromDesktop(Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), Buf ?? unset, Offset, ClientRect)
+    static FromForeground(Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetForegroundWindow, 'ptr'), Buf ?? unset, Offset, ClientRect)
     /**
      * @param Cmd -
      * - 2 : Returns a handle to the window below the given window.
      * - 3 : Returns a handle to the window above the given window.
      */
-    static FromMouse(ClientRect := false) {
+    static FromMouse(Buf?, Offset := 0, ClientRect := false) {
         pt := Point()
-        DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int')
-        return this(DllCall(RectBase.WindowFromPoint, 'ptr', pt, 'ptr'))
+        if !DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int') {
+            throw OSError()
+        }
+        return this(DllCall(RectBase.WindowFromPoint, 'ptr', pt, 'ptr'), Buf ?? unset, Offset, ClientRect)
     }
-    static FromNext(Hwnd, Cmd, ClientRect := false) {
-        return this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), ClientRect)
-    }
-    static FromParent(Hwnd, ClientRect := false) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), ClientRect)
-    static FromPoint(X, Y, ClientRect := false) {
-        return this(DllCall(RectBase.WindowFromPoint, 'ptr', Point(X, Y), 'ptr'), ClientRect)
-    }
-    static FromPtr(Ptr, Hwnd := 0) {
-        ObjAddRef(Ptr)
-        wrc := { Ptr: Ptr, Size: 16, Hwnd: Hwnd }
-        wrc.DefineProp('__Delete', { Call: RectDeletePtr })
-        ObjSetBase(wrc, this.Prototype)
-        return wrc
-    }
-    static FromShell(ClientRect := false) => this(DllCall(RectBase.GetShellWindow, 'ptr'), ClientRect)
-    static FromTop(Hwnd := 0, ClientRect := false) => this(DllCall(RectBase.GetTopWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), ClientRect)
+    static FromNext(Hwnd, Cmd, Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset, ClientRect)
+    static FromParent(Hwnd, Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset, ClientRect)
+    static FromPoint(X, Y, Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.WindowFromPoint, 'ptr', Point(X, Y), 'ptr'), Buf ?? unset, Offset, ClientRect)
+    static FromShell(Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetShellWindow, 'ptr'), Buf ?? unset, Offset, ClientRect)
+    static FromTop(Hwnd := 0, Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetTopWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset, ClientRect)
     /**
      * @param Cmd -
      * - GW_CHILD - 5 - The retrieved handle identifies the child window at the top of the Z order,
@@ -422,9 +371,7 @@ class WinRect extends Rect {
      * - GW_OWNER - 4 - The retrieved handle identifies the specified window's owner window, if any.
      *  For more information, see Owned Windows.
      */
-    static Get(Hwnd, Cmd, ClientRect := false) {
-        return this(DllCall(RectBase.GetWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), ClientRect)
-    }
+    static Get(Hwnd, Cmd, Buf?, Offset := 0, ClientRect := false) => this(DllCall(RectBase.GetWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset, ClientRect)
     static Make(Cls, Prefix := '', Suffix := '') {
         Proto := Cls.Prototype
         if !HasMethod(Cls, '__Call') {
@@ -457,46 +404,50 @@ class WinRect extends Rect {
         Proto.DefineProp(Prefix 'SetPosKeepAspectRatio' Suffix, { Call: WinRectSetPosKeepAspectRatio })
         Proto.DefineProp(Prefix 'Show' Suffix, { Call: WinRectShow })
         Proto.DefineProp(Prefix 'Update' Suffix, { Call: WinRectUpdate })
+        Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
+        Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
     }
-    __New(Hwnd := 0, ClientRect := false) {
+    __New(Hwnd := 0, Buf?, Offset := 0, ClientRect := false) {
         this.Hwnd := Hwnd
-        this.Size := 16
-        if ClientRect {
-            this.Client := true
-            if !DllCall(RectBase.GetClientRect, 'ptr', Hwnd, 'ptr', this, 'int') {
-                throw OSError()
+        if IsSet(Buf) {
+            if Buf.Size < 16 + Offset {
+                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.', -1)
             }
+            this.Buffer := Buf
         } else {
-            this.Client := false
-            if !DllCall(RectBase.GetWindowRect, 'ptr', Hwnd, 'ptr', this, 'int') {
-                throw OSError()
+            this.Buffer := Buffer(16 + Offset)
+        }
+        this.Offset := Offset
+        if Hwnd {
+            if ClientRect {
+                this.Client := true
+                if !DllCall(RectBase.GetClientRect, 'ptr', Hwnd, 'ptr', this, 'int') {
+                    throw OSError()
+                }
+            } else {
+                this.Client := false
+                if !DllCall(RectBase.GetWindowRect, 'ptr', Hwnd, 'ptr', this, 'int') {
+                    throw OSError()
+                }
             }
         }
     }
 }
 
 class Rect extends RectBase {
-    static FromBuffer(buf) {
-        rc := { Buffer: buf }
-        ObjSetBase(rc, this.Prototype)
-        return rc
+    static FromDimensions(X, Y, W, H, Buf?, Offset := 0) => this(X, Y, X + W, Y + H, Buf ?? unset, Offset)
+    __New(L := 0, T := 0, R := 0, B := 0, Buf?, Offset := 0) {
+        if IsSet(Buf) {
+            if Buf.Size < 16 + Offset {
+                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.', -1)
+            }
+            this.Buffer := Buf
+        } else {
+            this.Buffer := Buffer(16 + Offset)
+        }
+        this.Offset := Offset
+        NumPut('int', L, 'int', T, 'int', R, 'int', B, this.Buffer, Offset)
     }
-    static FromDimensions(X, Y, W, H) {
-        return this(X, Y, X + W, Y + H)
-    }
-    static FromPtr(Ptr) {
-        ObjAddRef(Ptr)
-        rc := { Ptr: Ptr, Size: 16 }
-        rc.DefineProp('__Delete', { Call: RectDeletePtr })
-        ObjSetBase(rc, this.Prototype)
-        return rc
-    }
-    __New(L := 0, T := 0, R := 0, B := 0) {
-        NumPut('int', L, 'int', T, 'int', R, 'int', B, this.Buffer := Buffer(16))
-    }
-
-    Ptr => this.Buffer.Ptr
-    Size => this.Buffer.Size
 }
 
 class RectBase {
@@ -539,9 +490,10 @@ class RectBase {
         }
     }
     static UnloadAll(*) {
-        for modName, hModule in this.Prototype.Modules {
+        for modName, hModule in this.Modules {
             DllCall('FreeLibrary', 'ptr', hModule)
         }
+        this.Addresses.Clear()
     }
     static Make(Cls, Prefix := '', Suffix := '') {
         Proto := Cls.Prototype
@@ -569,7 +521,7 @@ class RectBase {
         Proto.DefineProp(Prefix 'MidY' Suffix, { Get: (Self) => RectGetHeightSegment(Self, 2) })
         Proto.DefineProp(Prefix 'Monitor' Suffix, { Get: RectGetMonitor })
         Proto.DefineProp(Prefix 'MoveAdjacent' Suffix, { Call: MoveAdjacent })
-        Proto.DefineProp(Prefix 'Offset' Suffix, { Call: RectOffset })
+        Proto.DefineProp(Prefix 'OffsetRect' Suffix, { Call: RectOffset })
         Proto.DefineProp(Prefix 'PtIn' Suffix, { Call: RectPtIn })
         Proto.DefineProp(Prefix 'R' Suffix, { Get: RectGetCoordinate.Bind(8), Set: RectSetCoordinate.Bind(8) })
         Proto.DefineProp(Prefix 'Set' Suffix, { Call: RectSet })
@@ -582,22 +534,15 @@ class RectBase {
         Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
         Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
         Proto.DefineProp(Prefix 'W' Suffix, { Get: RectGetLength.Bind(0), Set: RectSetLength.Bind(0) })
+        Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
+        Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
     }
-    Size => 16
 }
 
 class Point {
     static __New() {
         this.DeleteProp('__New')
         this.Make(this)
-    }
-    static FromBuffer(buf) {
-        if buf.Size < 8 {
-            buf.Size := 8
-        }
-        pt := { Buffer: Buf }
-        ObjSetBase(pt, this.Prototype)
-        return pt
     }
     static FromCaretPos() {
         pt := Point()
@@ -607,13 +552,6 @@ class Point {
     static FromMouse() {
         pt := Point()
         DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int')
-        return pt
-    }
-    static FromPtr(Ptr) {
-        ObjAddRef(Ptr)
-        pt := { Ptr: Ptr, Size: 8 }
-        pt.DefineProp('__Delete', { Call: RectDeletePtr })
-        ObjSetBase(pt, this.Prototype)
         return pt
     }
     static Make(Cls, Prefix := '', Suffix := '') {
@@ -636,14 +574,26 @@ class Point {
         Proto.DefineProp(Prefix 'Value' Suffix, { Get: PtGetValue })
         Proto.DefineProp(Prefix 'X' Suffix, { Get: RectGetCoordinate.Bind(0), Set: RectSetCoordinate.Bind(0) })
         Proto.DefineProp(Prefix 'Y' Suffix, { Get: RectGetCoordinate.Bind(4), Set: RectSetCoordinate.Bind(4) })
+        Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
+        Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
 
     }
-    __New(X := 0, Y := 0) {
-        this.Buffer := Buffer(8)
-        NumPut('int', X, 'int', Y, this.Buffer, 0)
+    __New(X := 0, Y := 0, Buf?, Offset := 0) {
+        if IsSet(Buf) {
+            if Buf.Size < 8 + Offset {
+                throw Error('The buffer`'s size is insufficient. The size must be 8 + offset or greater.', -1)
+            }
+            this.Buffer := Buf
+        } else {
+            this.Buffer := Buffer(8 + Offset)
+        }
+        this.Offset := Offset
+        NumPut('int', X, 'int', Y, this.Buffer, Offset)
     }
     Call() {
-        DllCall(RectBase.GetCursorPos, 'ptr', this, 'int')
+        if !DllCall(RectBase.GetCursorPos, 'ptr', this, 'int') {
+            throw OSError()
+        }
     }
     /**
      * @param {Integer} Id -
@@ -661,8 +611,6 @@ class Point {
         DllCall(RectBase.GetCursorPos, 'ptr', this, 'int')
         return DllCall(RectBase.WindowFromPoint, 'ptr', this, 'ptr')
     }
-    Size => this.Buffer.Size
-    Ptr => this.Buffer.Ptr
 }
 /**
  * @description - Moves the window adjacent to another window while ensuring that the window stays
@@ -1009,6 +957,8 @@ RectGetHeightSegment(rc, Divisor, DecimalPlaces := 0) => Round(rc.H / Divisor, D
 RectGetLength(Offset, rc) => NumGet(rc, 8 + Offset, 'int') - NumGet(rc, Offset, 'int')
 RectGetMonitor(rc) => DllCall(RectBase.MonitorFromRect, 'ptr', rc, 'UInt', 0, 'Uptr')
 RectGetPoint(Offset1, Offset2, rc) => Point(NumGet(rc, Offset1, 'int'), NumGet(rc, Offset2, 'int'))
+RectGetPtrFromBuffer(rc) => rc.Buffer.Ptr + rc.Offset
+RectGetSizeFromBuffer(rc) => rc.Buffer.Size
 RectGetWidthSegment(rc, Divisor, DecimalPlaces := 0) => Round(rc.W / Divisor, DecimalPlaces)
 RectInflate(rc, dx, dy) => DllCall(RectBase.InflateRect, 'ptr', rc, 'int', dx, 'int', dy, 'int')
 /**
@@ -1022,12 +972,6 @@ RectIntersect(rc1, rc2, Offset := 0) {
     }
 }
 RectIsEmpty(rc) => DllCall(RectBase.IsRectEmpty, 'ptr', rc, 'int')
-RectDeletePtr(Obj) {
-    if Obj.HasOwnProp('Ptr') {
-        ObjRelease(Obj.Ptr)
-        Obj.DeleteProp('Ptr')
-    }
-}
 RectDispose(Obj) {
     if Obj.HasOwnProp('Ptr') {
         ObjRelease(Obj.Ptr)
@@ -1231,6 +1175,9 @@ WindowInfoHasExStyle(winfo, Id) {
 WindowInfoHasStyle(winfo, Id) {
     return winfo.Style & (IsNumber(Id) ? Id : winfo.WindowStyles.Get(Id))
 }
+WinRectApply(wrc, InsertAfter := 0, Flags := 0) {
+    return DllCall(WinRect.SetWindowPos, 'ptr', IsObject(wrc) ? wrc.Hwnd : wrc, 'ptr', InsertAfter, 'int', wrc.X, 'int', wrc.T, 'int', wrc.W, 'int', wrc.H, 'uint', Flags, 'int')
+}
 /**
  * Input the dimensions of the desired client area, and the window is moved to accommodate that
  * area.
@@ -1251,9 +1198,6 @@ WindowInfoMoveClient(winfo, X := 0, Y := 0, W := 0, H := 0, InsertAfter := 0, Fl
     if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
         throw OSError()
     }
-}
-WinRectApply(wrc, InsertAfter := 0, Flags := 0) {
-    return DllCall(WinRect.SetWindowPos, 'ptr', IsObject(wrc) ? wrc.Hwnd : wrc, 'ptr', InsertAfter, 'int', wrc.X, 'int', wrc.T, 'int', wrc.W, 'int', wrc.H, 'uint', Flags, 'int')
 }
 WinRectBringToTop(wrc) {
     return DllCall(RectBase.BringWindowToTop, 'ptr', IsObject(wrc) ? wrc.Hwnd : wrc, 'int')
@@ -1447,5 +1391,16 @@ WinRectShow(wrc, Flag := 0) {
     return DllCall(RectBase.ShowWindow, 'ptr', IsObject(wrc) ? wrc.Hwnd : wrc, 'uint', Flag, 'int')
 }
 WinRectUpdate(wrc) {
-    return DllCall(RectBase.GetWindowRect, 'ptr', IsObject(wrc) ? wrc.Hwnd : wrc, 'ptr', wrc, 'int')
+    if !IsObject(wrc) {
+        throw TypeError('The input value must be an object.', -1)
+    }
+    if HasProp(wrc, 'Client') && wrc.Client {
+        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
+            throw OSError()
+        }
+    } else {
+        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
+            throw OSError()
+        }
+    }
 }
