@@ -138,25 +138,25 @@ class Window32 {
         )
         this.Make(this)
     }
-    static FromDesktop(Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), Buf ?? unset, Offset)
-    static FromForeground(Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetForegroundWindow, 'ptr'), Buf ?? unset, Offset)
+    static FromDesktop(Buf?, Offset := 0) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), Buf ?? unset, Offset)
+    static FromForeground(Buf?, Offset := 0) => this(DllCall(RectBase.GetForegroundWindow, 'ptr'), Buf ?? unset, Offset)
     /**
      * @param Cmd -
      * - 2 : Returns a handle to the window below the given window.
      * - 3 : Returns a handle to the window above the given window.
      */
-    static FromCursor(Buf?, Offset := 0 := false) {
+    static FromCursor(Buf?, Offset := 0) {
         pt := Point()
         if !DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int') {
             throw OSError()
         }
         return this(DllCall(RectBase.WindowFromPoint, 'int', pt.Value, 'ptr'), Buf ?? unset, Offset)
     }
-    static FromNext(Hwnd, Cmd, Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
-    static FromParent(Hwnd, Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
-    static FromPoint(X, Y, Buf?, Offset := 0 := false) => this(DllCall(RectBase.WindowFromPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr'), Buf ?? unset, Offset)
-    static FromShell(Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetShellWindow, 'ptr'), Buf ?? unset, Offset)
-    static FromTop(Hwnd := 0, Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetTopWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
+    static FromNext(Hwnd, Cmd, Buf?, Offset := 0) => this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
+    static FromParent(Hwnd, Buf?, Offset := 0) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
+    static FromPoint(X, Y, Buf?, Offset := 0) => this(DllCall(RectBase.WindowFromPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr'), Buf ?? unset, Offset)
+    static FromShell(Buf?, Offset := 0) => this(DllCall(RectBase.GetShellWindow, 'ptr'), Buf ?? unset, Offset)
+    static FromTop(Hwnd := 0, Buf?, Offset := 0) => this(DllCall(RectBase.GetTopWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
     /**
      * @param Cmd -
      * - GW_CHILD - 5 - The retrieved handle identifies the child window at the top of the Z order,
@@ -191,7 +191,7 @@ class Window32 {
      * - GW_OWNER - 4 - The retrieved handle identifies the specified window's owner window, if any.
      *  For more information, see Owned Windows.
      */
-    static Get(Hwnd, Cmd, Buf?, Offset := 0 := false) => this(DllCall(RectBase.GetWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
+    static Get(Hwnd, Cmd, Buf?, Offset := 0) => this(DllCall(RectBase.GetWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
     static Make(Cls, Prefix := '', Suffix := '') {
         Proto := Cls.Prototype
         if !HasMethod(Cls, '__Call') {
