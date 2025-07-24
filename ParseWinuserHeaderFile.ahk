@@ -1,20 +1,30 @@
 ﻿#include <StringifyAll>
 
-t()
-t() {
-    result := ParseWinuserHeaderFile('C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\WinUser.h')
-
-    f := FileOpen(A_MyDocuments '\winuser.json', 'w')
-    f.Write(StringifyAll(result, 'general debug'))
-    f.Close()
-    Run('code-insiders "' A_MyDocuments '\winuser.json"')
-}
-
+/**
+ * @description - This function is modeled after the WinUser.H file on my computer, which was presumably
+ * created when Visual Studio was installed. It does a good job with that particular file. It will
+ * likely do a decent job with many C++ header files. However, it will not be perfect.
+ *
+ * How to use
+ *
+ * This gets all of the symbols and values that begin with "DT_". Note the file may not exist
+ * at that location on your computer. Download Visual Studio to get the header files.
+ * @example
+ *  result := ParseWinuserHeaderFile('C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\WinUser.h')
+ *  str := ''
+ *  for obj in result.Values {
+ *      if RegExMatch(obj['symbol'], '^DT_') {
+ *          str .= obj['symbol'] ' := ' obj['value'] '`n'
+ *      }
+ *  }
+ *  A_Clipboard := Str
+ * @
+ */
 ParseWinuserHeaderFile(path) {
     content := RegExReplace(FileRead(path, 'utf-8'), '/\*[\w\W]+?\*/|//.*', '')
-    patternFunction := '(?<=[\r\n])(?<name>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
-    patternValue := '(?<=[\r\n])#define[ \t]+(?<name>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
-    patternStruct := '(?<=[\r\n])typedef[ \t]+struct[ \t]+(?<name>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
+    patternFunction := '(?<=[\r\n])(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
+    patternValue := '(?<=[\r\n])#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
+    patternStruct := '(?<=[\r\n])typedef[ \t]+struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
     functions := _GetAll(patternFunction, [])
     values := _GetAll(patternValue, [])
     structs := _GetAll(patternStruct, [])
@@ -56,7 +66,7 @@ class FunctionDefinition {
         this.Match := Match
         this.Params := FunctionDefinition.Params(Match)
     }
-    Name => this.Match['name']
+    Symbol => this.Match['symbol']
     Variadic => InStr(this.Match['params'], '...)')
 
     class Params extends Array {
@@ -73,7 +83,7 @@ class FunctionDefinition {
         static __New() {
             this.DeleteProp('__New')
             Proto := this.Prototype
-            Proto.AnnotationIndex := Proto.TypeIndex := Proto.NameIndex := Proto.Const := 0
+            Proto.AnnotationIndex := Proto.TypeIndex := Proto.SymbolIndex := Proto.Const := 0
         }
         static Call(splitLine) {
             if splitLine.Length == 1 {
@@ -84,12 +94,12 @@ class FunctionDefinition {
                     splitLine.TypeIndex := 2
                 } else {
                     splitLine.TypeIndex := 1
-                    splitLine.NameIndex := 2
+                    splitLine.SymbolIndex := 2
                 }
             } else if splitLine.Length == 3 {
                 splitLine.AnnotationIndex := 1
                 splitLine.TypeIndex := 2
-                splitLine.NameIndex := 3
+                splitLine.SymbolIndex := 3
             } else if splitLine.Length > 3 {
                 newSplitLine := []
                 k := 0
@@ -120,16 +130,16 @@ class FunctionDefinition {
                 splitLine := newSplitLine
                 splitLine.AnnotationIndex := 1
                 splitLine.TypeIndex := 2
-                splitLine.NameIndex := 3
+                splitLine.SymbolIndex := 3
             }
             ObjSetBase(splitLine, FunctionDefinition.Param.Prototype)
             return splitLine
         }
         Annotation => Trim(this.AnnotationIndex ? this[this.AnnotationIndex] : '', ',;')
         Type => Trim(this.TypeIndex ? this[this.TypeIndex] : '', ',')
-        Name => Trim(this.NameIndex ? this[this.NameIndex] : '', ',')
+        Symbol => Trim(this.SymbolIndex ? this[this.SymbolIndex] : '', ',')
         Optional => InStr(this.Annotation, 'opt')
-        Pointer => InStr(this.Annotation this.Name this.Type, '*')
+        Pointer => InStr(this.Annotation this.Symbol this.Type, '*')
         MaybeNull => InStr(this.Annotation, 'maybenull')
         Input => InStr(this.Annotation, 'in')
         Out => InStr(this.Annotation, 'out')
@@ -154,12 +164,12 @@ class StructDefinition {
         index := 0
         this.Members := StructDefinition.Members(&index, members, [])
     }
-    Name => this.Match['name']
+    Symbol => this.Match['symbol']
 
     class Members extends Array {
         static __New() {
             this.DeleteProp('__New')
-            this.Prototype.Names := ''
+            this.Prototype.Symbols := ''
         }
         static Call(&index, splitLines, container) {
             flag_no_mac := flag_windows := flag_windows_else := false
@@ -218,7 +228,7 @@ class StructDefinition {
                     } else if InStr(member, '{') {
                         sleep 1
                     } else if InStr(member, '}') {
-                        container.Names := StrSplit(SubStr(member, 3), ' ', '`t;,')
+                        container.Symbols := StrSplit(SubStr(member, 3), ' ', '`t;,')
                         ObjSetBase(container, StructDefinition.Members.Prototype)
                         return container
                     } else if RegExMatch(member, '\w+\[[^\]]+\]', &MatchBracket) {
@@ -238,31 +248,31 @@ class StructDefinition {
                 }
             }
         }
-        Name => this.Names ? this.Names[1] : ''
+        Symbol => this.Symbols ? this.Symbols[1] : ''
     }
     class Member extends Array {
         static __New() {
             this.DeleteProp('__New')
             Proto := this.Prototype
-            Proto.TypeIndex := Proto.NameIndex := Proto.SizeIndex := Proto.Constant := 0
+            Proto.TypeIndex := Proto.SymbolIndex := Proto.SizeIndex := Proto.Constant := 0
         }
         static Call(splitMember) {
             if splitMember.Length == 3 {
                 if splitMember[1] = 'struct' {
                     splitMember.TypeIndex := 2
-                    splitMember.NameIndex := 3
+                    splitMember.SymbolIndex := 3
                 } else if SubStr(splitMember[1], 1, 1) = '_' {
                     splitMember.SizeIndex := 1
                     splitMember.TypeIndex := 2
-                    splitMember.NameIndex := 3
+                    splitMember.SymbolIndex := 3
                 } else if splitMember[1] = 'CONST' {
                     splitMember.Constant := true
                     splitMember.TypeIndex := 1
-                    splitMember.NameIndex := 2
+                    splitMember.SymbolIndex := 2
                 }
             } else if splitMember.Length == 2 {
                 splitMember.TypeIndex := 1
-                splitMember.NameIndex := 2
+                splitMember.SymbolIndex := 2
             } else if splitMember.Length > 3 {
                 splitMember.DefineProp('Type', { Value: splitMember.RemoveAt(1) })
             } else {
@@ -272,15 +282,15 @@ class StructDefinition {
             return splitMember
         }
         Type => this.TypeIndex ? this[this.TypeIndex] : ''
-        Name => this.NameIndex ? this[this.NameIndex] : ''
+        Symbol => this.SymbolIndex ? this[this.SymbolIndex] : ''
         SizeOf => this.SizeIndex ? this[this.SizeIndex] : ''
         UnknownType => InStr(this.Type, 'void')
-        Pointer => InStr(this.Type this.Name, '*')
+        Pointer => InStr(this.Type this.Symbol, '*')
         Struct => InStr(this[1], 'struct')
     }
     class Union {
-        __New(Name, Lines) {
-            this.Name := Trim(Name, ';')
+        __New(Symbol, Lines) {
+            this.Symbol := Trim(Symbol, ';')
             this.Members := []
             for member in Lines {
                 if member {
