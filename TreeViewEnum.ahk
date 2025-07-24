@@ -1,4 +1,11 @@
 ﻿
+/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/TreeViewEnumDescendents.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
+
 /**
  * @description - Recursively enumerates TreeView nodes. This can be called in 1-param or
  * 2-param mode. In 1-param mode, the variable receives the node id. In 2-param mode, the
@@ -22,21 +29,24 @@
  * still enumerated, but the caller never receives the parent. When false, parent nodes are included.
  */
 TreeViewEnumDescendents(TreeViewObj, ItemId := 0, ExpandedOnly := false, NonParentsOnly := false, *) {
-    stack := [ItemId]
+    Stack := [ItemId]
     flag_first := true
     if ExpandedOnly {
         if NonParentsOnly {
-            return EnumExpandedAndNonParentsOnly
+            Enum := _EnumExpandedAndNonParentsOnly
         } else {
-            return EnumExpandedOnly
+            Enum := _EnumExpandedOnly
         }
     } else if NonParentsOnly {
-        return EnumNonParentsOnly
+        Enum := _EnumNonParentsOnly
     } else {
-        return Enum
+        Enum := _Enum
     }
+    ObjSetBase(Enum, Enumerator.Prototype)
+    Enum.Stack := Stack
+    return Enum
 
-    Enum(&Id, &parent?) {
+    _Enum(&Id, &parent?) {
         if Id := TreeViewObj.GetChild(stack[-1]) {
             parent := stack[-1]
             stack.Push(Id)
@@ -58,7 +68,7 @@ TreeViewEnumDescendents(TreeViewObj, ItemId := 0, ExpandedOnly := false, NonPare
             return 0
         }
     }
-    EnumExpandedOnly(&Id, &parent?) {
+    _EnumExpandedOnly(&Id, &parent?) {
         if flag_first {
             if Id := TreeViewObj.GetChild(stack[-1]) {
                 parent := 0
@@ -91,7 +101,7 @@ TreeViewEnumDescendents(TreeViewObj, ItemId := 0, ExpandedOnly := false, NonPare
             return 0
         }
     }
-    EnumNonParentsOnly(&Id, &parent?) {
+    _EnumNonParentsOnly(&Id, &parent?) {
         if flag_first {
             while child := TreeViewObj.GetChild(stack[-1]) {
                 stack.Push(child)
@@ -135,7 +145,7 @@ TreeViewEnumDescendents(TreeViewObj, ItemId := 0, ExpandedOnly := false, NonPare
             return 0
         }
     }
-    EnumExpandedAndNonParentsOnly(&Id, &parent?) {
+    _EnumExpandedAndNonParentsOnly(&Id, &parent?) {
         if flag_first {
             if child := TreeViewObj.GetChild(stack[-1]) {
                 stack.Push(child)
@@ -206,6 +216,55 @@ TreeViewEnumDescendents(TreeViewObj, ItemId := 0, ExpandedOnly := false, NonPare
                     return
                 }
             }
+        }
+    }
+}
+
+
+TreeViewEnumAll(TreeViewObj, ItemId := 0, *) {
+    _id := TreeViewObj.GetNext(ItemId, 'F')
+    return Enum
+
+    Enum(&Id) {
+        if _id {
+            Id := _id
+            _id := TreeViewObj.GetNext(Id, 'F')
+            return 1
+        } else {
+            return 0
+        }
+    }
+}
+
+TreeViewEnumChecked(TreeViewObj, ItemId := 0, *) {
+    _id := TreeViewObj.Get(ItemId, 'C')
+    if !_id {
+        _id := TreeViewObj.GetNext(ItemId, 'C')
+    }
+    return Enum
+
+    Enum(&Id) {
+        if _id {
+            Id := _id
+            _id := TreeViewObj.GetNext(Id, 'C')
+            return 1
+        } else {
+            return 0
+        }
+    }
+}
+
+TreeViewEnumChildren(TreeViewObj, ItemId := 0, *) {
+    child := TreeViewObj.GetChild(ItemId)
+    return Enum
+
+    Enum(&Id) {
+        if child {
+            Id := child
+            child := TreeViewObj.GetNext(Id)
+            return 1
+        } else {
+            return 0
         }
     }
 }
