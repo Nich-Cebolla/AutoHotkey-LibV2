@@ -1,7 +1,6 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
     Author: Nich-Cebolla
-    Version: 1.0.1
     License: MIT
 */
 
@@ -25,6 +24,7 @@ class RectHighlight extends Gui {
      *   - { X, Y, W, H }
      *   - { X, Y, Width, Height }
      * - If none of these are found, `RectHighlight` throws an error.
+     *
      * @param {Object} [Options] - An object with zero or more of the following properties:
      * @param {Boolean} [Options.Blink=false] - `Options.Blink` changes the function used when
      * `Options.Duration > 0`. When `Options.Duration > 0`, and when the timer is activated, the
@@ -56,6 +56,16 @@ class RectHighlight extends Gui {
      * highlighted region.
      * @param {Integer} [Options.OffsetB=0] - Any number of pixels to offset the bottom of the
      * highlighted region.
+     * @param {Boolean} [Options.DisplayPosition = true] - If true, then the coordinate position
+     * of the rectangle's four corners are displayed on the interior of the rectangle by the
+     * corner. The position is relative to the screen.
+     * @param {String} [Options.PositionFontOpt = "q5 c" Options.Color] - The font options for the coordinates,
+     * if the coordinates are in use. If unset, or if the value does not contain a color option,
+     * the color will be set to the same as `Options.Color`.
+     * @param {String} [Options.PositionFontName = ""] - The name of the font for the
+     * coodinates, if the coordinates are in use.
+     * @param {String} [Options.Title = "Highlight"] - The title to assign to the window.
+     *
      * @param {Boolean} [ShowImmediately=true] - Note that if `Obj` is unset, `ShowImmediately` is
      * ignored. If `ShowImmediately` is nonzero, the rectangle is displayed before `RectHighlght.Call`
      * returns. Additionally, if `Options.Duration` is nonzero, the timer is initiated. If `ShowImmediately`
@@ -63,74 +73,23 @@ class RectHighlight extends Gui {
      * @returns {RectHighlight}
      */
     static Call(Obj?, Options?, ShowImmediately := true) {
-        ObjSetBase(G := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000'), this.Prototype)
+        Options := this.Options(Options ?? {})
+        ObjSetBase(G := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000', Options.Title), this.Prototype)
+        G.Options := Options
         G.Timer := false
         ; Some gui methods return incorrect values if the window was never shown.
         G.Show()
         G.Hide()
-        G.DefineProp('Options', { Value: this.Options(Options ?? {}) })
+        if Options.DisplayPosition {
+            G.ConstructPositionDisplay()
+        }
+        G.L := G.T := G.W := G.H := 0
         G.SetTimerFunc('', 1)
         G.SetTimerFunc('', 2)
         if ShowImmediately && IsSet(Obj) {
             G(Obj, G.Options)
         }
         return G
-    }
-
-    /**
-     * @description - Performs the calculations to get the position and dimensions from the input object.
-     * This does not apply offsets.
-     * @param {VarRef} x - A variable that will receive the x-coordinate of the rectangle.
-     * @param {VarRef} y - A variable that will receive the y-coordinate of the rectangle.
-     * @param {VarRef} w - A variable that will receive the width of the rectangle.
-     * @param {VarRef} h - A variable that will receive the height of the rectangle.
-     * @param {Object} Obj - The object from which to get the position and dimensions.
-     * @throws {ValueError} - If the input object does not have the required properties for `RectHighlight`.
-     */
-    static GetPos(&x, &y, &w, &h, Obj) {
-        if HasMethod(Obj, 'GetPos') {
-            Obj.GetPos(&x, &y, &w, &h)
-            if Obj is Gui.Control {
-                Obj.Gui.GetClientPos(&gx, &gy)
-                x += gx
-                y += gy
-            }
-            return
-        } else if HasProp(Obj, 'hWnd') {
-            WinGetPos(&x, &y, &w, &h, Obj.hWnd)
-            if Obj is Gui.Control {
-                Obj.Gui.GetClientPos(&gx, &gy)
-                x += gx
-                y += gy
-            }
-            return
-        } else {
-            for Arr in this.__Properties {
-                Flag := 1
-                for Prop in Arr {
-                    if !HasProp(Obj, Prop) {
-                        Flag := 0
-                        break
-                    }
-                }
-                if Flag {
-                    switch A_Index {
-                        case 1, 2:
-                            x := Arr[1]
-                            y := Arr[2]
-                            w := x + Arr[3]
-                            h := y + Arr[4]
-                        case 3, 4:
-                            x := Arr[1]
-                            y := Arr[2]
-                            w := Arr[3]
-                            h := Arr[4]
-                    }
-                    return
-                }
-            }
-        }
-        throw ValueError('The input object dose not have the required properties for ``RectHighlight``.', -1, 'Type(Obj) == ' Type(Obj))
     }
 
     /**
@@ -229,6 +188,26 @@ class RectHighlight extends Gui {
         }
     }
 
+    ConstructPositionDisplay() {
+        Options := this.Options
+        G := this.PositionDisplay := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +Owner' this.Hwnd, Options.Title)
+        WinSetTransparent(0, G.Hwnd)
+        if Options.PositionFontOpt && RegExMatch(Options.PositionFontOpt, '\b[cC]') {
+            G.SetFont(Options.PositionFontOpt, Options.PositionFontName || unset)
+        } else {
+            G.SetFont('c' Options.Color ' ' (Options.PositionFontOpt ? Options.PositionFontOpt : 'q5'), Options.PositionFontName || unset)
+        }
+        this.TopLeft := G.Add('Text', 'BackgroundTrans vTxtTL', '-00000, -00000')
+        this.TopRight := G.Add('Text', 'BackgroundTrans Right vTxtTR', '-00000, -00000')
+        this.BottomRight := G.Add('Text', 'BackgroundTrans Right vTxtBR', '-00000, -00000')
+        this.BottomLeft := G.Add('Text', 'BackgroundTrans vTxtBL', '-00000, -00000')
+        this.TopLeft.Text := this.TopRight.Text := this.BottomRight.Text := this.BottomLeft.Text := ''
+        this.TopLeft.GetPos(, , &txtw, &txth)
+        this.TopLeft.W := txtw
+        this.TopLeft.H := txth
+        G.Show()
+    }
+
     /**
      * @description - Deletes the input `Obj` from the `Options` object, and calls `this.Destroy()`.
      */
@@ -277,17 +256,80 @@ class RectHighlight extends Gui {
     }
 
     /**
+     * @description - Performs the calculations to get the position and dimensions from the input object.
+     * This does not apply offsets.
+     * @param {Object} Obj - The object from which to get the position and dimensions.
+     * @throws {ValueError} - If the input object does not have the required properties for `RectHighlight`.
+     */
+    GetPos(Obj) {
+        if HasMethod(Obj, 'GetPos') {
+            Obj.GetPos(&x, &y, &w, &h)
+            if Obj is Gui.Control {
+                Obj.Gui.GetClientPos(&gx, &gy)
+                x += gx
+                y += gy
+            }
+        } else if HasProp(Obj, 'hWnd') {
+            WinGetPos(&x, &y, &w, &h, Obj.hWnd)
+            if Obj is Gui.Control {
+                Obj.Gui.GetClientPos(&gx, &gy)
+                x += gx
+                y += gy
+            }
+        } else {
+            for Arr in RectHighlight.__Properties {
+                Flag := 1
+                for Prop in Arr {
+                    if !HasProp(Obj, Prop) {
+                        Flag := 0
+                        break
+                    }
+                }
+                if Flag {
+                    switch A_Index {
+                        case 1, 2:
+                            x := Obj.%Arr[1]%
+                            y := Obj.%Arr[2]%
+                            w := x + Obj.%Arr[3]%
+                            h := y + Obj.%Arr[4]%
+                        case 3, 4:
+                            x := Obj.%Arr[1]%
+                            y := Obj.%Arr[2]%
+                            w := Obj.%Arr[3]%
+                            h := Obj.%Arr[4]%
+                    }
+                    break
+                }
+            }
+        }
+        if IsSet(x) {
+            result := x !== this.L || y !== this.T || w !== this.W || h !== this.H
+            this.L := x
+            this.T := y
+            this.W := w
+            this.H := h
+            return result
+        } else {
+            throw ValueError('The input object dose not have the required properties for ``RectHighlight``.', -1, 'Type(Obj) == ' Type(Obj))
+        }
+    }
+
+    /**
      * @description - Calculates the position and size of the rectangle, and moves the window.
      */
     HighlightMove() {
         O := this.Options
-        RectHighlight.GetPos(&ox, &oy, &ow, &oh, O.Obj)
-        this.Move(
-            ox - O.OffsetL - O.Border
-          , oy - O.OffsetT - O.Border
-          , ow + O.Border * 2 + O.OffsetL + O.OffsetR
-          , oh + O.Border * 2 + O.OffsetT + O.OffsetB
-        )
+        if this.GetPos(O.Obj) {
+            this.Move(
+                this.L - O.OffsetL - O.Border
+              , this.T - O.OffsetT - O.Border
+              , this.W + O.Border * 2 + O.OffsetL + O.OffsetR
+              , this.H + O.Border * 2 + O.OffsetT + O.OffsetB
+            )
+            if this.DisplayPosition {
+                this.SetCoordinates()
+            }
+        }
     }
 
     /**
@@ -312,7 +354,7 @@ class RectHighlight extends Gui {
                 } else if Prop = 'OnShow' {
                     this.SetCallback( , , Value)
                 } else if HasProp(O, Prop) {
-                    if Value {
+                    if Value || Value == 0 {
                         O.DefineProp(Prop, { Value: Value })
                     } else {
                         O.DeleteProp(Prop)
@@ -369,6 +411,24 @@ class RectHighlight extends Gui {
         }
     }
 
+    SetCoordinates() {
+        O := this.Options
+        border := O.Border
+        this.TopLeft.Text := '( ' this.L ', ' this.T ' )'
+        this.TopLeft.Move(border + 1, border + 1)
+        this.TopRight.Text := '( ' (this.L + this.W) ', ' this.T ' )'
+        this.TopRight.Move(this.W - this.TopLeft.W - border - 1, border + 1)
+        this.BottomRight.Text := '( '  (this.L + this.W) ', ' (this.T + this.H) ' )'
+        this.TopRight.Move(this.W - this.TopLeft.W - border - 1, this.H - this.TopLeft.H - border - 1)
+        this.BottomLeft.Text := '( ' this.L ', ' (this.T + this.H) ' )'
+        this.TopRight.Move(border + 1, this.H - this.TopLeft.H - border - 1)
+    }
+
+    SetPositionControlsState(Value) {
+        this.TopLeft.Visible := this.TopRight.Visible := this.BottomRight.Visible := this.BottomLeft.Visible :=
+        this.TopLeft.Enabled := this.TopRight.Enabled := this.BottomRight.Enabled := this.BottomLeft.Enabled := Value
+    }
+
     /**
      * @description - Adjusts the rectangle's dimensions using the options.
      * `RectHighlight.Prototype.SetRegion` uses the following options to set the rectangle's
@@ -380,32 +440,25 @@ class RectHighlight extends Gui {
      */
     SetRegion(Show := true) {
         O := this.Options
-        RectHighlight.GetPos(&ox, &oy, &ow, &oh, O.Obj)
-        WinSetRegion(Format('0-0 {1}-0 {1}-{2} 0-{2} 0-0    {3}-{4} {5}-{4} {5}-{6} {3}-{6} {3}-{4}'
-                , OuterR := ow + O.Border * 2 + O.OffsetL + O.OffsetR           ; Outer right - 1
-                , OuterB := oh + O.Border * 2 + O.OffsetT + O.OffsetB           ; Outer bottom - 2
-                , O.Border                                                      ; Inner left - 3
-                , O.Border                                                      ; Inner top - 4
-                , OuterR - O.Border                                             ; Inner right - 5
-                , OuterB - O.Border                                             ; Inner bottom - 6
-            ), this.hWnd
-        )
-        this.Move(ox - O.OffsetL - O.Border, oy - O.OffsetT - O.Border, OuterR, OuterB)
-        if Show {
+        border := O.Border
+        if this.GetPos(O.Obj) {
+            WinSetRegion(Format('0-0 {1}-0 {1}-{2} 0-{2} 0-0    {3}-{4} {5}-{4} {5}-{6} {3}-{6} {3}-{4}'
+                    , OuterR := this.W + border * 2 + O.OffsetL + O.OffsetR           ; Outer right - 1
+                    , OuterB := this.H + border * 2 + O.OffsetT + O.OffsetB           ; Outer bottom - 2
+                    , border                                                      ; Inner left - 3
+                    , border                                                      ; Inner top - 4
+                    , OuterR - border                                             ; Inner right - 5
+                    , OuterB - border                                             ; Inner bottom - 6
+                ), this.hWnd
+            )
+            this.Move(this.L - O.OffsetL - border, this.T - O.OffsetT - border, OuterR, OuterB)
+            if this.DisplayPosition {
+                this.SetCoordinates()
+            }
+        }
+        if !this.Visible && Show {
             this.Show('NoActivate')
         }
-        ; this.GetPos(&tx, &ty, &tw, &th)
-        ; r := {
-        ;     tx: tx, ty: ty, tw: tw, th: th
-        ;   , OuterR: OuterR, OuterB: OuterB
-        ;   , ox: ox, oy: oy, ow: ow, oh: oh
-        ;   , Border: O.Border
-        ;   , OffsetL: O.OffsetL, OffsetT: O.OffsetT, OffsetR: O.OffsetR, OffsetB: O.OffsetB
-        ; }
-        ; f := fileopen(A_MyDocuments '\temp-output-RectHighlight.json', 'w')
-        ; f.Write(Stringify(r))
-        ; f.Close()
-        ; OutputDebug('`n==============`n' Stringify(r))
     }
 
     /**
@@ -529,6 +582,24 @@ class RectHighlight extends Gui {
         Set => this.Options.Color := Value
     }
 
+    DisplayPosition {
+        Get => this.Options.DisplayPosition
+        Set {
+            if Value {
+                if !this.HasOwnProp('PositionDisplay') {
+                    this.ConstructPositionDisplay()
+                }
+                this.Options.DisplayPosition := 1
+                this.SetPositionControlsState(1)
+            } else {
+                if this.HasOwnProp('PositionDisplay') {
+                    this.PositionDisplay.Hide()
+                }
+                this.Options.DisplayPosition := 0
+            }
+        }
+    }
+
     Duration {
         Get => this.Options.Duration
         Set => this.Options.Duration := Value
@@ -629,6 +700,7 @@ class RectHighlight extends Gui {
             Blink: false
           , Border: 2
           , Color: '00e0fe'
+          , DisplayPosition: true
           , Duration: -3000
           , Obj: ''
           , OffsetL: 0
@@ -638,6 +710,9 @@ class RectHighlight extends Gui {
           , OnHide: ''
           , OnMove: ''
           , OnShow: ''
+          , PositionFontOpt: ''
+          , PositionFontName: ''
+          , Title: 'Highlight'
         }
 
         /**
