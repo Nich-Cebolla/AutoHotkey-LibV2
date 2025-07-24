@@ -3,7 +3,6 @@
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Timer.ahk
     AutoHotkey post: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=138178
     Author: Nich-Cebolla
-    Version: 1.0.0
     License: MIT
 */
 
@@ -45,16 +44,20 @@ class Timer extends Array {
     }
     /**
      * @class
-     * @param {...*} Callbacks - Zero or more `Func` or callable object to call when the timer is active.
      * @param {Integer} Period - The period (milliseconds) at which `Callback` is called when the
      * timer is active.
      * @param {Integer} [Priority = 0] - The value passed to the `Priority` parameter of `SetTimer`.
+     * @param {Boolean} [InsufficientPeriodError = true] -If true, and if the amount of time
+     * to process all the callbacks exceeds the period for two consecutive cycles, `Timer`
+     * will throw an error.
+     * @param {...*} Callbacks - Zero or more `Func` or callable objects to call when the timer is active.
      */
-    __New(Period, Priority := 0, Callbacks*) {
+    __New(Period, Priority := 0, InsufficientPeriodError := true, Callbacks*) {
         this.Callbacks := Callbacks
         this.__Period := Period
         this.__Priority := Priority
         this.__Count := 0
+        this.InsufficientPeriodCount := InsufficientPeriodError ? 0 : -1
         if HasMethod(this, 'Init') {
             this.Init()
         }
@@ -77,7 +80,7 @@ class Timer extends Array {
         }
         this.DefineProp('Call', Timer.Prototype.GetOwnPropDesc('__CallHistoryActive'))
         this.DefineProp('TimeRemaining', Timer.Prototype.GetOwnPropDesc('__TimeRemainingHistoryActive'))
-        this.DefineProp('LastActionDuration', Timer.Prototype.GetOwnPropDesc('__LastActionDurationHistoryActive'))
+        this.DefineProp('LastProcessDuration', Timer.Prototype.GetOwnPropDesc('__LastProcessDurationHistoryActive'))
     }
     /**
      * @description - When the timer's period elapses, `Timer.Prototype.Call` is called.
@@ -95,6 +98,14 @@ class Timer extends Array {
         this.LastActionEnd := A_TickCount
         this.Status := 1
         this.__Count++
+        if this.LastProcessDuration > this.__Period {
+            switch this.InsufficientPeriodCount {
+                case 0: this.InsufficientPeriodCount++
+                case 1: throw Error('The amount of time to process the callbacks exceeded the period'
+                ' for two consecutive cycles. To suppress this error, set option ``InsufficientPeriodError``'
+                ' to 0.', -1, this.LastProcessDuration)
+            }
+        }
     }
     /**
      * @description - Deactivates the history functionality.
@@ -103,7 +114,7 @@ class Timer extends Array {
         this.__HistoryActive := 0
         this.DefineProp('Call', Timer.Prototype.GetOwnPropDesc('Call'))
         this.DefineProp('TimeRemaining', Timer.Prototype.GetOwnPropDesc('TimeRemaining'))
-        this.DefineProp('LastActionDuration', Timer.Prototype.GetOwnPropDesc('LastActionDuration'))
+        this.DefineProp('LastProcessDuration', Timer.Prototype.GetOwnPropDesc('LastProcessDuration'))
     }
     /**
      * @description - Deletes all own properties and sets `TimerObj.Capacity := 0`.
@@ -160,6 +171,14 @@ class Timer extends Array {
         if this.HistoryMaxItems > 0 && this.Length > this.HistoryMaxItems {
             this.RemoveAt(1, this.HistoryReleaseCount)
         }
+        if this.LastProcessDuration > this.__Period {
+            switch this.InsufficientPeriodCount {
+                case 0: this.InsufficientPeriodCount++
+                case 1: throw Error('The amount of time to process the callbacks exceeded the period'
+                ' for two consecutive cycles. To suppress this error, set option ``InsufficientPeriodError``'
+                ' to 0.', -1, this.LastProcessDuration)
+            }
+        }
     }
 
     Count => this.__Count
@@ -207,7 +226,7 @@ class Timer extends Array {
      * @memberof Timer
      * @instance
      */
-    LastActionDuration => this.LastActionEnd - this.LastActionStart
+    LastProcessDuration => this.LastActionEnd - this.LastActionStart
     /**
      * Gets or sets the timer's period. If a timer is currently active, the period is updated.
      * If `Period` is set to 0 when the timer is active, `Timer.Prototype.Stop` is called.
@@ -254,6 +273,6 @@ class Timer extends Array {
      * @instance
      */
     TimeRemainingDecimal => this.TimeRemaining / this.Period
-    __LastActionDurationHistoryActive => this[-1].End - this[-1].Start
+    __LastProcessDurationHistoryActive => this[-1].End - this[-1].Start
     __TimeRemainingHistoryActive => this.Period - A_TickCount + this[-1].Start
 }
