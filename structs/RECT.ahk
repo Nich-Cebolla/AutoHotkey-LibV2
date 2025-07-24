@@ -28,8 +28,8 @@
             if this.Hwnd {
                 this()
             }
-            this.Rect := WinRect(this.Hwnd, this.Buffer, this.Offset + 4, false)
-            this.ClientRect := WinRect(this.Hwnd, this.Buffer, this.Offset + 20, true)
+            this.Rect := WinRect(this.Hwnd, false, this.Buffer, this.Offset + 4)
+            this.ClientRect := WinRect(this.Hwnd, true, this.Buffer, this.Offset + 20)
         }
     @
 
@@ -212,7 +212,7 @@ class Window32 {
         Proto.DefineProp(Prefix 'GetChildBoundingRect' Suffix, { Call: Window32GetChildBoundingRect })
         Proto.DefineProp(Prefix 'GetClientRect' Suffix, { Call: Window32GetClientRect })
         Proto.DefineProp(Prefix 'GetExStyle' Suffix, { Call: Window32GetExStyle })
-        Proto.DefineProp(Prefix 'GetMonitor' Suffix, { Get: Window32GetMonitor })
+        Proto.DefineProp(Prefix 'Monitor' Suffix, { Get: Window32GetMonitor })
         Proto.DefineProp(Prefix 'GetStyle' Suffix, { Call: Window32GetStyle })
         Proto.DefineProp(Prefix 'HasExStyle' Suffix, { Call: Window32HasExStyle })
         Proto.DefineProp(Prefix 'HasStyle' Suffix, { Call: Window32HasStyle })
@@ -367,8 +367,8 @@ class Window32 {
         if this.Hwnd {
             this()
         }
-        this.Rect := WinRect(this.Hwnd, this.Buffer, this.Offset + 4, false)
-        this.ClientRect := WinRect(this.Hwnd, this.Buffer, this.Offset + 20, true)
+        this.Rect := WinRect(this.Hwnd, false, this.Buffer, this.Offset + 4)
+        this.ClientRect := WinRect(this.Hwnd, true, this.Buffer, this.Offset + 20)
     }
     Maximize() => WinMaximize(this.Hwnd)
     Minimize() => WinMinimize(this.Hwnd)
@@ -447,7 +447,7 @@ class WinRect extends Rect {
         Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
         Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
     }
-    __New(Hwnd := 0, Buf?, Offset := 0, ClientRect := false) {
+    __New(Hwnd := 0, ClientRect := false, Buf?, Offset := 0) {
         this.Hwnd := Hwnd
         if IsSet(Buf) {
             if Buf.Size < 16 + Offset {
@@ -474,7 +474,7 @@ class WinRect extends Rect {
     }
 }
 
-;@endregion
+;@endregionxxxxx
 
 
 ;@region Rect cls
@@ -529,6 +529,19 @@ class RectBase {
                 }
             }
             _name := SubStr(Name, InStr(Name, '_', , , -1) + 1)
+            for modName, hModule in this.Modules {
+                if address := DllCall('GetProcAddress', 'ptr', hModule, 'Astr', _name, 'ptr') {
+                    this.Addresses.Set(Name, address)
+                    return address
+                }
+            }
+            for dllName in this.ResidentModules {
+                if address := DllCall('GetProcAddress', 'ptr', this.Modules.Get(dllName), 'Astr', _name, 'ptr') {
+                    this.Addresses.Set(Name, address)
+                    return address
+                }
+            }
+            throw Error('Unable to locate the function.', -1, Name)
         } else {
             for dllName in this.ResidentModules {
                 if address := DllCall('GetProcAddress', 'ptr', this.Modules.Get(dllName), 'Astr', Name, 'ptr') {
@@ -580,6 +593,8 @@ class RectBase {
         Proto.DefineProp(Prefix 'TL' Suffix, { Get: RectGetPoint.Bind(0, 4) })
         Proto.DefineProp(Prefix 'ToClient' Suffix, { Call: RectToClient })
         Proto.DefineProp(Prefix 'ToScreen' Suffix, { Call: RectToScreen })
+        Proto.DefineProp(Prefix 'ToString' Suffix, { Call: RectToString })
+        Proto.DefineProp(Prefix 'ToStringDeconstructed' Suffix, { Call: RectToStringDeconstructed })
         Proto.DefineProp(Prefix 'TR' Suffix, { Get: RectGetPoint.Bind(8, 4) })
         Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
         Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
@@ -618,6 +633,7 @@ class Point {
             Proto.DefineProp('__Call', { Call: RectSetThreadDpiAwareness__Call })
         }
         Proto.DefineProp(Prefix 'Clone' Suffix, { Call: PtClone })
+        Proto.DefineProp(Prefix 'CursorPosToString' Suffix, { Call: PtCursorPosToString })
         Proto.DefineProp(Prefix 'Dispose' Suffix, { Call: RectDispose })
         Proto.DefineProp(Prefix 'Dpi' Suffix, { Get: PtGetDpi })
         Proto.DefineProp(Prefix 'GetCursorPos' Suffix, { Call: PtGetCursorPos })
@@ -655,8 +671,17 @@ class Point {
     Click(Options := '') => Click(this.X ' ' this.Y ' ' Options)
     ClickDrag(WhichButton, X?, Y?, Speed?, Relative?) => MouseClickDrag(WhichButton, this.X, this.Y, X ?? this.X, Y ?? this.Y, Speed ?? unset, Relative ?? Unset)
     MouseMove(Speed?, Relative?) => MouseMove(this.X, this.Y, Speed ?? Unset, Relative ?? unset)
-    GetPixel(Mode?) {
-        return PixelGetColor(this.X, this.Y, Mode ?? unset)
+    GetPixelColor(Mode?) {
+        if IsSet(Mode) {
+            return PixelGetColor(this.X, this.Y, Mode)
+        } else {
+            Modes := [ '', 'Alt', 'Slow' ]
+            loop {
+                if color := PixelGetColor(this.X, this.Y, Modes[A_Index]) || A_Index >= 3 {
+                    return color
+                }
+            }
+        }
     }
     /**
      * @param {Integer} Id -
@@ -712,6 +737,7 @@ class Point {
         }
         return this.Callback()
     }
+    PixelColor => this.GetPixelColor()
 }
 
 ;@endregion
@@ -720,6 +746,10 @@ class Point {
 ;@region Point funcs
 
 PtClone(pt) => Point(pt.X, pt.Y)
+PtCursorPosToString(Pt) {
+    DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int')
+    return '( ' Pt.X ', ' Pt.Y ' )'
+}
 PtGetCursorPos(pt) => DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int')
 PtGetDpi(pt) {
     if DllCall(RectBase.Shcore_GetDpiForMonitor, 'ptr'
@@ -786,6 +816,9 @@ PtToScreen(Pt, Hwnd, InPlace := false) {
         throw OSError()
     }
     return pt
+}
+PtToString(Pt) {
+    return '( ' Pt.X ', ' Pt.Y ' )'
 }
 
 ;@endregion
@@ -910,6 +943,21 @@ RectToScreen(rc, Hwnd, InPlace := false) {
         throw OSError()
     }
     return rc
+}
+RectToString(rc, DimensionLen := '-6') {
+    return (
+        'TL: ' Format('( {}, {} )', rc.L, rc.T)
+        '`r`nBR: ' Format('( {}, {} )', rc.R, rc.B)
+        '`r`nW: ' Format('{:' DimensionLen '}', rc.W) '  H: ' Format('{:' DimensionLen '}', rc.H)
+    )
+}
+RectToStringDeconstructed(rc, DimensionLen := '-6') {
+    return {
+        TL: Format('( {}, {} )', rc.L, rc.T)
+      , BR: Format('( {}, {} )', rc.R, rc.B)
+      , W: Format('{:' DimensionLen '}', rc.W)
+      , H: Format('{:' DimensionLen '}', rc.H)
+    }
 }
 /**
  * @returns {Rect} - If the specified structure contains a nonempty rectangle, a new `Rect` is created
@@ -1085,7 +1133,7 @@ Window32GetChildBoundingRect(win) {
 }
 
 Window32GetClientRect(win) {
-    return WinRect(IsObject(win) ? win.Hwnd : win, , , true)
+    return WinRect(IsObject(win) ? win.Hwnd : win, true)
 }
 
 Window32GetDpi(win) {
@@ -1330,7 +1378,7 @@ WinRectApply(wrc, InsertAfter := 0, Flags := 0) {
 }
 
 WinRectGetPos(wrc, &X?, &Y?, &W?, &H?) {
-    if wrc.Client {
+    if HasProp(wrc, 'Client') && wrc.Client {
         DllCall(RectBase.GetClientRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
     } else {
         DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
