@@ -11,8 +11,6 @@
 
 global FuncIsOptional, FuncIsByRef
 
-InitializeFuncMethodWorkaround()
-
 InitializeFuncMethodWorkaround() {
     ; Check to see if the bug has been fixed
     fn := Gui.Control.Prototype.GetPos
