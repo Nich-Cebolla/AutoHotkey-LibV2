@@ -1,4 +1,13 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/LOGFONT.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/FontExist.ahk
+#include <FontExist>
+
 /**
  * @class
  * @description - A wrapper around the LOGFONT structure.
@@ -12,7 +21,7 @@ class LOGFONT extends Buffer {
      * G := Gui('+Resize -DPIScale')
      * Txt := G.Add('Text', , 'Some text')
      * G.Show()
-     * Font := LOGFONT(Txt.hWnd)
+     * Font := LOGFONT(Txt.Hwnd)
      * Font()
      * MsgBox(Font.FaceName) ; Ms Shell Dlg
      * MsgBox(Font.FontSize) ; 11.25
@@ -20,23 +29,41 @@ class LOGFONT extends Buffer {
      * Font()
      * MsgBox(Font.FaceName) ; Roboto
      * MsgBox(Font.FontSize) ; 15.00
-     * @param {Integer} hWnd - The handle of Gui control or window to get the font from. I have
+     * @param {Integer} [Hwnd = 0] - The handle of Gui control or window to get the font from. I have
      * not tested this with non-AHK windows.
      * @param {String} [Encoding='UTF-16'] - The encoding to use for the font name from the buffer.
      * @return {LOGFONT} - A new `LOGFONT` object.
      */
-    __New(hWnd, Encoding := 'UTF-16') {
+    __New(Hwnd := 0, Encoding := 'UTF-16') {
         this.Size := 92
-        this.hWnd := hWnd
+        this.Hwnd := Hwnd
         this.Encoding := Encoding
         this.Handle := ''
     }
 
-    Call() {
-        if !WinExist(this.hWnd) {
-            throw TargetError('Window not found.', -1, this.hWnd)
+    /**
+     * @description - Attempts to set a window's font object using this object's values.
+     */
+    Apply(Redraw := true) {
+        ; this.FindFont()
+        if !(hFontOld := SendMessage(0x0031,,, this.Hwnd)) {
+            throw Error('Failed to get hFont.', -1)
         }
-        if !(hFont := SendMessage(0x0031,,, this.hWnd)) {
+        ; This checks if the `hFontOld` is a handle to an object that was created by this class.
+        ; We don't want to delete any objects that we didn't create. We also want to make sure we
+        ; do delete objects that we did create and that are no longer needed.
+        Flag := this.Handle = hFontOld
+        SendMessage(0x30, this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr'), Redraw, this.Hwnd)  ; 0x30 = WM_SETFONT
+        if Flag {
+            DllCall('DeleteObject', 'ptr', hFontOld, 'int')
+        }
+    }
+
+    Call() {
+        if !WinExist(this.Hwnd) {
+            throw TargetError('Window not found.', -1, this.Hwnd)
+        }
+        if !(hFont := SendMessage(0x0031,,, this.Hwnd)) {
             throw Error('Failed to get hFont.', -1)
         }
         if !DllCall('Gdi32.dll\GetObject', 'ptr', hFont, 'int', 92, 'ptr', this) {
@@ -45,15 +72,26 @@ class LOGFONT extends Buffer {
 
     }
 
-    Set(Redraw := true) {
-        if !(hFontOld := SendMessage(0x0031,,, this.hWnd)) {
-            throw Error('Failed to get hFont.', -1)
+    Clone(lf?) {
+        if !IsSet(lf) {
+            lf := %this.__Class%()
         }
-        Flag := this.Handle = hFontOld
-        SendMessage(0x30, this.Handle := DllCall('CreateFontIndirectW', 'ptr', this, 'ptr'), Redraw, this.hWnd)  ; 0x30 = WM_SETFONT
-        if Flag {
-            DllCall('DeleteObject', 'ptr', hFontOld)
-        }
+        lf.Height := this.Height
+        lf.Width := this.Width
+        lf.Escapement := this.Escapement
+        lf.Orientation := this.Orientation
+        lf.Weight := this.Weight
+        lf.Italic := this.Italic
+        lf.Underline := this.Underline
+        lf.StrikeOut := this.StrikeOut
+        lf.CharSet := this.CharSet
+        lf.OutPrecision := this.OutPrecision
+        lf.ClipPrecision := this.ClipPrecision
+        lf.Quality := this.Quality
+        lf.Pitch := this.Pitch
+        lf.Family := this.Family
+        lf.FaceName := this.FaceName
+        return lf
     }
 
     DisposeFont() {
@@ -61,6 +99,28 @@ class LOGFONT extends Buffer {
             DllCall('DeleteObject', 'ptr', this.Handle)
             this.Handle := 0
         }
+    }
+
+    OnDpiChanged(newDpi) {
+        this.Height := Round(this.BaseFontSize * newDpi / -72)
+        this.Apply()
+    }
+
+    Set(Name, Value, Apply := false) {
+        if HasProp(this, Name) {
+            this.%Name% := Value
+        } else {
+            throw Error('Property not found.', -1, Name)
+        }
+        if Apply {
+            this.Apply()
+        }
+    }
+
+    SetFontSize(newSize) {
+        this.BaseFontSize := newSize
+        this.Height := Round(newSize * this.Dpi / -72)
+        this.Apply()
     }
 
     /**
@@ -167,7 +227,16 @@ class LOGFONT extends Buffer {
      */
     FaceName {
         Get => StrGet(this.ptr + 28, 32, this.Encoding)
-        Set => StrPut(Value, this.ptr + 28, 32, this.Encoding)
+        Set {
+            if name := GetFirstFont(Value) {
+                if Min(StrLen(name), 31) == 31 {
+                    name := SubStr(name, 1, 31)
+                }
+                StrPut(name, this.Ptr + 28, 32, 'UTF-16')
+            } else {
+                throw ValueError('Font(s) not fount on the system.', -1)
+            }
+        }
     }
     /**
      * @property {Integer} LOGFONT.FontSize - The size of the font in points.
@@ -177,11 +246,12 @@ class LOGFONT extends Buffer {
         Set => this.Height := Round(Value * this.Dpi / -72, 0)
     }
     /**
-     * @property {Integer} LOGFONT.Dpi - The DPI of the window to which `hWnd` is the handle.
+     * @property {Integer} LOGFONT.Dpi - The DPI of the window to which `Hwnd` is the handle.
      */
-    Dpi => DllCall('User32\GetDpiForWindow', 'Ptr', this.hWnd, 'UInt')
+    Dpi => DllCall('User32\GetDpiForWindow', 'Ptr', this.Hwnd, 'UInt')
     /**
-     * @property {Gui.Control} LOGFONT.Ctrl - The control object associated with the hWnd.
+     * @property {Gui.Control} LOGFONT.Ctrl - The control object associated with the Hwnd.
      */
-    Ctrl => GuiCtrlFromHwnd(this.hWnd)
+    Ctrl => GuiCtrlFromHwnd(this.Hwnd)
 }
+
