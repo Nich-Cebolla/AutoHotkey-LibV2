@@ -1602,6 +1602,7 @@ class JsonValueFinder extends Map {
           , ObjBindMethod(this, 'CallbackClose')
           , this.Proto.Content
         )
+        return this
     }
     CallbackClose(Controller, Stack, Pos) {
         if Stack.Length == 2 && this.Result {
