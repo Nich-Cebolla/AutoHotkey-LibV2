@@ -113,7 +113,7 @@ class Timer extends Array {
                 this.InsufficientPeriodCount := 1
             }
         } else if this.InsufficientPeriodCount {
-            this.IsufficientPeriodCount := 0
+            this.InsufficientPeriodCount := 0
         }
     }
     /**
