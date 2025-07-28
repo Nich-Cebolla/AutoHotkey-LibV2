@@ -339,7 +339,7 @@ class Pattern {
      */
     static AhkObjectPropertyValuePair := (
         '\s*'
-        '(?<property>' this.AhkAllowedSymbolCharsNoDigits this.AhkObjectPropertyValuePair '*?)'
+        '(?<property>' this.AhkAllowedSymbolCharsNoDigits this.AhkAllowedSymbolChars '*?)'
         '\s*:\s*'
         '(?<value>'
             '(?:'
