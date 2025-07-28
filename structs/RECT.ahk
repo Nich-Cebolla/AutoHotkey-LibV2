@@ -4,6 +4,9 @@
     License: MIT
 */
 
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MoveAdjacent.ahk
+#include <MoveAdjacent>
+
 ;@region Intro
 
 /*
@@ -1374,7 +1377,7 @@ WinGet(Hwnd, Cmd) {
 ;@region WinRect funcs
 
 WinRectApply(wrc, InsertAfter := 0, Flags := 0) {
-    return DllCall(WinRect.SetWindowPos, 'ptr', wrc.Hwnd, 'ptr', InsertAfter, 'int', wrc.X, 'int', wrc.T, 'int', wrc.W, 'int', wrc.H, 'uint', Flags, 'int')
+    return DllCall(WinRect.SetWindowPos, 'ptr', wrc.Hwnd, 'ptr', InsertAfter, 'int', wrc.L, 'int', wrc.T, 'int', wrc.W, 'int', wrc.H, 'uint', Flags, 'int')
 }
 
 WinRectGetPos(wrc, &X?, &Y?, &W?, &H?) {
@@ -1480,183 +1483,6 @@ WinRectUpdate(wrc) {
 
 ;@region Misc
 
-/**
- * @description - Moves the window adjacent to another window while ensuring that the window stays
- * within the monitor's work area. The properties { L, T, R, B } of `Subject` are updated with the
- * new values. Your code must call a function to move the window itrc.
- *
- * @param {Rect} Subject - The object representing the window that will be moved. This can be an
- * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
- * { L, T, R B }. Those four property values will be updated with the result of this function call.
- *
- * @param {Rect} Target - The object representing the window that will be used as reference. This can
- * be an instance of `Rect` or any class that inherits from `Rect`, or any object with properties
- * { L, T, R, B }.
- *
- * If `ContainerRect` is unset and if `Target` does not inherit from `Rect`, `Target` must also
- * have a property `Monitor`. See {@link MoveAdjacent~ContainerRect}.
- *
- * @param {*} [ContainerRect] - If set, `ContainerRect` defines the boundaries which restrict
- * the area that the window is permitted to be moved within. The object must have poperties
- * { L, T, R, B } to be valid. If unset, `Target` must have a property `Monitor` which returns the
- * monitor handle to the monitor with which it shares the greatest area of intersection because this
- * is used to get the the work area of the monitor. `Rect` objects in this library have this property
- * built-in.
- *
- * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the window is to be moved
- * adjacent to `Target` on either the X or Y axis.
- *
- * @param {String} [Prefer = ""] - A character indicating a preferred side. If `Prefer` is an
- * empty string, the function will move the window to the side the has the greatest amount of
- * space between the monitor's border and `Target`. If `Prefer` is any of the following values,
- * the window will be moved to that side unless doing so would cause the the window to extend
- * outside of the monitor's work area.
- * - "L" - Prefers the left side.
- * - "T" - Prefers the top side.
- * - "R" - Prefers the right side.
- * - "B" - Prefes the bottom.
- * Any other nonzero value is silently ignored.
- *
- * @param {Number} [Padding = 0] - The amount of padding to leave between the window and `Target`.
- *
- * @param {Integer} [InsufficientSpaceAction = 0] - Determines the action taken if there is
- * insufficient space to move the window adjacent to `Target` while also keeping the window
- * entirely within the monitor's work area. The function will always sacrifice some of the padding
- * if it will allow the window to stay within the monitor's work area. If the space is still
- * insufficient, the action can be one of the following:
- * - 0 : The function will not move the window.
- * - 1 : The function will move the window, allowing the window's area to extend into a non-visible
- *   region of the monitor.
- * - 2 : The function will move the window, keeping the window's area within the monitor's work
- *   area by allowing the window to overlap with `Target`.
- *
- * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
- */
-MoveAdjacent(Subject, Target, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0) {
-    if IsSet(ContainerRect) {
-        monL := ContainerRect.L
-        monT := ContainerRect.T
-        monR := ContainerRect.R
-        monB := ContainerRect.B
-        monW := monR - monL
-        monH := monB - monT
-    } else if Hmon := Target.Monitor {
-        mon := Buffer(40)
-        NumPut('int', 40, mon)
-        if !DllCall(RectBase.user32_GetMonitorInfo, 'ptr', Hmon, 'ptr', mon, 'int') {
-            throw OSError()
-        }
-        monL := NumGet(mon, 20, 'int')
-        monT := NumGet(mon, 24, 'int')
-        monR := NumGet(mon, 28, 'int')
-        monB := NumGet(mon, 32, 'int')
-        monW := monR - monL
-        monH := monB - monT
-    } else {
-        throw Error('Failed to evaluate the monitor`'s bounding rectangle.', -1)
-    }
-    subL := Subject.L
-    subT := Subject.T
-    subR := Subject.R
-    subB := Subject.B
-    subW := subR - subL
-    subH := subB - subT
-    tarL := Target.L
-    tarT := Target.T
-    tarR := Target.R
-    tarB := Target.B
-    tarW := tarR - tarL
-    tarH := tarB - tarT
-    if Dimension = 'X' {
-        if Prefer = 'L' {
-            if tarL - subW - Padding >= monL {
-                X := tarL - subW - Padding
-            }
-        } else if Prefer = 'R' {
-            if tarR + subW + Padding <= monR {
-                X := tarR + Padding
-            }
-        } else if Prefer {
-            throw _ValueError('Prefer', Prefer)
-        }
-        if !IsSet(X) {
-            flag_nomove := false
-            X := _Proc(subW, subL, subR, tarW, tarL, tarR, monW, monL, monR, Prefer = 'L' ? 1 : Prefer = 'R' ? -1 : 0)
-            if flag_nomove {
-                return 1
-            }
-        }
-        Subject.X := X
-        Subject.Y := tarT + tarH / 2 - subH / 2
-        Subject.R := X + subW
-        Subject.B := Y + subH
-    } else if Dimension = 'Y' {
-        if Prefer = 'T' {
-            if tarT - subH - Padding >= monL {
-                Y := tarT - subH - Padding
-            }
-        } else if Prefer = 'B' {
-            if tarB + subH + Padding <= monB {
-                Y := tarB + Padding
-            }
-        } else if Prefer {
-            throw _ValueError('Prefer', Prefer)
-        }
-        if !IsSet(Y) {
-            flag_nomove := false
-            Y := _Proc(subH, subT, subB, tarH, tarT, tarB, monH, monT, monB, Prefer = 'T' ? 1 : Prefer = 'B' ? -1 : 0)
-            if flag_nomove {
-                return 1
-            }
-        }
-        Subject.X := tarL + tarW / 2 - subW / 2
-        Subject.Y := Y
-        Subject.R := X + subW
-        Subject.B := Y + subH
-    } else {
-        throw _ValueError('Dimension', Dimension)
-    }
-
-    _Proc(SubLen, SubMainSide, SubAltSide, TarLen, TarMainSide, TarAltSide, MonLen, MonMainSide, MonAltSide, Prefer) {
-        if Prefer == 1 && TarMainSide - SubLen - Padding > MonMainSide {
-            return TarMainSide - SubLen - Padding
-        } else if Prefer == -1 && TarAltSide + SubLen + Padding < MonAltSide {
-            return TarAltSide + SubLen + Padding
-        }
-        if TarMainSide - MonMainSide > MonAltSide - TarAltSide {
-            if TarMainSide - SubLen - Padding >= MonMainSide {
-                return TarMainSide - SubLen - Padding
-            } else if TarMainSide - SubLen >= MonMainSide {
-                return MonMainSide + TarMainSide - SubLen
-            } else {
-                switch InsufficientSpaceAction, 0 {
-                    case 0: flag_nomove := true
-                    case 1: return TarMainSide - SubLen
-                    case 2: return MonMainSide + SubLen
-                    default: throw _ValueError('InsufficientSpaceAction', InsufficientSpaceAction)
-                }
-            }
-        } else if TarAltSide + SubLen + Padding <= MonMainSide {
-            return TarAltSide + SubLen + Padding
-        } else if TarAltSide + SubLen >= MonMainSide {
-            return TarAltSide + SubLen
-        } else {
-            switch InsufficientSpaceAction, 0 {
-                case 0: flag_nomove := true
-                case 1: return TarAltSide + SubLen
-                case 2: return MonAltSide - SubLen
-                default: throw _ValueError('InsufficientSpaceAction', InsufficientSpaceAction)
-            }
-        }
-    }
-    _ValueError(name, Value) {
-        if IsObject(Value) {
-            return TypeError('Invalid type passed to ``' name '``.', -2)
-        } else {
-            return ValueError('Unexpected value passed to ``' name '``.', -2, Value)
-        }
-    }
-}
 
 /**
  * @description - Reorders the objects in an array according to the input options.
