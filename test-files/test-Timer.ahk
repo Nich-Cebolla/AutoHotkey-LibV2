@@ -16,7 +16,7 @@ Callback() {
 }
 
 ; Create an instance of the timer class
-t := Timer(Callback, 750)
+t := Timer(750, 0, true, Callback)
 
 ; That's all there is to it. In this example code, you can call any of the object's methods
 ; or set any of the properties with the gui using the controls.

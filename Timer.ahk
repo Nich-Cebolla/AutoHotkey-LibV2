@@ -57,7 +57,8 @@ class Timer extends Array {
         this.__Period := Period
         this.__Priority := Priority
         this.__Count := 0
-        this.InsufficientPeriodCount := InsufficientPeriodError ? 0 : -1
+        this.InsufficientPeriodCount := 0
+        this.InsufficientPeriodError := InsufficientPeriodError
         if HasMethod(this, 'Init') {
             this.Init()
         }
@@ -98,13 +99,21 @@ class Timer extends Array {
         this.LastActionEnd := A_TickCount
         this.Status := 1
         this.__Count++
+        if this.InsufficientPeriodError {
+            this.CheckPeriodDuration()
+        }
+    }
+    CheckPeriodDuration() {
         if this.LastProcessDuration > this.__Period {
-            switch this.InsufficientPeriodCount {
-                case 0: this.InsufficientPeriodCount++
-                case 1: throw Error('The amount of time to process the callbacks exceeded the period'
+            if this.InsufficientPeriodCount {
+                throw Error('The amount of time to process the callbacks exceeded the period'
                 ' for two consecutive cycles. To suppress this error, set option ``InsufficientPeriodError``'
                 ' to 0.', -1, this.LastProcessDuration)
+            } else {
+                this.InsufficientPeriodCount := 1
             }
+        } else if this.InsufficientPeriodCount {
+            this.IsufficientPeriodCount := 0
         }
     }
     /**
@@ -164,20 +173,14 @@ class Timer extends Array {
         for cb in this.Callbacks {
             Result.Push(cb())
         }
-        Result.End := A_TickCount
+        this[-1].End := A_TickCount
         this.Status := 1
-        Result.Index := this.__Count++
-        this.Push(Result)
+        this[-1].Index := ++this.__Count
         if this.HistoryMaxItems > 0 && this.Length > this.HistoryMaxItems {
             this.RemoveAt(1, this.HistoryReleaseCount)
         }
-        if this.LastProcessDuration > this.__Period {
-            switch this.InsufficientPeriodCount {
-                case 0: this.InsufficientPeriodCount++
-                case 1: throw Error('The amount of time to process the callbacks exceeded the period'
-                ' for two consecutive cycles. To suppress this error, set option ``InsufficientPeriodError``'
-                ' to 0.', -1, this.LastProcessDuration)
-            }
+        if this.InsufficientPeriodError {
+            this.CheckPeriodDuration()
         }
     }
 
