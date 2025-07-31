@@ -246,7 +246,7 @@ class Window32 {
         NumPut('uint', 60, this.Buffer, this.Offset)
         this.MakeWinRectObjects()
     }
-    Call() {
+    Call(*) {
         if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
             throw OSError()
         }
@@ -350,6 +350,7 @@ class Window32 {
             if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
                 throw OSError()
             }
+            return hwnd
         }
     }
     Activate() => WinActivate(this.Hwnd)
@@ -370,8 +371,8 @@ class Window32 {
         if this.Hwnd {
             this()
         }
-        this.Rect := WinRect(this.Hwnd, false, this.Buffer, this.Offset + 4)
-        this.ClientRect := WinRect(this.Hwnd, true, this.Buffer, this.Offset + 20)
+        this.Rect := WinRect(this.Hwnd, 0, this.Buffer, this.Offset + 4)
+        this.ClientRect := WinRect(this.Hwnd, 1, this.Buffer, this.Offset + 20)
     }
     Maximize() => WinMaximize(this.Hwnd)
     Minimize() => WinMinimize(this.Hwnd)
@@ -450,7 +451,16 @@ class WinRect extends Rect {
         Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
         Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
     }
-    __New(Hwnd := 0, ClientRect := false, Buf?, Offset := 0) {
+    /**
+     * @param {Integer} [Hwnd = 0] - The window handle.
+     * @param {Integer} [Flag = 0] - A flag that determines what function is called when the
+     * buffer's values are updated using `WinRectGetPos` or `WinRectUpdate`.
+     * - 0 : `GetWindowRect`
+     * - 1 : `GetClientRect`
+     * - 2 : `DwmGetWindowAttribute` passing DWMWA_EXTENDED_FRAME_BOUNDS to dwAttribute.
+     * For more information see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect}.
+     */
+    __New(Hwnd := 0, Flag := 0, Buf?, Offset := 0) {
         this.Hwnd := Hwnd
         if IsSet(Buf) {
             if Buf.Size < 16 + Offset {
@@ -461,18 +471,9 @@ class WinRect extends Rect {
             this.Buffer := Buffer(16 + Offset)
         }
         this.Offset := Offset
+        this.Flag := Flag
         if Hwnd {
-            if ClientRect {
-                this.Client := true
-                if !DllCall(RectBase.GetClientRect, 'ptr', Hwnd, 'ptr', this, 'int') {
-                    throw OSError()
-                }
-            } else {
-                this.Client := false
-                if !DllCall(RectBase.GetWindowRect, 'ptr', Hwnd, 'ptr', this, 'int') {
-                    throw OSError()
-                }
-            }
+            this.Update()
         }
     }
 }
@@ -1381,11 +1382,7 @@ WinRectApply(wrc, InsertAfter := 0, Flags := 0) {
 }
 
 WinRectGetPos(wrc, &X?, &Y?, &W?, &H?) {
-    if HasProp(wrc, 'Client') && wrc.Client {
-        DllCall(RectBase.GetClientRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
-    } else {
-        DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
-    }
+    WinRectUpdate(wrc)
     X := wrc.L
     Y := wrc.T
     W := wrc.R - wrc.L
@@ -1467,14 +1464,19 @@ WinRectMove(wrc, X := 0, Y := 0, W := 0, H := 0, InsertAfter := 0, Flags := 0) {
 }
 
 WinRectUpdate(wrc) {
-    if HasProp(wrc, 'Client') && wrc.Client {
-        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
-            throw OSError()
+    if IsObject(wrc) && HasProp(wrc, 'Flag') {
+        switch wrc.Flag, 0 {
+            case 0:
+                DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
+            case 1:
+                DllCall(RectBase.GetClientRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
+            case 2:
+                if hresult := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', wrc.Hwnd, 'uint', 9, 'ptr', wrc, 'uint', 16, 'uint') {
+                    throw oserror('DwmGetWindowAttribute failed.', -1, hresult)
+                }
         }
     } else {
-        if !DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int') {
-            throw OSError()
-        }
+        DllCall(RectBase.GetWindowRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
     }
 }
 
