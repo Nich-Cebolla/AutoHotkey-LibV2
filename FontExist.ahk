@@ -28,7 +28,6 @@ GetFirstFont(FaceNames) {
 FontExist(FaceName) {
     static maxLen := 31
     LOGFONTW := Buffer(92, 0)  ; LOGFONTW struct size = 92 bytes
-    hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
     if Min(StrLen(FaceName), maxLen) == maxLen {
         FaceName := SubStr(FaceName, 1, maxLen)
     }
@@ -43,9 +42,10 @@ FontExist(FaceName) {
     StrPut(FaceName, buf, bytes / 2, 'UTF-16')
     NumPut('ptr', buf.Ptr, lParam)
     NumPut('uint', 0, lParam, A_PtrSize)
+    hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
     DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', LOGFONTW, 'ptr', Callback, 'ptr', lParam.Ptr, 'uint', 0, 'uint')
-    CallbackFree(Callback)
     DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
+    CallbackFree(Callback)
 
     return NumGet(lParam, A_PtrSize, 'uint')
 
