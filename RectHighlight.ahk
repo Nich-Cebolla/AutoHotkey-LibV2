@@ -56,9 +56,6 @@ class RectHighlight extends Gui {
      * highlighted region.
      * @param {Integer} [Options.OffsetB=0] - Any number of pixels to offset the bottom of the
      * highlighted region.
-     * @param {Boolean} [Options.DisplayPosition = true] - If true, then the coordinate position
-     * of the rectangle's four corners are displayed on the interior of the rectangle by the
-     * corner. The position is relative to the screen.
      * @param {String} [Options.PositionFontOpt = "q5 c" Options.Color] - The font options for the coordinates,
      * if the coordinates are in use. If unset, or if the value does not contain a color option,
      * the color will be set to the same as `Options.Color`.
@@ -80,9 +77,6 @@ class RectHighlight extends Gui {
         ; Some gui methods return incorrect values if the window was never shown.
         G.Show()
         G.Hide()
-        if Options.DisplayPosition {
-            G.ConstructPositionDisplay()
-        }
         G.L := G.T := G.W := G.H := 0
         G.SetTimerFunc('', 1)
         G.SetTimerFunc('', 2)
@@ -326,9 +320,6 @@ class RectHighlight extends Gui {
               , this.W + O.Border * 2 + O.OffsetL + O.OffsetR
               , this.H + O.Border * 2 + O.OffsetT + O.OffsetB
             )
-            if this.DisplayPosition {
-                this.SetCoordinates()
-            }
         }
     }
 
@@ -452,9 +443,6 @@ class RectHighlight extends Gui {
                 ), this.hWnd
             )
             this.Move(this.L - O.OffsetL - border, this.T - O.OffsetT - border, OuterR, OuterB)
-            if this.DisplayPosition {
-                this.SetCoordinates()
-            }
         }
         if !this.Visible && Show {
             this.Show('NoActivate')
@@ -582,24 +570,6 @@ class RectHighlight extends Gui {
         Set => this.Options.Color := Value
     }
 
-    DisplayPosition {
-        Get => this.Options.DisplayPosition
-        Set {
-            if Value {
-                if !this.HasOwnProp('PositionDisplay') {
-                    this.ConstructPositionDisplay()
-                }
-                this.Options.DisplayPosition := 1
-                this.SetPositionControlsState(1)
-            } else {
-                if this.HasOwnProp('PositionDisplay') {
-                    this.PositionDisplay.Hide()
-                }
-                this.Options.DisplayPosition := 0
-            }
-        }
-    }
-
     Duration {
         Get => this.Options.Duration
         Set => this.Options.Duration := Value
@@ -700,7 +670,6 @@ class RectHighlight extends Gui {
             Blink: false
           , Border: 2
           , Color: '00e0fe'
-          , DisplayPosition: true
           , Duration: -3000
           , Obj: ''
           , OffsetL: 0
