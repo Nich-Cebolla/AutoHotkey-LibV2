@@ -524,7 +524,7 @@ class RectBase {
             if this.Modules.Has(modName) {
                 hModule := this.Modules.Get(modName)
             } else {
-                hModule := DllCall('LoadLibrary','Str', SubStr(Name, 1, InStr(Name, '_', , , -1) - 1) '.dll', 'ptr')
+                hModule := DllCall('LoadLibrary', 'str', SubStr(Name, 1, InStr(Name, '_', , , -1) - 1) '.dll', 'ptr')
                 if hModule {
                     this.Modules.Set(modName, hModule)
                 } else {
