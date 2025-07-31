@@ -11,7 +11,7 @@
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect}.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/nf-dwmapi-dwmgetwindowattribute}.
  */
-DwmGetWindowRect(Hwnd, &OutX?, &OutY?, &OutW?, &OutH?, DpiScale := true) {
+DwmGetWindowRect(Hwnd, &OutX?, &OutY?, &OutW?, &OutH?, DpiScale := false) {
     rc := Buffer(16)
     if hresult := DllCall(
         'Dwmapi.dll\DwmGetWindowAttribute'
