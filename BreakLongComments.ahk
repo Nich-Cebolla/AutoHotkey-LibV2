@@ -155,11 +155,11 @@ BreakLongJsdoc(Indent := '', Str?, Path?, MaxLen := 100, MinLen := 85, LineEndin
     return Str
 }
 
-if A_ScriptFullPath == A_LineFile {
-    A_Clipboard := BreakLongJsdoc('    ')
-    OM := CoordMode('Mouse', 'Screen')
-    OT := CoordMode('Tooltip', 'Screen')
-    MouseGetpos(&x, &y)
-    Tooltip('Done', x, y)
-    sleep 1500
-}
+; if A_ScriptFullPath == A_LineFile {
+;     A_Clipboard := BreakLongJsdoc('    ')
+;     OM := CoordMode('Mouse', 'Screen')
+;     OT := CoordMode('Tooltip', 'Screen')
+;     MouseGetpos(&x, &y)
+;     Tooltip('Done', x, y)
+;     sleep 1500
+; }
