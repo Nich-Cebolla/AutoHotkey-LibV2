@@ -7,6 +7,9 @@
 
 /*
     See the bottom of the file for static Windows API symbols related to fonts.
+
+    Note you cannot use an Ahk `Gui` handle with `Logfont`; it has to be a `Gui.Control` or some
+    other type of window.
 */
 
 
