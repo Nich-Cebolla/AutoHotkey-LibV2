@@ -1566,6 +1566,7 @@ class FontSignature {
             }
         }
     }
+    Ptr => this.Buffer.Ptr
 }
 
 LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
