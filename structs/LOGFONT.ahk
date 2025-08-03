@@ -142,8 +142,13 @@ class Logfont {
         cb := CallbackCreate(Callback)
         result := []
         hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
-        for faceName in ListFaceName {
-            lf.FaceName := faceName
+        if ListFaceName.Length {
+            for faceName in ListFaceName {
+                lf.FaceName := faceName
+                result.Push(DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', lParam, 'uint', 0, 'uint'))
+            }
+        } else {
+            lf.FaceName := ''
             result.Push(DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', lParam, 'uint', 0, 'uint'))
         }
         DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
