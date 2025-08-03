@@ -166,7 +166,8 @@ class Logfont {
      * evaluated. If `Callback` never returns zero, `Logfont.FontExist` returns an empty string.
      *
      * The value passed to the fourth parameter of `Callback` is a pointer to the face name that
-     * is being evaluated. To get that as a string, in the body of `Callback` include this:
+     * is being evaluated. To get that as a string, in the body of `Callback` include this
+     * (where "lParam" is the symbol used for the fourth parameter):
      * @example
      *  faceName := StrGet(lParam, LF_DEFAULT_ENCODING)
      * @
