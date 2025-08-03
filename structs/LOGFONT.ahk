@@ -231,6 +231,7 @@ class Logfont {
      * will only be available temporarily. When using `Logfont.FromPtr`, do not cache a reference to
      * the `Logfont` object; use it then let it go out of scope, or copy its values to an AHK buffer
      * using `Logfont.Prototype.Clone`.
+     * @param {Integer} Ptr - The address of the LOGFONT structure.
      */
     static FromPtr(Ptr) {
         lf := { Buffer: { Ptr: Ptr, Size: this.Prototype.Size }, Handle: 0 }
@@ -479,7 +480,7 @@ class Logfont {
      */
     FontSize {
         Get => this.Hwnd ? Round(this.Height * -72 / this.Dpi, 2) : ''
-        Set => this.SetFontSize(Value)
+        Set => this.Height := Round(Value * this.Dpi / -72)
     }
     /**
      * Gets or sets the font height.
