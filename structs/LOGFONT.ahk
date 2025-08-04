@@ -681,9 +681,8 @@ class EnumFontFamExProcParams {
  *
  * Do not cache a reference to this object unless you are certain that the AHK process is
  * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, copy
- * the memory to an AHK buffer using `memmove` or a similar function.
- * {@link https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memmove-wmemmove?view=msvc-170}.
+ * access to the values outside of the scope which this object is constructed, use
+ * `TextMetric.Prototype.Clone` to make a copy.
  */
 class TextMetric {
     static __New() {
@@ -925,9 +924,8 @@ class TextMetric {
  *
  * Do not cache a reference to this object unless you are certain that the AHK process is
  * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, copy
- * the memory to an AHK buffer using `memmove` or a similar function.
- * {@link https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memmove-wmemmove?view=msvc-170}.
+ * access to the values outside of the scope which this object is constructed, use
+ * `NewTextMetric.Prototype.Clone` to make a copy.
  */
 class NewTextMetric extends TextMetric {
     static __New() {
@@ -1036,9 +1034,8 @@ class NewTextMetric extends TextMetric {
  *
  * Do not cache a reference to this object unless you are certain that the AHK process is
  * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, copy
- * the memory to an AHK buffer using `memmove` or a similar function.
- * {@link https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memmove-wmemmove?view=msvc-170}.
+ * access to the values outside of the scope which this object is constructed, use
+ * `NewTextMetricEx.Prototype.Clone` to make a copy.
  */
 class NewTextMetricEx {
     static __New() {
@@ -1131,9 +1128,8 @@ class NewTextMetricEx {
  *
  * Do not cache a reference to this object unless you are certain that the AHK process is
  * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, copy
- * the memory to an AHK buffer using `memmove` or a similar function.
- * {@link https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memmove-wmemmove?view=msvc-170}.
+ * access to the values outside of the scope which this object is constructed, use
+ * `FontSignature.Prototype.Clone` to make a copy.
  */
 class FontSignature {
     static __New() {
