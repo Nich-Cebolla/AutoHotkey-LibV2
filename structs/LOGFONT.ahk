@@ -599,8 +599,8 @@ class Logfont {
  * When using `EnumFontFamExProcParams`, do not cache a reference to the object. You must
  * only use it within the scope of your callback function because the system is managing that
  * memory. If you need values outside of the callback function's scope, you'll have to copy
- * the memory into an AHK buffer. You can use `memmove`
- * {@link https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/memmove-wmemmove?view=msvc-170}.
+ * the memory into an AHK buffer. Simply call `EnumFontFamExProcParams.Prototype.Clone` to
+ * copy the memory into an AHK buffer.
  *
  * See the description above {@link Logfont.EnumFonts} for an example.
  */
