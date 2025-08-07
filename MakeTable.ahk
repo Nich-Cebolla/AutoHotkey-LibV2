@@ -147,6 +147,9 @@ class MakeTable {
      * maximum, `MakeTable` breaks the text into multiple lines.
      * @param {String} [Options.OutputColumnSeparator = ""] - The literal string that is used to
      * separate cells.
+     * @param {Boolean} [OutputLineBetweenRows = false] - If true, there will be an extra line
+     * separating the rows. The line will look just like the header separator seen in the above
+     * examples.
      * @param {String} [Options.OutputRowSeparator = "`n"] - The literal string that is used to
      * separate rows.
      * @param {String} [Options.TrimCharacters = "`s"] - The value passed to the third parameter
@@ -211,22 +214,23 @@ class MakeTable {
         sep := Options.OutputColumnSeparator
         le := Options.OutputRowSeparator
         suffix := Options.LineSuffix
+        filler := FillStr('-')
+        rowLine := prefix
+        for width in OutWidths {
+            if A_Index > 1 {
+                rowLine .= filler[padLen]
+            }
+            rowLine .= filler[width]
+            if A_Index < OutWidths.Length {
+                rowLine .= filler[padLen] sep
+            }
+        }
+        rowLine .= suffix le
         table := ''
         loop rows.Length {
             ++r
-            if r == 2 && Options.AddHeaderSeparator {
-                filler := FillStr('-')
-                table .= prefix
-                for width in OutWidths {
-                    if A_Index > 1 {
-                        table .= filler[padLen]
-                    }
-                    table .= filler[width]
-                    if A_Index < OutWidths.Length {
-                        table .= filler[padLen] sep
-                    }
-                }
-                table .= suffix le
+            if (Options.OutputLineBetweenRows && r > 1) || (r == 2 && Options.AddHeaderSeparator) {
+                table .= rowLine
             }
             k := 0
             loop OutRowLines[r] {
@@ -305,6 +309,7 @@ class MakeTable {
           , LineSuffix: ''
           , MaxWidths: ''
           , OutputColumnSeparator: ''
+          , OutputLineBetweenRows: false
           , OutputRowSeparator: '`n'
           , TrimCharacters: '`s'
         }
