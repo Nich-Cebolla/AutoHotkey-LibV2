@@ -1018,9 +1018,7 @@ Window32CallbackFromDesktop(*) {
 }
 
 Window32CallbackFromForeground(*) {
-    if hwnd := DllCall(RectBase.GetForegroundWindow, 'ptr') {
-        return hwnd
-    }
+    return DllCall(RectBase.GetForegroundWindow, 'ptr')
 }
 
 /**
