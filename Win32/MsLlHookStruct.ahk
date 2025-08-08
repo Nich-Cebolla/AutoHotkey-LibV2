@@ -30,9 +30,8 @@
  *
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msllhookstruct}
  *
- * There are two other libraries for setting mouse hooks in this repo:
+ * There is one other libraries for setting mouse hooks in this repo:
  * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MouseHookStruct.ahk}.
- * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MouseHook.ahk}.
  */
 class MsLlHookStruct {
     static __New() {
