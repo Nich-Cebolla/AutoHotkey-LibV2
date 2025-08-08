@@ -17,7 +17,7 @@
  * non-word characters. For example, if the prefix for a control is "BtnGet", and the label for
  * the group is "Option 1", then that control's name is "BtnGetOption1".
  *
- * For a demo, see "test-files\MakeInputControlGroup.ahk".
+ * For a demo, see "test-files\demo-MakeInputControlGroup.ahk".
  *
  * @param {Gui} G - The Gui object.
  *
