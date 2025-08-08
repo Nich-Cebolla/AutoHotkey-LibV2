@@ -59,7 +59,6 @@ class MouseHookStruct {
      *
      * Here ae the various mouse messages (these would be passed to the `wParam` member of the MOUSEPROC
      * function):
-     *
      * |  Hex Code  |  Symbol            |  Meaning                          |
      * |  ----------|--------------------|---------------------------------  |
      * |  0x0200    |  WM_MOUSEMOVE      |  Mouse moved                      |
@@ -75,7 +74,6 @@ class MouseHookStruct {
      * |  0x020A    |  WM_MOUSEWHEEL     |  Vertical scroll (wheel moved)    |
      * |  0x020B    |  WM_XBUTTONDOWN    |  XButton1/XButton2 down           |
      * |  0x020E    |  WM_MOUSEHWHEEL    |  Horizontal scroll (wheel moved)  |
-     *
      * @class
      */
     __New(Ptr) {
