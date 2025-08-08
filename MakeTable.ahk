@@ -209,6 +209,15 @@ class MakeTable {
             }
         }
         r := 0
+        loop lines.Length {
+            ++r
+            if rows[r].Length < OutWidths.Length {
+                loop OutWidths.Length - rows[r].Length {
+                    rows[r].Push([''])
+                }
+            }
+        }
+        r := 0
         prefix := Options.LinePrefix
         pad := Options.ColumnPadding
         sep := Options.OutputColumnSeparator
