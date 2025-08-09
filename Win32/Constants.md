@@ -18,6 +18,7 @@
 
 - CW_USEDEFAULT := 0x80000000
 - TOOLTIPS_CLASSW := "tooltips_class32"
+- An unsigned 32 bit value typecast -1 := 4294967295
 
 ### TTM
 
