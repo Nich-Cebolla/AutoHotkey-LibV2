@@ -89,10 +89,10 @@ class SelectControls extends Array {
         this.hWnd := G.hWnd
         this.ProcessControlList(G)
         this.SetInfoWindow(Options.InfoWindowMessage || unset)
-        Align.MoveAdjacent(Internal.IW, G)
+        Align.MoveAdjacent(this.MessageWindow, G)
         this.Highlighter := RectHighlight( , Options.RectHighlightOpt ? Options.RectHighlightOpt : unset)
         this.DefineProp('HighlightToggle', { Call: this.Highlighter.GetFunc() })
-        this.__Internal.IW.Show('NoActivate')
+        this.MessageWindow.Show()
         Hotkey(EndKey, this, 'On')
         this.Active := true
 
@@ -127,7 +127,7 @@ class SelectControls extends Array {
         if this.Active {
             Hotkey(this.EndKey, this, 'Off')
             this.Active := false
-            this.__Internal.IW.Hide()
+            this.MessageWindow.Hide()
             Callback := this.Callback
             if Param is Gui.Button {
                 if Param.Text == 'Submit' {
@@ -144,10 +144,10 @@ class SelectControls extends Array {
             this.Active := true
             this.ProcessControlList(this.Gui)
             this.SetInfoWindow(this.Options.InfoWindowMessage || unset)
-            Align.MoveAdjacent(this.__Internal.IW, this.Gui)
+            Align.MoveAdjacent(this.MessageWindow, this.Gui)
             Hotkey(this.EndKey, this, 'On')
             this.Active := true
-            this.__Internal.IW.Show('NoActivate')
+            this.MessageWindow.Show()
         }
 
         _Out() {
@@ -373,53 +373,53 @@ class SelectControls extends Array {
      * @param {String} [Message] - A message to use instead of the built-in message.
      */
     SetInfoWindow(Message?) {
-        if this.__Internal.HasOwnProp('IW') {
+        if this.HasOwnProp('MessageWindow') {
             try {
-                if WinExist(this.__Internal.IW.hWnd) {
-                    IW := this.__Internal.IW
+                if WinExist(this.MessageWindow.hWnd) {
+                    MW := this.MessageWindow
                 }
             }
-            if IsSet(IW) {
+            if IsSet(MW) {
                 if IsSet(Message) {
-                    IW['TxtInfo'].Text := Message
+                    MW['TxtInfo'].Text := Message
                 }
-                return IW
+                return MW
             }
         }
         Options := this.Options
-        IW := this.__Internal.IW := Gui('+Resize', Options.InfoWindowTitle)
+        MW := this.MessageWindow := Gui('+Resize', Options.InfoWindowTitle)
         if Options.FontOpt {
-            IW.SetFont(Options.FontOpt)
+            MW.SetFont(Options.FontOpt)
         }
         if Options.FontFamily {
             for s in StrSplit(Options.FontFamily, ',', '`s`t') {
                 if s {
-                    IW.SetFont(, s)
+                    MW.SetFont(, s)
                 }
             }
         }
-        InfoTxt := IW.Add(
+        InfoTxt := MW.Add(
             'Text'
           , 'w400 vTxtInfo'
           , Message ?? 'Activate the checkboxes for any controls you want to include, then either'
             ' press the hotkey "' this.EndKey '" or click the button below.'
         )
-        InfoBtnSubmit := IW.Add('Button', 'Section vBtnSubmit', 'Submit')
-        InfoBtnCancel := IW.Add('Button', 'ys vBtnCancel', 'Cancel')
+        InfoBtnSubmit := MW.Add('Button', 'Section vBtnSubmit', 'Submit')
+        InfoBtnCancel := MW.Add('Button', 'ys vBtnCancel', 'Cancel')
         ; Centering the buttons.
         InfoBtnSubmit.GetPos(&cx1, , &cw1)
         InfoBtnCancel.GetPos(&cx2, , &cw2)
         InfoTxt.GetPos(&cx3, , &cw3)
-        diff := cw3 - (cw2 + cw1 + IW.MarginX)
+        diff := cw3 - (cw2 + cw1 + MW.MarginX)
         InfoBtnSubmit.Move(cx3 + diff / 2)
         InfoBtnCancel.Move(cw3 - cx3 - diff / 2)
         ; Set event handlers
         InfoBtnSubmit.OnEvent('Click', this)
         InfoBtnCancel.OnEvent('Click', this)
-        IW.OnEvent('Close', this)
-        IW.Show('NoActivate')
-        IW.Hide()
-        return IW
+        MW.OnEvent('Close', this)
+        MW.Show()
+        MW.Hide()
+        return MW
     }
 
     Gui {
