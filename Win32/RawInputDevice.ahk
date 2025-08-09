@@ -7,7 +7,7 @@
 class RawInputDevice {
     static __New() {
         this.DeleteProp('__New')
-        this.Size :=
+        this.Prototype.cbSize :=
         2 +         ; USHORT     usUsagePage
         2 +         ; USHORT     usUsage
         4 +         ; DWORD      dwFlags
@@ -18,6 +18,7 @@ class RawInputDevice {
         ObjSetBase(_rawInputDevice, this.Prototype)
         return _rawInputDevice
     }
+    static cbSize => this.Prototype.cbSize
     /**
      * `RawInputDevice` is a wrapper around `RegisterRawInputDevices`. There are many more ways
      * it can be used besides tracking the mouse. To explore this further, see
@@ -111,7 +112,7 @@ class RawInputDevice {
      * called; your code will need to call `ArrayRawInputDevices.Prototype.Register`.
      */
     __New(UsagePage, UsageId, Flags := 0, Hwnd := 0, DeferRegistration := false) {
-        this.Buffer := Buffer(RawInputDevice.Size)
+        this.Buffer := Buffer(this.cbSize)
         this.Hwnd := Hwnd
         this.UsagePage := UsagePage
         this.UsageId := UsageId
@@ -125,7 +126,7 @@ class RawInputDevice {
             'RegisterRawInputDevices'
           , 'ptr', this
           , 'uint', 1
-          , 'uint', RawInputDevice.Size
+          , 'uint', this.cbSize
           , 'int'
         ) {
             throw OSError()
@@ -138,7 +139,7 @@ class RawInputDevice {
             'RegisterRawInputDevices'
           , 'ptr', this
           , 'uint', 1
-          , 'uint', RawInputDevice.Size
+          , 'uint', this.cbSize
           , 'int'
         ) {
             throw OSError()
@@ -179,7 +180,7 @@ class ArrayRawInputDevices {
      * @throws {OSError}
      */
     static Retrieve() {
-        cbSize := RawInputDevice.Size
+        cbSize := RawInputDevice.cbSize
         puiNumDevices := 0
         DllCall(
             'GetRegisteredRawInputDevices'
@@ -219,7 +220,7 @@ class ArrayRawInputDevices {
      * @param {Boolean} [DeferRegistration = false] - If true, `RegisterRawInputDevices` is not
      * called; your code will need to call `ArrayRawInputDevices.Prototype.Register`.
      * @returns {ArrayRawInputDevices} - An object that supports an array of RAWINPUTDEVICE structures.
-     * The buffer object is set to property "Buffer" and has a size of `RawInputDevice.Size * Params.Length`.
+     * The buffer object is set to property "Buffer" and has a size of `RawInputDevice.cbSize * Params.Length`.
      * Though all of the data is contained in one Buffer, you can access the individual `RawInputDevice`
      * using various methods. References to the `RawInputDevice` objects are held by the array
      * on property "List". The map on property "Map" associates the UsageId with the index in the
@@ -229,7 +230,7 @@ class ArrayRawInputDevices {
      * @
      */
     __New(Params, DeferRegistration := false) {
-        this.Buffer := Buffer(RawInputDevice.Size * Params.Length, 0)
+        this.Buffer := Buffer(RawInputDevice.cbSize * Params.Length, 0)
         this.Map := Map()
         this.List := []
         if IsSet(Params) {
@@ -242,7 +243,7 @@ class ArrayRawInputDevices {
         }
     }
     Add(Params, DeferRegistration := false) {
-        cbSize := RawInputDevice.Size
+        cbSize := RawInputDevice.cbSize
         if not Params is Array {
             Params := [ Params ]
         }
@@ -280,7 +281,7 @@ class ArrayRawInputDevices {
         if Index < 1 || Index > m.Count {
             throw IndexError('Index out of range.', -1)
         }
-        cbSize := RawInputDevice.Size
+        cbSize := RawInputDevice.cbSize
         if cbSize < 1 {
             throw Error('Invalid size.', -1)
         }
@@ -353,7 +354,7 @@ class ArrayRawInputDevices {
             'RegisterRawInputDevices'
           , 'ptr', this
           , 'uint', this.Map.Count
-          , 'uint', RawInputDevice.Size
+          , 'uint', RawInputDevice.cbSize
           , 'int'
         ) {
             throw OSError()
@@ -362,16 +363,16 @@ class ArrayRawInputDevices {
     RegisterIndex(Index, Count := 1) {
         if !DllCall(
             'RegisterRawInputDevices'
-          , 'ptr', this.Ptr + RawInputDevice.Size * (Index - 1)
+          , 'ptr', this.Ptr + RawInputDevice.cbSize * (Index - 1)
           , 'uint', Count
-          , 'uint', RawInputDevice.Size
+          , 'uint', RawInputDevice.cbSize
           , 'int'
         ) {
             throw OSError()
         }
     }
     __Make(Params, Index) {
-        cbSize := RawInputDevice.Size
+        cbSize := RawInputDevice.cbSize
         item := RawInputDevice.FromPtr(this.Buffer.Ptr + (Index - 1) * cbSize)
         item.UsagePage := Params.UsagePage
         item.UsageId := Params.UsageId
@@ -381,6 +382,6 @@ class ArrayRawInputDevices {
         this.Map.Set(Params.UsageId, this.List.Length)
     }
     Ptr => this.Buffer.Ptr
-    Size => this.Map.Count * RawInputDevice.Size
+    Size => this.Map.Count * RawInputDevice.cbSize
     MaxSize => this.Buffer.Size
 }
