@@ -1,15 +1,13 @@
 #Include ..\Align.ahk
 #include ..\RectHighlight.ahk
 #include ..\SelectControls.ahk
-; https://github.com/Nich-Cebolla/Stringify-ahk
-#include <Stringify>
+; https://github.com/Nich-Cebolla/AutoHotkey-StringifyAll
+#include <StringifyAll>
 ; https://github.com/Nich-Cebolla/AutoHotkey-Array
 #include <Array_Reduce>
 #include <Array_ForEach>
 #include <Array_Find>
 
-; https://github.com/Nich-Cebolla/Stringify-ahk/blob/main/Object.Prototype.Stringify.ahk
-#include <Object.Prototype.Stringify_V1.0.0>
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ParseJson.ahk
 #include <ParseJson>
 ; https://github.com/Nich-Cebolla/AutoHotkey-DecodeUnicodeEscapeSequence/blob/main/DecodeUnicodeEscapeSequence.ahk
@@ -439,7 +437,7 @@ class Test_Align {
                 )
             }
             WinRedraw(DG.hWnd)
-            DG['EdtResult'].Text := Stringify(Result) '`r`n`r`n' DG['EdtResult'].Text
+            DG['EdtResult'].Text := StringifyAll(Result) '`r`n`r`n' DG['EdtResult'].Text
 
             _ProcValue(&Value) {
                 if InStr(Value, ch) {
@@ -584,7 +582,7 @@ class Test_Align {
             Edits[A_Index].Move(X, Y)
             Y += h + SC.MarginY
         }
-        SC.Add('Edit', Format('x{} y{} w{} r{} vEdtResult', SC.MarginX, Y + 10, X + this.SC_DefaultEditWidth - SC.MarginX, this.SC_ResultEditRows))
+        SC.Add('Edit', Format('x{} y{} w{} r{} -Wrap +HScroll vEdtResult', SC.MarginX, Y + 10, X + this.SC_DefaultEditWidth - SC.MarginX, this.SC_ResultEditRows))
         SC.Show('x100 y25')
         SC.GetPos(&x, &y, &w)
         SC_child.Show(Format('x{} y{}', 50 + x + w, 25))
@@ -605,7 +603,7 @@ class Test_Align {
                 }
             }
             if SC.HasOwnProp('SelectControlsHelper') {
-                (fn := SC.SelectControlsHelper)()
+                SC.SelectControlsHelper.Call()
             } else {
                 SC.SelectControlsHelper := SelectControls(SC.Child, this.SC_EndKey, _Callback, Options)
             }
@@ -622,7 +620,7 @@ class Test_Align {
                     Ctrl.GetPos(&x, &y, &w, &h)
                     Ctrl.EndPos := { x:x,y:y,w:w,h:h }
                 }
-                SC['EdtResult'].Text := Stringify(List, , { PropsList: Map('Gui.Control', 'Name') }) '`r`n`r`n======================`r`n`r`n' SC['EdtResult'].Text
+                SC['EdtResult'].Text := StringifyAll(List) '`r`n`r`n======================`r`n`r`n' SC['EdtResult'].Text
             }
         }
         HClickButtonCancel(Ctrl, *) {
@@ -996,3 +994,59 @@ RemoveContaingParentheses(TextParams) {
     }
     return MatchParams['inner']
 }
+
+
+
+class StringifyAllConfig {
+    static __New() {
+        this.DeleteProp('__New')
+        this.EnumTypeMap := Map('Array', 1)
+        this.EnumTypeMap.Default := 2
+        this.StopAtTypeMap := Map('Array', '-Array', 'Object', '-Object', 'Map', '-Map')
+    }
+
+; ==== Enum options --------------------------------------------------------------------------------
+    ; static EnumTypeMap := unset
+    static ExcludeMethods := unset
+    static ExcludeProps := unset
+    static FilterTypeMap := unset
+    static MaxDepth := unset
+    static Multiple := unset
+    static PropsTypeMap := unset
+    static StopAtTypeMap := unset
+
+; ==== Callbacks -----------------------------------------------------------------------------------
+    static CallbackError := unset
+    static CallbackGeneral := unset
+    static CallbackPlaceholder := unset
+
+; ==== Newline and indent options ------------------------------------------------------------------
+    static CondenseCharLimit := unset
+    static CondenseCharLimitEnum1 := unset
+    static CondenseCharLimitEnum2 := unset
+    static CondenseCharLimitEnum2Item := unset
+    static CondenseCharLimitProps := unset
+    static CondenseDepthThreshold := unset
+    static CondenseDepthThresholdEnum1 := unset
+    static CondenseDepthThresholdEnum2 := unset
+    static CondenseDepthThresholdEnum2Item := unset
+    static CondenseDepthThresholdProps := unset
+    static Indent := unset
+    static InitialIndent := unset
+    static Newline := unset
+    static NewlineDepthLimit := unset
+    static Singleline := unset
+
+; ==== Print options -------------------------------------------------------------------------------
+    static ItemProp := unset
+    static PrintErrors := unset
+    static QuoteNumericKeys := unset
+    static RootName := unset
+    static UnsetArrayItem := unset
+
+; ==== General options -----------------------------------------------------------------------------
+    static InitialPtrListCapacity := unset
+    static InitialStrCapacity := unset
+}
+
+
