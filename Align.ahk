@@ -4,9 +4,6 @@
     Version: 1.2.0
     License: MIT
 */
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RectHighlight.ahk
-#include RectHighlight.ahk
-
 
 class Align {
     static DPI_AWARENESS_CONTEXT := -3
@@ -740,20 +737,6 @@ class Align {
             throw PropertyError('Property not found.', -1, Name)
         }
     }
-    ; static __New() {
-    ;     if this.Prototype.__Class == 'Align' {
-    ;         this.DefineProp('SelectControlsHelperCollection', { Value: Map() })
-    ;         this.SelectControlsHelperCollection.CaseSense := false
-    ;         this.DefineProp('SelectControlsDefault', { Value: {
-    ;             Capacity: 100
-    ;           , ExcludeNames: ''
-    ;           , ExcludeTypes: ''
-    ;           , InfoWindowMessage: ''
-    ;           , InfoWindowTitle: 'SelectControls'
-    ;           , RectHighlightOpt: ''
-    ;         } })
-    ;     }
-    ; }
 
     /**
      * @description - Creates a proxy for non-AHK windows.
