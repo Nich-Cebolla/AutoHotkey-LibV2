@@ -10,7 +10,7 @@
 ;@region Intro
 
 /*
-    As of 7/19/25: Much of this is untested. Please report any unexpected errors. I will test soon.
+    As of 8/11/25: Most methods are now tested and working.
 */
 
 /**
@@ -139,6 +139,7 @@ class Window32 {
           , 'WS_EX_STATICEDGE', 0x00020000
           , 'WS_EX_APPWINDOW', 0x00040000
         )
+        this.Prototype.cbSize := 60
         this.Make(this)
     }
     static FromDesktop(Buf?, Offset := 0) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), Buf ?? unset, Offset)
@@ -235,15 +236,15 @@ class Window32 {
     __New(Hwnd := 0, Buf?, Offset := 0) {
         this.Hwnd := Hwnd
         if IsSet(Buf) {
-            if Buf.Size < 60 + Offset {
+            if Buf.Size < this.cbSize + Offset {
                 throw Error('The buffer`'s size is insufficient. The size must be 60 + offset or greater.', -1)
             }
             this.Buffer := Buf
         } else {
-            this.Buffer := Buffer(60 + Offset)
+            this.Buffer := Buffer(this.cbSize + Offset)
         }
         this.Offset := Offset
-        NumPut('uint', 60, this.Buffer, this.Offset)
+        NumPut('uint', this.cbSize, this.Buffer, this.Offset)
         this.MakeWinRectObjects()
     }
     Call(*) {
@@ -458,6 +459,9 @@ class WinRect extends Rect {
      * - 0 : `GetWindowRect`
      * - 1 : `GetClientRect`
      * - 2 : `DwmGetWindowAttribute` passing DWMWA_EXTENDED_FRAME_BOUNDS to dwAttribute.
+     *
+     * Some controls / windows will cause `DwmGetWindowAttribute` to throw an error.
+     *
      * For more information see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect}.
      */
     __New(Hwnd := 0, Flag := 0, Buf?, Offset := 0) {
@@ -473,12 +477,24 @@ class WinRect extends Rect {
         this.Offset := Offset
         this.Flag := Flag
         if Hwnd {
-            this.Update()
+            this()
+        }
+    }
+    Call(*) {
+        switch this.Flag, 0 {
+            case 0:
+                DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int')
+            case 1:
+                DllCall(RectBase.GetClientRect, 'ptr', this.Hwnd, 'ptr', this, 'int')
+            case 2:
+                if HRESULT := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', this.Hwnd, 'uint', 9, 'ptr', this.Buffer.Ptr, 'uint', 16, 'uint') {
+                    throw oserror('``DwmGetWindowAttribute`` failed.', -1, 'HRESULT: ' Format('{:X}', HRESULT))
+                }
         }
     }
 }
 
-;@endregionxxxxx
+;@endregion
 
 
 ;@region Rect cls
