@@ -71,7 +71,7 @@ class WindowSubclass {
      * subclass procedure, or a pointer to a memory address containing the data.
      *
      * @param {Boolean} [DeferActivation = false] - If true, `SetWindowSubclass` is not called, your
-     * code must call `WindowsHook.Prototype.Install`.
+     * code must call `WindowSubclass.Prototype.Install`.
      */
     __New(SubclassProc, Hwnd?, uIdSubclass?, dwRefData := 0, DeferActivation := false) {
         this.SubclassProc := SubclassProc
