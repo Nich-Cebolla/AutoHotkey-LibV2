@@ -80,6 +80,7 @@ class ItemScroller {
           , TextFontFamily: ''
           , DisableTooltips: false
           , Callback: ''
+          , CtrlNameSuffix: ''
         }
 
         /**
@@ -118,6 +119,7 @@ class ItemScroller {
         }
         List := []
         List.Length := ObjOwnPropCount(Params.Controls)
+        suffix := Params.CtrlNameSuffix
         GreatestW := 0
         for Name, Obj in Params.Controls.OwnProps() {
             ; Set the font first so it is reflected in the width.
@@ -144,7 +146,7 @@ class ItemScroller {
               , 'x10 y10 ' _GetParam(Obj, 'Opt') || unset
               , _GetParam(Obj, 'Text') || unset
             )
-            List[Obj.Index].Name := Obj.Name
+            List[Obj.Index].Name := Obj.Name suffix
             List[Obj.Index].Params := Obj
             if Obj.Type == 'Button' {
                 List[Obj.Index].GetPos(, , &cw, &ch)
@@ -337,6 +339,14 @@ class ItemScroller {
             return 1
         }
         this.SetIndex(this.Index + N)
+    }
+
+    UpdateValues() {
+        len := this.__Item.Length
+        if this.CtrlEdit.Text > len {
+            this.CtrlEdit.Text := len
+        }
+        this.CtrlTxtTotal.Text := len
     }
 
     static AlignH(CtrlToMove, ReferenceCtrl) {
