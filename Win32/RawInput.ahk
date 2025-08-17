@@ -99,18 +99,18 @@ class RawMouse extends RawInputBase {
         cbSizeHeader := this.cbSizeHeader
         this.Prototype.cbSize :=
         cbSizeHeader +
-        4 +     ; USHORT + 2 for alignment     usFlags              RawInputBase.HeaderSize
+        4 +     ; USHORT + 2 for alignment     usFlags              cbSizeHeader
         4 +     ; union {
                 ;   ULONG ulButtons
                 ;   struct {
-                ;     USHORT                usButtonFlags;          RawInputBase.HeaderSize + 4
-                ;     USHORT                usButtonData;           RawInputBase.HeaderSize + 6
+                ;     USHORT                usButtonFlags;          cbSizeHeader + 4
+                ;     USHORT                usButtonData;           cbSizeHeader + 6
                 ;   } DUMMYSTRUCTNAME;
                 ; } DUMMYUNIONNAME;
-        4 +     ; ULONG                     ulRawButtons            RawInputBase.HeaderSize + 8
-        4 +     ; LONG                      lLastX                  RawInputBase.HeaderSize + 12
-        4 +     ; LONG                      lLastY                  RawInputBase.HeaderSize + 16
-        4       ; ULONG                     ulExtraInformation      RawInputBase.HeaderSize + 20
+        4 +     ; ULONG                     ulRawButtons            cbSizeHeader + 8
+        4 +     ; LONG                      lLastX                  cbSizeHeader + 12
+        4 +     ; LONG                      lLastY                  cbSizeHeader + 16
+        4       ; ULONG                     ulExtraInformation      cbSizeHeader + 20
         Proto := this.Prototype
         Proto.OffsetFlags := cbSizeHeader
         Proto.OffsetButtonFlags := Proto.OffsetFlags + 4
@@ -155,7 +155,7 @@ class RawMouse extends RawInputBase {
      */
     Flags => NumGet(this, this.OffsetFlags, 'ushort')
     /**
-     * One of the following:
+     * One or more of the following:
      * <pre>
      * Name                      |  Value   |  Meaning
      * --------------------------|----------|----------------------------------------------------------
@@ -224,14 +224,14 @@ class RawMouse extends RawInputBase {
      * @memberof RawMouse
      * @instance
      */
-    LastX => NumGet(this, this.OffsetLastX, 'Int')
+    LastX => NumGet(this, this.OffsetLastX, 'int')
     /**
      * "The motion in the Y direction. This is signed relative motion or absolute motion, depending
      * on the value of usFlags."
      * @memberof RawMouse
      * @instance
      */
-    LastY => NumGet(this, this.OffsetLastY, 'Int')
+    LastY => NumGet(this, this.OffsetLastY, 'int')
     /**
      * "Additional device-specific information for the event. See Distinguishing Pen Input from Mouse
      * and Touch for more info."
@@ -326,8 +326,11 @@ class RawInputBase {
         A_PtrSize   ; WPARAM     wParam     8 + A_PtrSize
     }
     static Call(lParam) {
+        tracer := test.tracer
+       ;  tracer.Out('Entering ' A_ThisFunc)
         pcbSize := this.cbSize
         rawInputDevice := { Buffer: Buffer(pcbSize) }
+       ;  tracer.Out('Calling GetRawInputData')
         if DllCall(
             'GetRawInputData'
           , 'ptr', lParam
@@ -337,16 +340,20 @@ class RawInputBase {
           , 'uint', this.cbSizeHeader
           , 'uint'
         ) == 4294967295 {
+           ;  tracer.Out('GetRawInputData error ' A_LastError)
             if A_LastError {
                 throw OSError()
             } else {
                 throw OSError('``GetRawInputData`` failed.', -1)
             }
         }
+       ;  tracer.Out('GetRawInputData successful')
         if this.TypeId == NumGet(rawInputDevice.Buffer, 0, 'uint') {
+           ;  tracer.Out('Type id matched: ' this.TypeId)
             ObjSetBase(rawInputDevice, this.Prototype)
             return rawInputDevice
         }
+       ;  tracer.Out('Type id did not match: ' this.TypeId)
     }
     static FromPtr(Ptr) {
         rawInputDevice := { Ptr: Ptr, Size: NumGet(Ptr, 4, 'uint') }
@@ -375,8 +382,9 @@ class RawInputBase {
 }
 
 /**
- * @classdesc -
- * For information see {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawkeyboard}.
+ * not implemented
+ *
+ * For information see {@link https://learn.microsoft.com/en-us/windows/desktop/api/winuser/ns-winuser-rawhid}.
 
 class RawHid extends RawInputBase {
     static __New() {
