@@ -1,5 +1,5 @@
 ﻿/*
-    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/LOGFONT.ahk
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Logfont.ahk
     Author: Nich-Cebolla
     Version: 2.0.0
     License: MIT
