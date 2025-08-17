@@ -1,5 +1,5 @@
 ﻿/*
-    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/RECT.ahk
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Rect.ahk
     Author: Nich-Cebolla
     License: MIT
 */
