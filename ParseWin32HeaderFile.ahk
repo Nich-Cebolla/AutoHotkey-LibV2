@@ -1,4 +1,11 @@
-﻿#include <StringifyAll>
+﻿/*
+    Github: https://github.com/Nich-Cebolla/ParseCsv-AutoHotkey/blob/main/ParseWin32HeaderFile.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
+; https://github.com/Nich-Cebolla/StringifyAll
+#include <StringifyAll>
 
 /**
  * @description - This function is modeled after the WinUser.H file on my computer, which was presumably
@@ -20,11 +27,18 @@
  *  A_Clipboard := Str
  * @
  */
-ParseWinuserHeaderFile(path) {
-    content := RegExReplace(FileRead(path, 'utf-8'), '/\*[\w\W]+?\*/|//.*', '')
-    patternFunction := '(?<=[\r\n])(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
-    patternValue := '(?<=[\r\n])#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
-    patternStruct := '(?<=[\r\n])typedef[ \t]+struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
+ParseWinuserHeaderFile(Str?, Path?, Encoding := 'utf-8') {
+    if !IsSet(Str) {
+        if IsSet(Path) {
+            str := FileRead(Path, Encoding)
+        } else {
+            str := A_Clipboard
+        }
+    }
+    content := RegExReplace(str, '/\*[\w\W]+?\*/|//.*', '') ; remove comments
+    patternFunction := '(?<=[\r\n]|^)(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
+    patternValue := '(?<=[\r\n]|^)#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
+    patternStruct := '(?<=[\r\n]|^)typedef[ \t]+struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
     functions := _GetAll(patternFunction, [])
     values := _GetAll(patternValue, [])
     structs := _GetAll(patternStruct, [])
@@ -154,6 +168,10 @@ class FunctionDefinition {
 }
 
 class StructDefinition {
+    static __New() {
+        this.DeleteProp('__New')
+        this.Prototype.NoOffsets := 0
+    }
     __New(Match) {
         this.Match := Match
         members := StrSplit(RegExReplace(Match['members'], ' +', ' '), '`n', '`r`s`t')
@@ -163,6 +181,109 @@ class StructDefinition {
         }
         index := 0
         this.Members := StructDefinition.Members(&index, members, [])
+    }
+    /**
+     * This is not fully tested. It is intended to be a helper for programmatically converting
+     * windows header content into AHK code, and the output should be inspected visually if used.
+     *
+     * Attempts to calculate the members' offsets and alignment padding. If performing the
+     * calculation is currently not possible (due to missing information internally) then
+     * the property "NoOffsets" is set with 1 and `StructDefinition.Prototype.CalculateOffsets` returns
+     * 1.
+     * @returns {Integer} - If calculating the offsets is currently not possible, returns 1. Else,
+     * returns 0.
+     */
+    CalculateOffsets() {
+        flag_no_offsets := greatestSize := 0
+        members := this.Members
+        for member in members {
+            if member.Size == -1 {
+                return this.NoOffsets := 1
+            } else {
+                if greatestSize == 'A_PtrSize' {
+                    if member.Size == '16' || member.Size == '8' {
+                        greatestSize := member.Size
+                    }
+                } else {
+                    switch member.Size {
+                        case 'A_PtrSize':
+                            if greatestSize <= 4 {
+                                greatestSize := member.Size
+                            }
+                        default:
+                            if greatestSize < member.Size {
+                                greatestSize := member.Size
+                            }
+                    }
+                }
+            }
+        }
+        A_PtrSize_count := offset := 0
+        loop members.Length - 1 {
+            member := members[A_Index]
+            next := members[A_Index + 1]
+            ; handle alignment padding
+            _Proc(member, next.Size)
+            if member.EffectiveSize == 'A_PtrSize' {
+                A_PtrSize_count++
+            } else if IsNumber(member.EffectiveSize) {
+                offset += member.EffectiveSize
+            } else {
+                throw Error('There is a logical error in the script.', -1)
+            }
+        }
+        _Proc(members[-1], greatestSize)
+        if members[-1].EffectiveSize == 'A_PtrSize' {
+            A_PtrSize_count++
+        } else if IsNumber(members[-1].EffectiveSize) {
+            offset += members[-1].EffectiveSize
+        } else {
+            throw Error('There is a logical error in the script.', -1)
+        }
+        this.cbSize := _GetOffset()
+
+        return 0
+
+        _GetOffset() {
+            return A_PtrSize_Count ? offset ' + A_PtrSize * ' A_PtrSize_Count : offset
+        }
+        _Proc(member, alignment) {
+            switch alignment {
+                case 'A_PtrSize':
+                    r4 := Mod(offset + A_PtrSize_count * 4 + (member.Size == 'A_PtrSize' ? 4 : member.Size), 4)
+                    r8 := Mod(offset + A_PtrSize_count * 8 + (member.Size == 'A_PtrSize' ? 8 : member.Size), 8)
+                    if r4 || r8 {
+                        if member.Size == '4' {
+                            ; Padding can be represented by using "A_PtrSize"
+                            member.SetCalculatedValues(_GetOffset(), 'A_PtrSize', '+4 on x64 only')
+                        } else if member.Size == '2' || member.Size == '1' {
+                            ; Padding varies between architectures
+                            member.SetCalculatedValues(_GetOffset(), member.Size ' + A_PtrSize - ' member.Size, '+ variable padding')
+                        } else {
+                            ; Only size values of 4, 2 or 1 should be passed through this block
+                            throw Error('A logical error exists in the script.', -1)
+                        }
+                    } else {
+                        member.SetCalculatedValues(_GetOffset())
+                    }
+                case '8':
+                    r4 := Mod(offset + A_PtrSize_count * 4 + (member.Size == 'A_PtrSize' ? 4 : member.Size), alignment)
+                    r8 := Mod(offset + A_PtrSize_count * 8 + (member.Size == 'A_PtrSize' ? 8 : member.Size), alignment)
+                    if r4 || r8 {
+                        ; Padding varies between architectures
+                        member.SetCalculatedValues(_GetOffset(), member.Size ' + (A_PtrSize == 8 ? ' r8 ' : ' r4 ')', '+ variable padding')
+                    } else {
+                        member.SetCalculatedValues(_GetOffset())
+                    }
+                case '4', '2':
+                    ; Preceding A_PtrSize members won't impact the need for / value of padding
+                    if r := Mod(offset + (member.Size == 'A_PtrSize' ? 0 : member.Size), alignment) {
+                        member.SetCalculatedValues(_GetOffset(), member.Size ' + ' r, '+ ' r)
+                    } else {
+                        member.SetCalculatedValues(_GetOffset())
+                    }
+            }
+        }
     }
     Symbol => this.Match['symbol']
 
@@ -255,6 +376,8 @@ class StructDefinition {
             this.DeleteProp('__New')
             Proto := this.Prototype
             Proto.TypeIndex := Proto.SymbolIndex := Proto.SizeIndex := Proto.Constant := 0
+            this.Sizes := Map()
+            this.Sizes.CaseSense := false
         }
         static Call(splitMember) {
             if splitMember.Length == 3 {
@@ -281,12 +404,49 @@ class StructDefinition {
             ObjSetBase(splitMember, this.Prototype)
             return splitMember
         }
-        Type => this.TypeIndex ? this[this.TypeIndex] : ''
-        Symbol => this.SymbolIndex ? this[this.SymbolIndex] : ''
-        SizeOf => this.SizeIndex ? this[this.SizeIndex] : ''
-        UnknownType => InStr(this.Type, 'void')
+        /**
+         * Called by `StructDefinition.Prototype.CalculateOffsets`.
+         * @param {String} Offset - A string representing the byte offset.
+         * @param {String} [EffectiveSize] - A string representing the size + alignment padding.
+         * If unset, the property "EffectiveSize" is defined with a function that returns the
+         * value of the property "Size".
+         * @param {String} [Padding = ""] - A string describing the padding that is added to the
+         * size.
+         */
+        SetCalculatedValues(Offset, EffectiveSize?, Padding := '') {
+            this.Offset := Offset
+            if IsSet(EffectiveSize) {
+                this.EffectiveSize := EffectiveSize
+            } else {
+                this.DefineProp('EffectiveSize', { Get: _EffectiveSize })
+            }
+            this.Padding := Padding
+
+            return
+
+            _EffectiveSize(Self) {
+                return Self.Size
+            }
+        }
+        AhkType {
+            Get {
+                switch this.Size {
+                    case 'A_PtrSize': return 'ptr'
+                    case '8': return InStr(this.Type, 'int') ? 'int64' : 'double'
+                    case '4': return this.Type = 'int' ? 'int' : 'uint'
+                    case '2': return this.Type = 'word' || this.Type = 'ushort' ? 'ushort' : 'short'
+                    case '1': return this.Type = 'byte' || this.Type = 'uchar' ? 'uchar' : 'char'
+                }
+            }
+        }
         Pointer => InStr(this.Type this.Symbol, '*')
+        ; Currently supports only winuser.h types and basic types
+        Size => this.TypeIndex ? Win32StructGetMemberSize(this.Type) : ''
+        SizeOf => this.SizeIndex ? this[this.SizeIndex] : ''
         Struct => InStr(this[1], 'struct')
+        Symbol => this.SymbolIndex ? this[this.SymbolIndex] : ''
+        Type => this.TypeIndex ? this[this.TypeIndex] : ''
+        UnknownType => InStr(this.Type, 'void')
     }
     class Union {
         __New(Symbol, Lines) {
@@ -299,4 +459,113 @@ class StructDefinition {
             }
         }
     }
+}
+
+class Win32StructGetMemberSize {
+    static __New() {
+        this.DeleteProp('__New')
+        this.Types := Map()
+        this.Types.CaseSense := false
+        this.Types.Default := -1
+        this.Types.Set(
+            'ATOM', '2'
+          , 'BOOL', '4'
+          , 'BYTE', '1'
+          , 'CHAR', '1'
+          , 'COLORREF', '4'
+          , 'DWORD', '4'
+          , 'DWORD_PTR', 'A_PtrSize'
+          , 'HANDLE', 'A_PtrSize'
+          , 'HBITMAP', 'A_PtrSize'
+          , 'HBRUSH', 'A_PtrSize'
+          , 'HCURSOR', 'A_PtrSize'
+          , 'HDC', 'A_PtrSize'
+          , 'HICON', 'A_PtrSize'
+          , 'HINSTANCE', 'A_PtrSize'
+          , 'HMENU', 'A_PtrSize'
+          , 'HMONITOR', 'A_PtrSize'
+          , 'HWND', 'A_PtrSize'
+          , 'INT32', '4'
+          , 'LCID', '4'
+          , 'LOGFONTA', 'A_PtrSize'
+          , 'LOGFONTW', 'A_PtrSize'
+          , 'LONG', '4'
+          , 'LPARAM', 'A_PtrSize'
+          , 'LPCSTR', 'A_PtrSize'
+          , 'LPCWSTR', 'A_PtrSize'
+          , 'LPSTR', 'A_PtrSize'
+          , 'LPVOID', 'A_PtrSize'
+          , 'LPWSTR', 'A_PtrSize'
+          , 'LRESULT', 'A_PtrSize'
+          , 'MONITORINFO', '40'
+        ;   , 'MOUSEHOOKSTRUCT', '8 + A_PtrSize * 3'
+          , 'MSGBOXCALLBACK', 'A_PtrSize'
+          , 'PEN_FLAGS', '4'
+          , 'PEN_MASK', '4'
+          , 'POINT', '8'
+          , 'POINTER_BUTTON_CHANGE_TYPE', '4'
+          , 'POINTER_DEVICE_CURSOR_TYPE', '4'
+          , 'POINTER_DEVICE_TYPE', '4'
+          , 'POINTER_FLAGS', '4'
+        ;   , 'POINTER_INFO', '72 + A_PtrSize * 2'
+          , 'POINTER_INPUT_TYPE', '4'
+          , 'POINTS', '4'
+          , 'PVOID', 'A_PtrSize'
+          , 'PWINDOWPOS', 'A_PtrSize'
+        ;   , 'RAWINPUTHEADER', '8 + A_PtrSize * 2'
+        ;   , 'RECT', '16'
+          , 'TOUCH_FLAGS', '4'
+          , 'TOUCH_MASK', '4'
+          , 'UINT', '4'
+          , 'UINT16', '2'
+          , 'UINT32', '4'
+          , 'UINT64', '8'
+          , 'UINT_PTR', 'A_PtrSize'
+          , 'ULONG', '4'
+          , 'ULONGLONG', '8'
+          , 'ULONG_PTR', 'A_PtrSize'
+          , 'USHORT', '2'
+          , 'WCHAR', '1'
+          , 'WNDPROC', 'A_PtrSize'
+          , 'WORD', '2'
+          , 'WPARAM', 'A_PtrSize'
+          , 'const', -1
+          , 'float', '4'
+          , 'int', '4'
+          , 'struct', -1
+          , 'union', -1
+        )
+    }
+    static Call(typeStr) {
+        return this.Types.Get(typeStr)
+    }
+}
+
+
+GetMemberTypes(parsedHeader) {
+    unique := Map()
+    for struct in parsedHeader.Structs {
+        for member in struct.Members {
+            if !unique.Has(member.Type) {
+                unique.Set(member.Type, Map())
+            }
+            u := unique.Get(member.Type)
+            if !u.Has(struct.Symbol) {
+                u.Set(struct.Symbol, 1)
+            }
+        }
+    }
+    s := ''
+    for t, u in unique {
+        s .= t ' :: '
+        for n in u {
+            if A_Index == 1 {
+                s .= n
+            } else {
+                s .= '; ' n
+            }
+        }
+        s .= '`n'
+    }
+    return s
 }
