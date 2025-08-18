@@ -153,6 +153,56 @@ class Align {
     }
 
     /**
+     * Evaluates if `Win2` is to the right of `Win1`.
+     * @param {Gui|Gui.Control|Align} Win1 - First window.
+     * @param {Gui|Gui.Control|Align} Win2 - Second window.
+     * @returns {Integer} - If the following conditions are all true, returns 1. Else, returns 0.
+     * - The "left" of `Win2` is greater than or equal to the "right" of `Win1`.
+     * - The range spanning from "top" to "bottom" of `Win2` and `Win1` overlaps by at least one pixel.
+     */
+    static CompareRect_Right(Win1, Win2) {
+        Win1.GetPos(&x1, &y1, &w1, &h1)
+        Win2.GetPos(&x2, &y2, &w2, &h2)
+        if x2 >= x1 + w1 {
+            rc1 := Buffer(16)
+            NumPut('int', x1, 'int', y1, 'int', x1 + w1, 'int', y1 + h1, rc1)
+            rc2 := Buffer(16)
+            ; Hypothetically extend the rect for `Win2` to overlap with `Win1` along the x axis
+            NumPut('int', x1, 'int', y2, 'int', x2 + w2, 'int', y2 + h2, rc2)
+            rc3 := Buffer(16)
+            if DllCall('IntersectRect', 'ptr', rc3, 'ptr', rc1, 'ptr', rc2, 'int') {
+                return 1
+            }
+        }
+        return 0
+    }
+
+    /**
+     * Evaluates if `Win2` is below `Win1`.
+     * @param {Gui|Gui.Control|Align} Win1 - First window.
+     * @param {Gui|Gui.Control|Align} Win2 - Second window.
+     * @returns {Integer} - If the following conditions are all true, returns 1. Else, returns 0.
+     * - The "top" of `Win2` is greater than or equal to the "bottom" of `Win1`.
+     * - The range spanning from "left" to "right" of `Win2` and `Win1` overlaps by at least one pixel.
+     */
+    static CompareRect_Below(Win1, Win2) {
+        Win1.GetPos(&x1, &y1, &w1, &h1)
+        Win2.GetPos(&x2, &y2, &w2, &h2)
+        if y2 >= y1 + h1 {
+            rc1 := Buffer(16)
+            NumPut('int', x1, 'int', y1, 'int', x1 + w1, 'int', y1 + h1, rc1)
+            rc2 := Buffer(16)
+            ; Hypothetically extend the rect for `Win2` to overlap with `Win1` along the y axis
+            NumPut('int', x2, 'int', y1, 'int', x2 + w2, 'int', y2 + h2, rc2)
+            rc3 := Buffer(16)
+            if DllCall('IntersectRect', 'ptr', rc3, 'ptr', rc1, 'ptr', rc2, 'int') {
+                return 1
+            }
+        }
+        return 0
+    }
+
+    /**
      * @description - Arranges controls using a string diagram.
      * - Rows are separated by newline characters.
      * - Columns are separated by spaces or tabs.
