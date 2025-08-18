@@ -5,7 +5,13 @@
 */
 
 /**
- * @classdesc - This adds a content scroller to a Gui window. There's 6 elements included, each set
+ * @classdesc - This adds a content scroller to a Gui window.
+ *
+ * See file "test-files\test-ItemScroller.ahk" for an interactive example. The test code itself
+ * probably isn't very easy to follow, but the gui window shows what it looks like and allows you
+ * to adjust the various properties to see the effect.
+ *
+ * There's 6 elements included, each set
  * to a property on the instance object:
  * - `ItemScrollerObj.CtrlPrevious` - Back button
  * - `ItemScrollerObj.CtrlIndex` - An edit control that shows / changes the current item index
@@ -23,8 +29,11 @@
  * - "V" for vertical orientation. The order is the same as horizontal.
  * - Diagram: You can customize the relative position of the controls by creating a string diagram.
  * See the documentation for {@link ItemScroller.Diagram} for details. The names of the controls are
- * customizable, but the defaults are: BtnPrevious, EdtIndex, TxtOf, TxtTotal, BtnJump, BtnNext. If
- * you use the option "CtrlNameSuffix" don't forget to include that with the names.
+ * customizable, but the defaults are:
+ *
+ * BtnPrevious EdtIndex TxtOf TxtTotal BtnJump BtnNext
+ *
+ * If you use the option "CtrlNameSuffix" don't forget to include that with the names.
  * The return object from `ItemScroller.Diagram` is set to the property `ItemScrollerObj.Diagram`.
  */
 class ItemScroller {
@@ -55,15 +64,17 @@ class ItemScroller {
      */
     __New(GuiObj, Pages, Callback, Options?) {
         Options := this.Options := ItemScroller.Options(Options ?? {})
-        this.DefineProp('Index', { Value: 1 })
-        this.DefineProp('DisableTooltips', { Value: Options.DisableTooltips })
+        this.GuiHwnd := GuiObj.Hwnd
+        this.Index := 1
         this.Callback := Callback
         this.__Item := Map()
-        List := []
+        List := this.List := []
         List.Length := ObjOwnPropCount(Options.Controls)
         suffix := Options.CtrlNameSuffix
         paddingX := this.__PaddingX := Options.PaddingX
         paddingY := this.__PaddingY := Options.PaddingY
+        this.__StartX := Options.StartX
+        this.__StartY := Options.StartY
         this.__Orientation := Options.Orientation
         GreatestW := 0
         for Name, Obj in Options.Controls.OwnProps() {
@@ -103,84 +114,12 @@ class ItemScroller {
         }
         this.UpdatePages(Pages)
         this.CtrlIndex.Move(, , Options.EditIndexWidth)
-        X := Options.StartX
-        Y := Options.StartY
-        ButtonHeight := ch
-        if Options.Orientation = 'H' {
-            for Ctrl in List {
-                Obj := Ctrl.Options
-                Ctrl.DeleteProp('Options')
-                if Ctrl.Type = 'Button' {
-                    BtnIndex := Obj.Index
-                    if Options.NormalizeButtonWidths {
-                        Ctrl.Move(X, Y, GreatestW)
-                        X += GreatestW + paddingX
-                        continue
-                    }
-                }
-                Ctrl.Move(X, Y)
-                Ctrl.GetPos(, , &cw)
-                X += cw + paddingX
-            }
-            for Ctrl in List {
-                if Ctrl.Type !== 'Button' {
-                    ItemScroller.AlignV(Ctrl, List[BtnIndex])
+        if Options.NormalizeButtonWidths {
+            for ctrl in List {
+                if ctrl.Type == 'Button' {
+                    ctrl.Move(, , GreatestW)
                 }
             }
-        } else if Options.Orientation = 'V' {
-            for Ctrl in List {
-                Obj := Ctrl.Options
-                Ctrl.DeleteProp('Options')
-                if Ctrl.Type = 'Button' {
-                    BtnIndex := Obj.Index
-                    if Options.NormalizeButtonWidths {
-                        Ctrl.Move(X, Y, GreatestW)
-                        Y += Buttonheight + paddingY
-                        continue
-                    }
-                }
-                Ctrl.Move(X, Y)
-                Ctrl.GetPos(, , , &ch)
-                Y += cH + paddingY
-            }
-            for Ctrl in List {
-                if Ctrl.Type !== 'Button' {
-                    ItemScroller.AlignH(Ctrl, List[BtnIndex])
-                }
-            }
-        } else {
-            for Ctrl in List {
-                Obj := Ctrl.Options
-                Ctrl.DeleteProp('Options')
-                if Ctrl.Type = 'Button' {
-                    if Options.NormalizeButtonWidths {
-                        Ctrl.Move(, , GreatestW)
-                        continue
-                    }
-                }
-            }
-            this.Diagram := ItemScroller.Diagram(GuiObj, Options.Orientation, Options.StartX, Options.StartY, paddingX, paddingY)
-        }
-        if StrLen(Options.Orientation) == 1 {
-            this.Left := Options.StartX
-            this.Top := Options.StartY
-            GreatestX := GreatestY := 0
-            for Ctrl in List {
-                Ctrl.GetPos(&cx, &cy, &cw, &ch)
-                if cx + cw > GreatestX {
-                    GreatestX := cx + cw
-                }
-                if cy + ch > GreatestY {
-                    GreatestY := cy + ch
-                }
-            }
-            this.Right := GreatestX
-            this.Bottom := GreatestY
-        } else {
-            this.Left := this.Diagram.Left
-            this.Top := this.Diagram.Top
-            this.Right := this.Diagram.Right
-            this.Bottom := this.Diagram.bottom
         }
         if StrLen(Options.EditBackgroundColor) {
             this.CtrlIndex.Opt('Background' Options.EditBackgroundColor)
@@ -189,7 +128,7 @@ class ItemScroller {
             this.CtrlOf.Opt('Background' Options.TextBackgroundColor)
             this.CtrlTotal.Opt('Background' Options.TextBackgroundColor)
         }
-        this.CtrlTotal.Text := this.Pages
+        this.SetOrientation()
 
         return
 
@@ -277,6 +216,73 @@ class ItemScroller {
         return this.Callback.Call(this.Index, this)
     }
 
+    SetOrientation(Orientation?, StartX?, StartY?, PaddingX?, PaddingY?) {
+        if IsSet(StartX) {
+            this.__StartX := StartX
+        } else {
+            StartX := this.__StartX
+        }
+        if IsSet(StartY) {
+            this.__StartY := StartY
+        } else {
+            StartY := this.__StartY
+        }
+        if IsSet(PaddingX) {
+            this.__PaddingX := PaddingX
+        } else {
+            PaddingX := this.__PaddingX
+        }
+        if IsSet(PaddingY) {
+            this.__PaddingY := PaddingY
+        } else {
+            PaddingY := this.__PaddingY
+        }
+        if IsSet(Orientation) {
+            this.__Orientation := Orientation
+        }
+        switch this.__Orientation, 0 {
+            case 'H':
+                maxH := 0
+                for ctrl in this.List {
+                    ctrl.GetPos(, , , &h)
+                    if h > maxH {
+                        maxH := h
+                    }
+                }
+                X := StartX
+                for ctrl in this.List {
+                    ctrl.GetPos(, , &w, &h)
+                    if h == maxH {
+                        ctrl.Move(X, StartY)
+                    } else {
+                        ctrl.Move(X, StartY + 0.5 * (maxH - h))
+                    }
+                    X += w + PaddingX
+                }
+            case 'V':
+                maxW := 0
+                for ctrl in this.List {
+                    ctrl.GetPos(, , &w)
+                    if w > maxW {
+                        maxW := w
+                    }
+                }
+                Y := StartY
+                for ctrl in this.List {
+                    ctrl.GetPos(, , &w, &h)
+                    if w == maxW {
+                        ctrl.Move(StartX, Y)
+                    } else {
+                        ctrl.Move(StartX + 0.5 * (maxW - w), Y)
+                    }
+                    Y += h + PaddingY
+                }
+            default:
+                this.Diagram := ItemScroller.Diagram(this.Gui, this.__Orientation, StartX, StartY, PaddingX, PaddingY)
+
+        }
+    }
+
     SetReferenceData(values*) {
         this.__Item.Set(values*)
     }
@@ -320,53 +326,36 @@ class ItemScroller {
         }
     }
 
+    Gui => GuiFromHwnd(this.GuiHwnd)
+
+    Orientation {
+        Get => this.__Orientation
+        Set => this.SetOrientation(Value)
+    }
+
     PaddingX {
         Get => this.__PaddingX
-        Set {
-            this.__PaddingX := Value
-            if this.__Orientation = 'H' {
-                list := []
-                list.Length := ObjOwnPropCount(ItemScroller.Options.Default.Controls)
-                for prop, obj in ItemScroller.Options.Default.Controls.OwnProps() {
-                    list[obj.Index] := prop
-                }
-                for prop in list {
-                    if A_Index == 1 {
-                        this.Ctrl%prop%.GetPos(&x, , &w)
-                    } else {
-                        this.Ctrl%prop%.Move(x + w + Value)
-                        this.Ctrl%prop%.GetPos(&x, , &w)
-                    }
-                }
-            }
-        }
+        Set => this.SetOrientation(, , , Value)
     }
 
     PaddingY {
         Get => this.__PaddingY
-        Set {
-            this.__PaddingY := Value
-            if this.__Orientation = 'V' {
-                list := []
-                list.Length := ObjOwnPropCount(ItemScroller.Options.Default.Controls)
-                for prop, obj in ItemScroller.Options.Default.Controls.OwnProps() {
-                    list[obj.Index] := prop
-                }
-                for prop in list {
-                    if A_Index == 1 {
-                        this.Ctrl%prop%.GetPos(, &y, , &h)
-                    } else {
-                        this.Ctrl%prop%.Move(y + h + Value)
-                        this.Ctrl%prop%.GetPos(, &y, , &h)
-                    }
-                }
-            }
-        }
+        Set => this.SetOrientation(, , , , Value)
     }
 
     Pages {
         Get => this.__Pages
         Set => this.UpdatePages(Value)
+    }
+
+    StartX {
+        Get => this.__StartX
+        Set => this.SetOrientation(, Value)
+    }
+
+    StartY {
+        Get => this.__StartY
+        Set => this.SetOrientation(, , Value)
     }
 
     /**
@@ -397,7 +386,6 @@ class ItemScroller {
           , BtnFontFamily: ''
           , BtnFontOpt: ''
           , CtrlNameSuffix: ''
-          , DisableTooltips: false
           , EditBackgroundColor: ''
           , EditFontFamily: ''
           , EditFontOpt: ''

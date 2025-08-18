@@ -1,5 +1,6 @@
 ﻿
 #include ..\ItemScroller.ahk
+#include ..\MakeInputControlGroup.ahk
 
 test()
 
@@ -35,14 +36,67 @@ class test {
         g.Add('Button', 'ys vBtnUpdatePages', 'Update pages').OnEvent('Click', HClickButtonUpdatePages)
         g['BtnUpdatePages'].GetPos(&x, , &w)
 
+        this.SetOrientationInput := MakeInputControlGroup(
+            g
+          , [ 'Index', 'Orientation', 'StartX', 'StartY', 'PaddingX', 'PaddingY' ]
+          , { StartX: x + w + 10, StartY: 10, GetButton: false, SetButton: false, EditWidth: 125, NameSuffix: '4' }
+        )
+        this.SetOrientationInput.Get('Index').Edit.GetPos(&x, , &w)
+        g.Add('Button', 'x' (x + w + 10) ' y10 vBtnSetOrientation', 'SetOrientation').OnEvent('Click', HClickButtonSetOrientation)
+        g['BtnSetOrientation'].GetPos(&x, , &w)
+        this.SetOrientationInput.Get('StartY').Label.GetPos(&x, &y, &w, &h)
+
+        this.PropertiesInput := MakeInputControlGroup(
+            g
+          , [ 'Orientation', 'PaddingX', 'PaddingY', 'Pages', 'StartX', 'StartY' ]
+          , { StartX: x, StartY: y + h + 10, GetButton: true, SetButton: true, EditWidth: 125, NameSuffix: '5' }
+        )
+        this.PropertiesInput.Get('StartY').Set.GetPos(&x, , &w)
+        for label, group in this.PropertiesInput {
+            group.Get.OnEvent('Click', HClickButtonGet)
+            group.Set.OnEvent('Click', HClickButtonSet)
+        }
+
+        this.scrollers[-1].CtrlNext.GetPos(, &y, , &h)
+
         g.Show('x20 y20 w' (x + w + 10) ' h' (y + h + 10))
 
         return
+
+        HClickButtonGet(Ctrl, *) {
+            prop := StrReplace(StrReplace(Ctrl.Name, '5', ''), 'BtnGet', '')
+            index := this.SetOrientationInput.Get('Index').Edit.Text
+            if !index || !IsNumber(index) || (index < 1 || index > 3) {
+                MsgBox('Use the "Index" edit control at the top to specify which scroller to target. Input an integer between 1 and 3.')
+                return
+            }
+            this.PropertiesInput.Get(prop).Edit.Text := this.scrollers[index].%prop%
+        }
+
+        HClickButtonSet(Ctrl, *) {
+            prop := StrReplace(StrReplace(Ctrl.Name, '5', ''), 'BtnSet', '')
+            index := this.SetOrientationInput.Get('Index').Edit.Text
+            if !index || !IsNumber(index) || (index < 1 || index > 3) {
+                MsgBox('Use the "Index" edit control at the top to specify which scroller to target. Input an integer between 1 and 3.')
+                return
+            }
+            this.scrollers[index].%prop% := this.PropertiesInput.Get(prop).Edit.Text
+        }
 
         HClickButtonUpdatePages(Ctrl, *) {
             for scroller in this.scrollers {
                 scroller.UpdatePages(Ctrl.Gui['EdtPages'].Text)
             }
+        }
+
+        HClickButtonSetOrientation(Ctrl, *) {
+            this.scrollers[this.SetOrientationInput.Get('Index').Edit.Text].SetOrientation(
+                this.SetOrientationInput.Get('Orientation').Edit.Text ? StrReplace(this.SetOrientationInput.Get('Orientation').Edit.Text, '``n', '`n') : unset
+              , this.SetOrientationInput.Get('StartX').Edit.Text || unset
+              , this.SetOrientationInput.Get('StartY').Edit.Text || unset
+              , this.SetOrientationInput.Get('PaddingX').Edit.Text || unset
+              , this.SetOrientationInput.Get('PaddingY').Edit.Text || unset
+            )
         }
 
         _MakeScroller(orientation, name, startY, &x, &y, &w, &h) {
