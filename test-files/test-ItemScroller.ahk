@@ -19,9 +19,6 @@ class test {
             ctrls.Push(g.Add('Text', 'w100 vTxt' A_Index, arr[A_Index]))
         }
         ctrls[-1].GetPos(, &y, , &h)
-        controls := itemscroller.options.default.controls
-        controls.previous.text := '<'
-        controls.next.text := '>'
 
         ; horizontal layout
         _MakeScroller('H', '1', y + h + 10, &x, &y, &w, &h)

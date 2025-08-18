@@ -102,6 +102,7 @@ class ItemScroller {
             }
         }
         this.UpdatePages(Pages)
+        this.CtrlIndex.Move(, , Options.EditIndexWidth)
         X := Options.StartX
         Y := Options.StartY
         ButtonHeight := ch
@@ -386,12 +387,12 @@ class ItemScroller {
                 ; The function should then return the string to be used for the options / text
                 ; parameter. I don't recommend returning a size or position value, because this
                 ; function handles that internally.
-                Previous: { Name: 'BtnPrevious', Type: 'Button', Opt: '', Text: 'Back', Index: 1 }
-              , Index: { Name: 'EdtIndex', Type: 'Edit', Opt: 'w30', Text: '1', Index: 2 }
+                Previous: { Name: 'BtnPrevious', Type: 'Button', Opt: '', Text: '<', Index: 1 }
+              , Index: { Name: 'EdtIndex', Type: 'Edit', Opt: '', Text: '1', Index: 2 }
               , Of: { Name: 'TxtOf', Type: 'Text', Opt: '', Text: 'of', Index: 3 }
-              , Total: { Name: 'TxtTotal', Type: 'Text', Opt: 'w30', Text: '1', Index: 4  }
+              , Total: { Name: 'TxtTotal', Type: 'Text', Opt: '', Text: '', Index: 4  }
               , Jump: { Name: 'BtnJump', Type: 'Button', Opt: '', Text: 'Jump', Index: 5 }
-              , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: 'Next', Index: 6 }
+              , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: '>', Index: 6 }
             }
           , BtnFontFamily: ''
           , BtnFontOpt: ''
@@ -400,7 +401,7 @@ class ItemScroller {
           , EditBackgroundColor: ''
           , EditFontFamily: ''
           , EditFontOpt: ''
-          , EditInputWidth: 30
+          , EditIndexWidth: 30
           , NormalizeButtonWidths: true
           ; Orientation can be "H" for horizontal, "V" for vertical, or it can be a diagrammatic
           ; representation of the arrangement as described in the description of this class.
