@@ -43,10 +43,12 @@
  * of the "Get" buttons.
  * @param {String} [Options.SetButtonPrefix = "BtnSet"] - The literal string that prefixes the name
  * of the "Set" buttons.
+ * @param {String} [Options.NameSuffix = ""] - The literal string that will be appended to all
+ * control names.
  */
 MakeInputControlGroup(G, LabelList, Options?) {
     local maxY := getButton := setButton := editWidth := buttonWidth := paddingX := paddingY :=
-    labelAlignment := labelPrefix := editPrefix := getButtonPrefix := setButtonPrefix := 0
+    labelAlignment := labelPrefix := editPrefix := getButtonPrefix := setButtonPrefix := nameSuffix := 0
     if !IsSet(Options) {
         Options := {}
     }
@@ -54,7 +56,9 @@ MakeInputControlGroup(G, LabelList, Options?) {
     y := startY := HasProp(Options, 'StartY') ? Options.StartY : G.MarginY
     for prop, val in Map('maxY', '', 'getButton', true, 'setButton', true, 'editWidth', 250
     , 'buttonWidth', 80, 'paddingX', 5, 'paddingY', 5, 'labelAlignment', 'Right'
-    , 'labelPrefix', 'Txt', 'editPrefix', 'Edt', 'getButtonPrefix', 'BtnGet', 'setButtonPrefix', 'BtnSet') {
+    , 'labelPrefix', 'Txt', 'editPrefix', 'Edt', 'getButtonPrefix', 'BtnGet', 'setButtonPrefix', 'BtnSet'
+    , 'nameSuffix', ''
+    ) {
         if HasProp(Options, prop) {
             %prop% := Options.%prop%
         } else {
@@ -62,20 +66,21 @@ MakeInputControlGroup(G, LabelList, Options?) {
         }
     }
     controls := Map()
+    controls.NameSuffix := nameSuffix
     width := 0
     for label in LabelList {
         _label := RegExReplace(label, '\W', '')
         controls.Set(
             label, group := {
-                Label: G.Add('Text', 'x' x ' y' y ' ' labelAlignment ' v' labelPrefix _label, label ':')
-              , Edit: G.Add('Edit', 'x' x ' y' y ' w' editWidth ' v' editPrefix _label)
+                Label: G.Add('Text', 'x' x ' y' y ' ' labelAlignment ' v' labelPrefix _label nameSuffix, label ':')
+              , Edit: G.Add('Edit', 'x' x ' y' y ' w' editWidth ' v' editPrefix _label nameSuffix)
             }
         )
         if getButton {
-            group.Get := G.Add('Button', 'x' x ' y' y ' w' buttonWidth ' v' getButtonPrefix _label, 'Get')
+            group.Get := G.Add('Button', 'x' x ' y' y ' w' buttonWidth ' v' getButtonPrefix _label nameSuffix, 'Get')
         }
         if setButton {
-            group.Set := G.Add('Button', 'x' x ' y' y ' w' buttonWidth ' v' setButtonPrefix _label, 'Set')
+            group.Set := G.Add('Button', 'x' x ' y' y ' w' buttonWidth ' v' setButtonPrefix _label nameSuffix, 'Set')
         }
         group.Label.GetPos(, , &txtw)
         if txtw > width {
