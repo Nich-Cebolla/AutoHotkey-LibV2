@@ -57,12 +57,14 @@ class ItemScroller {
         Options := this.Options := ItemScroller.Options(Options ?? {})
         this.DefineProp('Index', { Value: 1 })
         this.DefineProp('DisableTooltips', { Value: Options.DisableTooltips })
-        this.Pages := Pages
         this.Callback := Callback
         this.__Item := Map()
         List := []
         List.Length := ObjOwnPropCount(Options.Controls)
         suffix := Options.CtrlNameSuffix
+        paddingX := this.__PaddingX := Options.PaddingX
+        paddingY := this.__PaddingY := Options.PaddingY
+        this.__Orientation := Options.Orientation
         GreatestW := 0
         for Name, Obj in Options.Controls.OwnProps() {
             ; Set the font first so it is reflected in the width.
@@ -86,8 +88,8 @@ class ItemScroller {
             }
             this.Ctrl%Name% := List[Obj.Index] := GuiObj.Add(
                 Obj.Type
-              , 'x10 y10 ' _GetParam(Obj, 'Opt') || unset
-              , _GetParam(Obj, 'Text') || unset
+              , 'x10 y10 ' (Obj.Opt ? _GetParam(Obj, 'Opt') : '')
+              , Obj.Text ? _GetParam(Obj, 'Text') : ''
             )
             List[Obj.Index].Name := Obj.Name suffix
             List[Obj.Index].Options := Obj
@@ -99,10 +101,11 @@ class ItemScroller {
                 List[Obj.Index].OnEvent('Click', HClickButton%Name%)
             }
         }
+        this.UpdatePages(Pages)
         X := Options.StartX
         Y := Options.StartY
         ButtonHeight := ch
-        if Options.Orientation = 'H' || (Options.HasOwnprop('Horizontal') && Options.Horizontal) {
+        if Options.Orientation = 'H' {
             for Ctrl in List {
                 Obj := Ctrl.Options
                 Ctrl.DeleteProp('Options')
@@ -110,20 +113,20 @@ class ItemScroller {
                     BtnIndex := Obj.Index
                     if Options.NormalizeButtonWidths {
                         Ctrl.Move(X, Y, GreatestW)
-                        X += GreatestW + Options.PaddingX
+                        X += GreatestW + paddingX
                         continue
                     }
                 }
                 Ctrl.Move(X, Y)
                 Ctrl.GetPos(, , &cw)
-                X += cw + Options.PaddingX
+                X += cw + paddingX
             }
             for Ctrl in List {
                 if Ctrl.Type !== 'Button' {
                     ItemScroller.AlignV(Ctrl, List[BtnIndex])
                 }
             }
-        } else if Options.Orientation = 'V' || (Options.HasOwnprop('Horizontal') && !Options.Horizontal) {
+        } else if Options.Orientation = 'V' {
             for Ctrl in List {
                 Obj := Ctrl.Options
                 Ctrl.DeleteProp('Options')
@@ -131,13 +134,13 @@ class ItemScroller {
                     BtnIndex := Obj.Index
                     if Options.NormalizeButtonWidths {
                         Ctrl.Move(X, Y, GreatestW)
-                        Y += Buttonheight + Options.PaddingY
+                        Y += Buttonheight + paddingY
                         continue
                     }
                 }
                 Ctrl.Move(X, Y)
                 Ctrl.GetPos(, , , &ch)
-                Y += cH + Options.PaddingY
+                Y += cH + paddingY
             }
             for Ctrl in List {
                 if Ctrl.Type !== 'Button' {
@@ -155,7 +158,7 @@ class ItemScroller {
                     }
                 }
             }
-            this.Diagram := ItemScroller.Diagram(GuiObj, Options.Orientation, Options.StartX, Options.StartY, Options.PaddingX, Options.PaddingY)
+            this.Diagram := ItemScroller.Diagram(GuiObj, Options.Orientation, Options.StartX, Options.StartY, paddingX, paddingY)
         }
         if StrLen(Options.Orientation) == 1 {
             this.Left := Options.StartX
@@ -229,6 +232,32 @@ class ItemScroller {
         this.SetIndex(this.Index + N)
     }
 
+    /**
+     * @param {String} str - The string to measure. Multi-line strings are not valid.
+     * @returns {Integer} - The width of the string in pixels using the font from the "Total" text
+     * control.
+     */
+    MeasureText(str) {
+        buf := Buffer(StrPut(str, 'UTF-16'))
+        StrPut(str, buf, 'UTF-16')
+        sz := Buffer(8)
+        context := ItemScrollerSelectFontIntoDc(this.CtrlTotal.Hwnd)
+        if DllCall(
+            'Gdi32.dll\GetTextExtentPoint32'
+          , 'Ptr', context.Hdc
+          , 'Ptr', buf
+          , 'Int', StrLen(str)
+          , 'Ptr', sz
+          , 'Int'
+        ) {
+            context()
+            return NumGet(sz, 0, 'int')
+        } else {
+            context()
+            throw OSError()
+        }
+    }
+
     SetIndex(Value) {
         if !this.Pages {
             return 1
@@ -251,12 +280,92 @@ class ItemScroller {
         this.__Item.Set(values*)
     }
 
-    UpdateValues() {
-        len := this.Pages
-        if this.CtrlIndex.Text > len {
-            this.CtrlIndex.Text := len
+    UpdatePages(Pages?) {
+        if IsSet(Pages) {
+            this.__Pages := Pages
+            this.CtrlTotal.Text := Pages
         }
-        this.CtrlTotal.Text := len
+        if this.CtrlIndex.Text > this.__Pages {
+            this.CtrlIndex.Text := this.__Pages
+        }
+        this.CtrlTotal.Text := this.__Pages
+        this.CtrlTotal.GetPos(&x, &y, &w, &h)
+        w2 := this.MeasureText(this.__Pages)
+        if w != w2 {
+            this.CtrlTotal.Move(, , w2)
+            diff := w2 - w
+            x += w
+            rc1 := Buffer(16)
+            NumPut('int', x, 'int', y, 'int', 0, 'int', y + h, rc1)
+            rc2 := Buffer(16)
+            rc3 := Buffer(16)
+            ; This evaluates whether each control is to the right of the "Total" control and has
+            ; overlapping y-coordinate position with the "Total" control. For those controls which
+            ; do have these characteristics, their x-coordinate position is adjusted by `diff` to
+            ; account for the change in width of the "Total" control, maintaining the relative
+            ; separation.
+            for ctrl in [ this.CtrlPrevious, this.CtrlIndex, this.CtrlOf, this.CtrlJump, this.CtrlNext ] {
+                ctrl.GetPos(&x2, &y2, &w2, &h2)
+                if x2 >= x {
+                    NumPut('int', x2, 'int', y2, 'int', x2 + w2, 'int', y2 + h2, rc2)
+                    ; Hypothetically extend the rect for the "Total" control to the right side of the
+                    ; control we are evaluating.
+                    NumPut('int', x2 + w2, rc1, 8)
+                    if DllCall('IntersectRect', 'ptr', rc3, 'ptr', rc1, 'ptr', rc2, 'int') {
+                        ctrl.Move(x2 + diff)
+                    }
+                }
+            }
+        }
+    }
+
+    PaddingX {
+        Get => this.__PaddingX
+        Set {
+            this.__PaddingX := Value
+            if this.__Orientation = 'H' {
+                list := []
+                list.Length := ObjOwnPropCount(ItemScroller.Options.Default.Controls)
+                for prop, obj in ItemScroller.Options.Default.Controls.OwnProps() {
+                    list[obj.Index] := prop
+                }
+                for prop in list {
+                    if A_Index == 1 {
+                        this.Ctrl%prop%.GetPos(&x, , &w)
+                    } else {
+                        this.Ctrl%prop%.Move(x + w + Value)
+                        this.Ctrl%prop%.GetPos(&x, , &w)
+                    }
+                }
+            }
+        }
+    }
+
+    PaddingY {
+        Get => this.__PaddingY
+        Set {
+            this.__PaddingY := Value
+            if this.__Orientation = 'V' {
+                list := []
+                list.Length := ObjOwnPropCount(ItemScroller.Options.Default.Controls)
+                for prop, obj in ItemScroller.Options.Default.Controls.OwnProps() {
+                    list[obj.Index] := prop
+                }
+                for prop in list {
+                    if A_Index == 1 {
+                        this.Ctrl%prop%.GetPos(, &y, , &h)
+                    } else {
+                        this.Ctrl%prop%.Move(y + h + Value)
+                        this.Ctrl%prop%.GetPos(, &y, , &h)
+                    }
+                }
+            }
+        }
+    }
+
+    Pages {
+        Get => this.__Pages
+        Set => this.UpdatePages(Value)
     }
 
     /**
@@ -291,12 +400,13 @@ class ItemScroller {
           , EditBackgroundColor: ''
           , EditFontFamily: ''
           , EditFontOpt: ''
+          , EditInputWidth: 30
           , NormalizeButtonWidths: true
           ; Orientation can be "H" for horizontal, "V" for vertical, or it can be a diagrammatic
           ; representation of the arrangement as described in the description of this class.
           , Orientation: 'H'
-          , PaddingX: 10
-          , PaddingY: 10
+          , PaddingX: 5
+          , PaddingY: 5
           , StartX: 10
           , StartY: 10
           , TextBackgroundColor: ''
@@ -488,3 +598,71 @@ class ItemScroller {
     }
 }
 
+
+/**
+ * @classdesc - Use this as a safe way to access a window's font object. This handles accessing and
+ * releasing the device context and font object.
+ */
+class ItemScrollerSelectFontIntoDc {
+
+    __New(hWnd) {
+        this.hWnd := hWnd
+        if !(this.hdc := DllCall('GetDC', 'Ptr', hWnd, 'ptr')) {
+            throw OSError()
+        }
+        OnError(this.Callback := ObjBindMethod(this, '__ReleaseOnError'), 1)
+        if !(this.hFont := SendMessage(0x0031, 0, 0, , hWnd)) { ; WM_GETFONT
+            throw OSError()
+        }
+        if !(this.oldFont := DllCall('SelectObject', 'ptr', this.hdc, 'ptr', this.hFont, 'ptr')) {
+            throw OSError()
+        }
+    }
+
+    /**
+     * @description - Selects the old font back into the device context, then releases the
+     * device context.
+     */
+    Call() {
+        if err := this.__Release() {
+            throw err
+        }
+    }
+
+    __ReleaseOnError(thrown, mode) {
+        if err := this.__Release() {
+            thrown.Message .= '; ' err.Message
+        }
+        throw thrown
+    }
+
+    __Release() {
+        if this.oldFont {
+            if !DllCall('SelectObject', 'ptr', this.hdc, 'ptr', this.oldFont, 'int') {
+                err := OSError()
+            }
+            this.DeleteProp('oldFont')
+        }
+        if this.hdc {
+            if !DllCall('ReleaseDC', 'ptr', this.hWnd, 'ptr', this.hdc, 'int') {
+                if IsSet(err) {
+                    err.Message .= '; Another error occurred: ' OSError().Message
+                }
+            }
+            this.DeleteProp('hdc')
+        }
+        OnError(this.Callback, 0)
+        return err ?? ''
+    }
+
+    __Delete() => this()
+
+    static __New() {
+        if this.Prototype.__Class == 'SelectFontIntoDc' {
+            Proto := this.Prototype
+            Proto.DefineProp('hdc', { Value: '' })
+            Proto.DefineProp('hFont', { Value: '' })
+            Proto.DefineProp('oldFont', { Value: '' })
+        }
+    }
+}

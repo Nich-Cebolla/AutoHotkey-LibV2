@@ -5,6 +5,7 @@ test()
 
 class test {
     static Call() {
+        this.scrollers := []
         arr := this.arr := []
         arr.Capacity := 100
         loop 100 {
@@ -13,31 +14,45 @@ class test {
         ctrls := this.ctrls := []
         g := this.g := gui()
         g.SetFont('s11', 'Segoe Ui')
+        g.Add('Edit', 'w100 Section vEdtPages', '20')
         loop 5 {
             ctrls.Push(g.Add('Text', 'w100 vTxt' A_Index, arr[A_Index]))
         }
         ctrls[-1].GetPos(, &y, , &h)
+        controls := itemscroller.options.default.controls
+        controls.previous.text := '<'
+        controls.next.text := '>'
 
         ; horizontal layout
         _MakeScroller('H', '1', y + h + 10, &x, &y, &w, &h)
 
-        guiwidth := x + w + 10
-
         ; diagram layout
         _MakeScroller(
-            'BtnPrevious2`nEdtIndex2 TxtOf2 TxtTotal2`nBtnJump2 BtnNext2'
+            'BtnPrevious2`nEdtIndex2 TxtOf2`nTxtTotal2 BtnJump2 BtnNext2'
           , '2', y + h + 25, &x, &y, &w, &h
         )
 
         ; vertical layout
         _MakeScroller('V', '3', y + h + 25, &x, &y, &w, &h)
-        g.Show('x20 y20 w' guiwidth ' h' (y + h + 10))
 
+        g.Add('Button', 'ys vBtnUpdatePages', 'Update pages').OnEvent('Click', HClickButtonUpdatePages)
+        g['BtnUpdatePages'].GetPos(&x, , &w)
+
+        g.Show('x20 y20 w' (x + w + 10) ' h' (y + h + 10))
+
+        return
+
+        HClickButtonUpdatePages(Ctrl, *) {
+            for scroller in this.scrollers {
+                scroller.UpdatePages(Ctrl.Gui['EdtPages'].Text)
+            }
+        }
 
         _MakeScroller(orientation, name, startY, &x, &y, &w, &h) {
-            this.scroller_%name% := ItemScroller(g, 20, _Callback, { StartX: 10, StartY: startY, Orientation: orientation, CtrlNameSuffix: name })
+            this.scroller_%name% := ItemScroller(g, 20, _Callback, { StartX: 10, StartY: startY, Orientation: orientation, CtrlNameSuffix: name, NormalizeButtonWidths: false })
             this.scroller_%name%.CtrlNext.GetPos(&x, &y, &w, &h)
             this.scroller_%name%.SetReferenceData('ctrls', ctrls, 'arr', arr)
+            this.scrollers.Push(this.scroller_%name%)
         }
 
         _Callback(Index, scroller) {
