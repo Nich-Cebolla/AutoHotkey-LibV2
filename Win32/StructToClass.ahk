@@ -121,34 +121,40 @@ class StructToClass {
             params := ''
             body := ''
             properties := ''
+            offsets := ''
             if struct.CalculateOffsets() {
                 ; couldn't calculate offsets
                 loop members.Length - 1 {
                     member := members[A_Index]
                     membersStr .= member.Size ' + `t; ' member.Type '    `t' member.Symbol '    `t0`t`n'
                     _ProcessMember1(member)
+                    offsets .= ind(2) 'proto.offset_' member.Symbol ' := 00' le
                 }
                 member := members[-1]
                 membersStr .= member.Size ' `t; ' member.Type '    `t' member.Symbol '    `t0`t`n'
                 _ProcessMember2(member)
+                offsets .= ind(2) 'proto.offset_' member.Symbol ' := 00' le
             } else {
                 ; all offsets were calculated
                 loop members.Length - 1 {
                     member := members[A_Index]
                     membersStr .= member.EffectiveSize ' + `t; ' member.Type '    `t' member.Symbol '    `t' member.Offset '    `t' member.Padding '`n'
                     _ProcessMember1(member)
+                    offsets .= ind(2) 'proto.offset_' member.Symbol ' := ' member.Offset le
                 }
                 member := members[-1]
                 membersStr .= member.EffectiveSize ' `t; ' member.Type '    `t' member.Symbol '    `t' member.Offset '    `t' member.Padding '`n'
                 _ProcessMember2(member)
+                offsets .= ind(2) 'proto.offset_' member.Symbol ' := ' member.Offset le
             }
-            name := RegExReplace(struct.Symbol, '^tag', '')
             s .= (
-                ind(0) 'class ' name ' {' le
+                ind(0) 'class ' RegExReplace(struct.Symbol, '^tag', '') ' {' le
                 ind(1) 'static __New() {' le
                 ind(2) 'this.DeleteProp(' q '__New' q ')' le
-                ind(2) 'this.Prototype.cbSize := ' le
+                ind(2) 'proto := this.Prototype' le
+                ind(2) 'proto.cbSize := ' le
                 MakeTable(SubStr(membersStr, 1, -1), makeTableOpt) le
+                offsets
                 ind(1) '}' le
                 ind(1) '__New(' params ') {' le
                 ind(2) 'this.Buffer := Buffer(this.cbSize)' le
@@ -188,7 +194,7 @@ class StructToClass {
                             ind(4) 'bytes := StrPut(Value, ' q 'UTF-16' q ')' le
                             ind(4) 'if this.__' member.Symbol '.Size < bytes {' le
                             ind(5) 'this.__' member.Symbol '.Size := bytes' le
-                            ind(5) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, ' (struct.NoOffsets ? '000' : member.Offset) ')' le
+                            ind(5) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, this.offset_' member.Symbol ')' le
                             ind(4) '}' le
                             ind(3) '} else {' le
                             ind(4) 'this.__' member.Symbol ' := Buffer(StrPut(Value, ' q 'UTF-16' q ')' le
@@ -201,10 +207,10 @@ class StructToClass {
                         properties .= (
                             ind(1) member.Symbol ' {' le
                             ; get
-                            ind(2) 'Get => NumGet(this.Buffer, ' (struct.NoOffsets ? '000' : member.Offset) ', ' q member.AhkType q ')' le
+                            ind(2) 'Get => NumGet(this.Buffer, this.offset_' member.Symbol ', ' q member.AhkType q ')' le
                             ; set
                             ind(2) 'Set {' le
-                            ind(3) 'NumPut(' q member.AhkType q ', Value, this.Buffer, ' (struct.NoOffsets ? '000' : member.Offset) ')' le
+                            ind(3) 'NumPut(' q member.AhkType q ', Value, this.Buffer, this.offset_' member.Symbol ')' le
                             ind(2) '}' le
                             ind(1) '}' le
                         )
