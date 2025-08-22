@@ -39,6 +39,9 @@
  * The return object from `ItemScroller.Diagram` is set to the property `ItemScrollerObj.Diagram`.
  */
 class ItemScroller {
+    static __New() {
+
+    }
 
     /**
      * @description - Centers a list of windows horizontally with respect to one another, splitting
