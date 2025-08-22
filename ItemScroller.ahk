@@ -311,7 +311,7 @@ class ItemScroller {
      * @see {@link ItemScroller.Options}
      */
     __New(GuiObj, Pages, Callback, Options?) {
-        Options := this.Options := ItemScroller.Options(Options ?? {})
+        Options := this.Options := ItemScroller.Options(Options ?? unset)
         this.GuiHwnd := GuiObj.Hwnd
         this.Index := 1
         this.Callback := Callback
@@ -653,7 +653,7 @@ class ItemScroller {
 
         /**
          * @description - Clones `ItemScroller.Options.Default` then iterates the input `Options`
-         * properties, overwriting the property values on the cloned object.
+         * object's properties, overwriting the property values on the cloned object.
          * @param {Object} [Options] - The input object.
          * @return {Object}
          */
