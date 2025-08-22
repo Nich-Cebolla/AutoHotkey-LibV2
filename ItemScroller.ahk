@@ -21,8 +21,8 @@
  * whatever number is in the edit control
  * - `ItemScrollerObj.CtrlNext` - Next button
  *
- * The gui passed to `GuiObj` has a value property "Scroller" added with a value of the `ItemScroller`
- * instance.
+ * The gui passed to `GuiObj` has a value property "ItemScroller" added with a value of the
+ * `ItemScroller` instance.
  *
  * ### Orientation
  *
@@ -377,7 +377,7 @@ class ItemScroller {
             this.CtrlTotal.Opt('Background' Options.TextBackgroundColor)
         }
         this.SetOrientation()
-        GuiObj.DefineProp('Scroller', { Value: this })
+        GuiObj.DefineProp('ItemScroller', { Value: this })
 
         return
 
@@ -387,15 +387,15 @@ class ItemScroller {
         }
 
         HClickButtonPrevious(Ctrl, *) {
-            this.IncIndex(-1)
+            Ctrl.Gui.ItemScroller.IncIndex(-1)
         }
 
         HClickButtonNext(Ctrl, *) {
-            this.IncIndex(1)
+            Ctrl.Gui.ItemScroller.IncIndex(1)
         }
 
         HClickButtonJump(Ctrl, *) {
-            this.SetIndex(this.CtrlIndex.Text)
+            Ctrl.Gui.ItemScroller.SetIndex(Ctrl.Gui.ItemScroller.CtrlIndex.Text)
         }
 
         _GetParam(Obj, Prop) {
@@ -417,8 +417,8 @@ class ItemScroller {
     Dispose() {
         if this.HasOwnProp('GuiHwnd') {
             G := this.Gui
-            if G.HasOwnProp('Scroller') {
-                G.DeleteProp('Scroller')
+            if G.HasOwnProp('ItemScroller') {
+                G.DeleteProp('ItemScroller')
             }
             this.DeleteProp('GuiHwnd')
         }
