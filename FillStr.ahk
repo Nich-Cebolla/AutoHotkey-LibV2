@@ -80,7 +80,6 @@ class FillStr {
         Filler.CenterAlign('Hello, world!', 26, 1)  ; -------Hello, world!------
         Filler.CenterAlign('Hello, world!', 26, 2)  ; ------Hello, world!-------
         Filler.CenterAlign('Hello, world!', 26, 3)  ; -------Hello, world!-------
-        Filler.CenterAlign('Hello, world!', 26, 4)  ; ------Hello, world!------
         Filler.RightAlign('Hello, world!', 26)      ; -------------Hello, world!
         Filler.RightAlign('Hello, world!', 26, 5)   ; --------Hello, world!-----
      * @
@@ -88,11 +87,12 @@ class FillStr {
      */
     __New(Str) {
         this.Str := Str
-        Loop 10
+        this.Cache := Map()
+        Loop 10 {
             Out .= Str
+        }
         this[10] := Out
         this.Len := StrLen(Str)
-        this.Cache := Map()
     }
     __Item[Qty] {
         /**
@@ -102,29 +102,38 @@ class FillStr {
          * @returns {String} - The string of the specified number of repetitions.
          */
         Get {
-            if !Qty
+            if !Qty {
                 return ''
+            }
+            cache := this.Cache
+            s := this.Str
             Out := ''
-            if this.Cache.Has(Number(Qty))
-                return this.Cache[Number(Qty)]
+            VarSetStrCapacity(&Out, Qty * this.Len)
+            if cache.Has(Number(Qty)) {
+                return cache[Number(Qty)]
+            }
             r := Mod(Qty, 10)
-            Loop r
-                Out .= this.Str
+            Loop r {
+                Out .= s
+            }
             Qty -= r
             if Qty {
-                Split := StrSplit(Qty)
-                for n in Split {
-                    if n = 0
+                for n in StrSplit(Qty) {
+                    if n = 0 {
                         continue
+                    }
                     Tens := 1
-                    Loop StrLen(Qty) - A_Index
-                        Tens := Tens * 10
-                    if this.Cache.Has(Tens) {
-                        Loop n
-                            Out .= this.Cache.Get(Tens)
+                    Loop StrLen(Qty) - A_Index {
+                        Tens *= 10
+                    }
+                    if cache.Has(Tens) {
+                        Loop n {
+                            Out .= cache.Get(Tens)
+                        }
                     } else {
-                        Loop n
+                        Loop n {
                             Out .= _Process(Tens)
+                        }
                     }
                 }
             }
@@ -132,15 +141,15 @@ class FillStr {
 
             _Process(Qty) {
                 local Out
-                ; if !RegExMatch(Qty, '^10+$')
-                ;     throw Error('Logical error in _Process function call.', -1)
                 Tenth := Integer(Qty / 10)
-                if this.Cache.Has(Tenth) {
-                    Loop 10
-                        Out .= this.Cache.Get(Tenth)
-                } else
+                if cache.Has(Tenth) {
+                    Loop 10 {
+                        Out .= cache.Get(Tenth)
+                    }
+                } else {
                     Out := _Process(Tenth)
-                this.Cache.Set(Number(Qty), Out)
+                }
+                cache.Set(Number(Qty), Out)
                 return Out
             }
         }
@@ -275,6 +284,23 @@ class FillStr {
     }
 
     /**
+     * @description - Right aligns a string within a specified width. This method is only compatible
+     * with filler strings that are 1 character in length.
+     * @param {String} Str - The string to right align.
+     * @param {Number} Width - The width of the output string.
+     * @param {Number} [RightOffset=0] - The offset from the right side.
+     * @returns {String} - The right aligned string.
+     */
+    RightAlign(Str, Width, RightOffset := 0) {
+        if RightOffset {
+            if RightOffset + StrLen(Str) > Width
+                RightOffset := Width - StrLen(Str)
+            return this[Width - StrLen(Str) - RightOffset] Str this[RightOffset]
+        }
+        return this[Width - StrLen(Str)] Str
+    }
+
+    /**
      * @description - Right aligns a string within a specified width. This method is compatible with
      * filler strings of any length.
      * @param {String} Str - The string to right align.
@@ -303,22 +329,5 @@ class FillStr {
         if RightOffset > 0
             Out := FillStr.GetOffsetStr(RightOffset, TruncateActionLeft, this) Out
         return Out
-    }
-
-    /**
-     * @description - Right aligns a string within a specified width. This method is only compatible
-     * with filler strings that are 1 character in length.
-     * @param {String} Str - The string to right align.
-     * @param {Number} Width - The width of the output string.
-     * @param {Number} [RightOffset=0] - The offset from the right side.
-     * @returns {String} - The right aligned string.
-     */
-    RightAlign(Str, Width, RightOffset := 0) {
-        if RightOffset {
-            if RightOffset + StrLen(Str) > Width
-                RightOffset := Width - StrLen(Str)
-            return this[Width - StrLen(Str) - RightOffset] Str this[RightOffset]
-        }
-        return this[Width - StrLen(Str)] Str
     }
 }
