@@ -13,7 +13,7 @@ class test {
             arr.Push(Random(1,1000))
         }
         ctrls := this.ctrls := []
-        g := this.g := gui()
+        g := this.g := gui('+Resize')
         g.SetFont('s11', 'Segoe Ui')
         g.Add('Edit', 'w100 Section vEdtPages', '20')
         loop 5 {
@@ -22,16 +22,19 @@ class test {
         ctrls[-1].GetPos(, &y, , &h)
 
         ; horizontal layout
+        g.Add('Text', 'x10 y' (y + h + 25) ' vTxtHorizontal', 'Horizontal layout, index 1').GetPos(, &y, , &h)
         _MakeScroller('H', '1', y + h + 10, &x, &y, &w, &h)
 
         ; diagram layout
+        g.Add('Text', 'x10 y' (y + h + 25) ' vTxtDiagram', 'Diagram layout, index 2').GetPos(, &y, , &h)
         _MakeScroller(
             'BtnPrevious2`nEdtIndex2 TxtOf2`nTxtTotal2 BtnJump2 BtnNext2'
-          , '2', y + h + 25, &x, &y, &w, &h
+          , '2', y + h + 10, &x, &y, &w, &h
         )
 
         ; vertical layout
-        _MakeScroller('V', '3', y + h + 25, &x, &y, &w, &h)
+        g.Add('Text', 'x10 y' (y + h + 25) ' vTxtVertical', 'Vertical layout, index 3').GetPos(, &y, , &h)
+        _MakeScroller('V', '3', y + h + 10, &x, &y, &w, &h)
 
         g.Add('Button', 'ys vBtnUpdatePages', 'Update pages').OnEvent('Click', HClickButtonUpdatePages)
         g['BtnUpdatePages'].GetPos(&x, , &w)
@@ -100,7 +103,24 @@ class test {
         }
 
         _MakeScroller(orientation, name, startY, &x, &y, &w, &h) {
-            this.scroller_%name% := ItemScroller(g, 20, _Callback, { StartX: 10, StartY: startY, Orientation: orientation, CtrlNameSuffix: name, NormalizeButtonWidths: false })
+            this.scroller_%name% := ItemScroller(
+                g
+              , 20
+              , _Callback
+              , {
+                    StartX: 10
+                  , StartY: startY
+                  , Orientation: orientation
+                  , CtrlNameSuffix: name
+                  , NormalizeButtonWidths: false
+                  , BtnFontFamily: 'Segoe Ui'
+                  , BtnFontOpt: 's11 q5'
+                  , EditFontFamily: 'Segoe Ui'
+                  , EditFontOpt: 's11 q5'
+                  , TextFontFamily: 'Segoe Ui'
+                  , TextFontOpt: 's11 q5'
+                }
+            )
             this.scroller_%name%.CtrlNext.GetPos(&x, &y, &w, &h)
             this.scroller_%name%.SetReferenceData('ctrls', ctrls, 'arr', arr)
             this.scrollers.Push(this.scroller_%name%)
