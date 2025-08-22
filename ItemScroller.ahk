@@ -39,9 +39,6 @@
  * The return object from `ItemScroller.Diagram` is set to the property `ItemScrollerObj.Diagram`.
  */
 class ItemScroller {
-    static __New() {
-
-    }
 
     /**
      * @description - Centers a list of windows horizontally with respect to one another, splitting
@@ -426,6 +423,7 @@ class ItemScroller {
             this.DeleteProp('GuiHwnd')
         }
         list := []
+        list.Capacity := ObjOwnPropCount(this)
         for prop, val in this.OwnProps() {
             if IsObject(val) {
                 list.Push(prop)
