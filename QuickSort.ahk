@@ -15,7 +15,7 @@
  *
  * @param {Array} Arr - The array to be sorted.
  *
- * @param {*} CompareFn - A `Func` or callable object that compares two values.
+ * @param {*} [CompareFn = (a, b) => a - b] - A `Func` or callable object that compares two values.
  *
  * Parameters:
  * 1. A value to be compared.
