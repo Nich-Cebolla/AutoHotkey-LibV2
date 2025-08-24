@@ -105,22 +105,21 @@ QuickSort(Arr, CompareFn := (a, b) => a - b, ArrSizeThreshold := 17, PivotCandid
         }
         candidates := []
         loop candidates.Capacity := PivotCandidates {
-            candidates.Push(Random(1, Arr.Length))
+            candidates.Push(Arr[Random(1, Arr.Length)])
         }
         i := 1
         loop candidates.Length - 1 {
             j := i
             current := candidates[++i]
-            value := Arr[Current]
             loop j {
-                if CompareFn(Arr[candidates[j]], value) < 0 {
+                if CompareFn(candidates[j], current) < 0 {
                     break
                 }
                 candidates[j + 1] := candidates[j--]
             }
             candidates[j + 1] := current
         }
-        pivot := Arr[candidates[halfPivotCandidates]]
+        pivot := candidates[halfPivotCandidates]
         left := []
         right := []
         left.Capacity := right.Capacity := Arr.Length
