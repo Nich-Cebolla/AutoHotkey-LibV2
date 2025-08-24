@@ -319,21 +319,18 @@ class ItemScroller {
         List := this.List := []
         List.Length := ObjOwnPropCount(Options.Controls)
         suffix := Options.CtrlNameSuffix
-        paddingX := this.__PaddingX := Options.PaddingX
-        paddingY := this.__PaddingY := Options.PaddingY
-        this.__StartX := Options.StartX
-        this.__StartY := Options.StartY
-        this.__Orientation := Options.Orientation
+        paddingX := Options.PaddingX
+        paddingY := Options.PaddingY
         GreatestW := 0
         for Name, Obj in Options.Controls.OwnProps() {
             ; Set the font first so it is reflected in the width.
             GuiObj.SetFont()
             switch Obj.Type, 0 {
                 case 'Button':
-                    if Options.BtnFontOpt {
-                        GuiObj.SetFont(Options.BtnFontOpt)
+                    if Options.ButtonFontOpt {
+                        GuiObj.SetFont(Options.ButtonFontOpt)
                     }
-                    _SetFontFamily(Options.BtnFontFamily)
+                    _SetFontFamily(Options.ButtonFontFamily)
                 case 'Edit':
                     if Options.EditFontOpt {
                         GuiObj.SetFont(Options.EditFontOpt)
@@ -361,7 +358,7 @@ class ItemScroller {
             }
         }
         this.UpdatePages(Pages)
-        this.CtrlIndex.Move(, , Options.EditIndexWidth)
+        this.CtrlIndex.Move(, , Options.EditWidth)
         if Options.NormalizeButtonWidths {
             for ctrl in List {
                 if ctrl.Type == 'Button' {
@@ -442,15 +439,17 @@ class ItemScroller {
     }
 
     /**
-     * @param {String} str - The string to measure. Multi-line strings are not valid.
-     * @returns {Integer} - The width of the string in pixels using the font from the "Total" text
-     * control.
+     * @param {String} Str - The string to measure. Multi-line strings are not valid.
+     * @param {Gui.Control} Ctrl - The control to use for the device context. If unset, "CtrlTotal"
+     * is used.
+     * @param {VarRef} [OutHeight] - A variable that will receive the width of the string in pixels.
+     * @param {VarRef} [OutHeight] - A variable that will receive the height of the string in pixels.
      */
-    MeasureText(Str) {
+    MeasureText(Str, Ctrl?, &OutWidth?, &OutHeight?) {
         buf := Buffer(StrPut(Str, 'UTF-16'))
         StrPut(str, buf, 'UTF-16')
         sz := Buffer(8)
-        context := ItemScrollerSelectFontIntoDc(this.CtrlTotal.Hwnd)
+        context := ItemScrollerSelectFontIntoDc(IsSet(Ctrl) ? Ctrl.Hwnd : this.CtrlTotal.Hwnd)
         if DllCall(
             'Gdi32.dll\GetTextExtentPoint32'
           , 'Ptr', context.Hdc
@@ -460,11 +459,36 @@ class ItemScroller {
           , 'Int'
         ) {
             context()
-            return NumGet(sz, 0, 'int')
+            OutHeight := NumGet(sz, 4, 'int')
+            OutWidth := NumGet(sz, 0, 'int')
         } else {
             context()
             throw OSError()
         }
+    }
+
+    /**
+     * Adjusts a control's width and height as a function of the dimensions of its text content. Use
+     * this to adjust a control's dimensions after updating the font size / font name. You might
+     * want to call {@link ItemScroller.Prototype.MeasureText} before and after changing the font
+     * size, so you can use the ratio to multiply by the width and height to get evenly scaled
+     * dimensions.
+     * @param {String} Ctrl - The control to measure. The value returned by the control's "Text"
+     * property is measured, using the control as the device context. The control's width and height
+     * are updated using the text's dimensions to determine the width and height
+     * @param {Integer} [WidthPadding = 0] - The number of pixels to add to the control's width.
+     * @param {Integer} [HeightPadding = 0] - The number of pixels to add to the control's height.
+     * @param {VarRef} [OutWidth] - A variable that will receive the control's new width.
+     * @param {VarRef} [OutHeight] - A variable that will receive the control's new height.
+     */
+    ScaleControlText(Ctrl, FontOpt?, FontName?, WidthPadding := 0, HeightPadding := 0, &OutWidth?, &OutHeight?) {
+        this.MeasureText(Ctrl.Text, Ctrl, &w1, &h1)
+        Ctrl.SetFont(FontOpt ?? unset, FontName ?? unset)
+        this.MeasureText(Ctrl.Text, Ctrl, &w2, &h2)
+        Ctrl.GetPos(, , &w, &h)
+        OutWidth := w * w2 / w1 + WidthPadding
+        OutHeight := h * h2 / h1 + HeightPadding
+        Ctrl.Move(, , OutWidth, OutHeight)
     }
 
     SetIndex(Value) {
@@ -486,30 +510,61 @@ class ItemScroller {
     }
 
     SetOrientation(Orientation?, StartX?, StartY?, PaddingX?, PaddingY?) {
+        options := this.Options
         if IsSet(StartX) {
-            this.__StartX := StartX
+            options.StartX := StartX
         } else {
-            StartX := this.__StartX
+            StartX := options.StartX
         }
         if IsSet(StartY) {
-            this.__StartY := StartY
+            options.StartY := StartY
         } else {
-            StartY := this.__StartY
+            StartY := options.StartY
         }
         if IsSet(PaddingX) {
-            this.__PaddingX := PaddingX
+            options.PaddingX := PaddingX
         } else {
-            PaddingX := this.__PaddingX
+            PaddingX := options.PaddingX
         }
         if IsSet(PaddingY) {
-            this.__PaddingY := PaddingY
+            options.PaddingY := PaddingY
         } else {
-            PaddingY := this.__PaddingY
+            PaddingY := options.PaddingY
         }
         if IsSet(Orientation) {
-            this.__Orientation := Orientation
+            options.Orientation := Orientation
+        } else {
+            orientation := options.Orientation
         }
-        switch this.__Orientation, 0 {
+        if options.ButtonWidth {
+            this.CtrlPrevious.Move(, , options.ButtonWidth)
+            this.CtrlJump.Move(, , options.ButtonWidth)
+            this.CtrlNext.Move(, , options.ButtonWidth)
+        }
+        if options.ButtonHeight {
+            this.CtrlPrevious.Move(, , , options.ButtonHeight)
+            this.CtrlJump.Move(, , , options.ButtonHeight)
+            this.CtrlNext.Move(, , , options.ButtonHeight)
+        }
+        if options.EditWidth {
+            this.CtrlIndex.Move(, , options.EditWidth)
+        }
+        if options.EditHeight {
+            this.CtrlIndex.Move(, , , options.EditHeight)
+        }
+        if options.TextOfWidth {
+            this.CtrlOf.Move(, , options.TextOfWidth)
+        }
+        if options.TextOfHeight {
+            this.CtrlOf.Move(, , , options.TextOfHeight)
+        }
+        if options.TextTotalWidth {
+            this.CtrlTotal.Move(, , options.TextTotalWidth)
+        }
+        if options.TextTotalHeight {
+            this.CtrlTotal.Move(, , , options.TextTotalHeight)
+        }
+        switch this.Orientation, 0 {
             case 'H':
                 maxH := 0
                 for ctrl in this.List {
@@ -547,7 +602,7 @@ class ItemScroller {
                     Y += h + PaddingY
                 }
             default:
-                this.Diagram := ItemScroller.Diagram(this.Gui, this.__Orientation, StartX, StartY, PaddingX, PaddingY)
+                this.Diagram := ItemScroller.Diagram(this.Gui, orientation, StartX, StartY, PaddingX, PaddingY)
                 for row in this.Diagram.Rows {
                     ItemScroller.CenterVList(Row.Controls)
                 }
@@ -568,26 +623,30 @@ class ItemScroller {
             this.CtrlIndex.Text := this.__Pages
         }
         this.CtrlTotal.Text := this.__Pages
-        this.CtrlTotal.GetPos(&x, &y, &w, &h)
-        w2 := this.MeasureText(this.__Pages)
-        this.CtrlTotal.Move(, , w2)
+        this.MeasureText(this.__Pages, , &w, &h)
+        if !this.Options.TextTotalWidth {
+            this.CtrlTotal.Move(, , w)
+        }
+        if !this.Options.TextTotalHeight {
+            this.CtrlTotal.Move(, , , h)
+        }
         this.SetOrientation()
     }
 
     Gui => GuiFromHwnd(this.GuiHwnd)
 
     Orientation {
-        Get => this.__Orientation
+        Get => this.Options.Orientation
         Set => this.SetOrientation(Value)
     }
 
     PaddingX {
-        Get => this.__PaddingX
+        Get => this.Options.PaddingX
         Set => this.SetOrientation(, , , Value)
     }
 
     PaddingY {
-        Get => this.__PaddingY
+        Get => this.Options.PaddingY
         Set => this.SetOrientation(, , , , Value)
     }
 
@@ -597,12 +656,12 @@ class ItemScroller {
     }
 
     StartX {
-        Get => this.__StartX
+        Get => this.Options.StartX
         Set => this.SetOrientation(, Value)
     }
 
     StartY {
-        Get => this.__StartY
+        Get => this.Options.StartY
         Set => this.SetOrientation(, , Value)
     }
 
@@ -631,13 +690,16 @@ class ItemScroller {
               , Jump: { Name: 'BtnJump', Type: 'Button', Opt: '', Text: 'Jump', Index: 5 }
               , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: '>', Index: 6 }
             }
-          , BtnFontFamily: ''
-          , BtnFontOpt: ''
+          , ButtonFontFamily: ''
+          , ButtonFontOpt: ''
+          , ButtonHeight: ''
+          , ButtonWidth: ''
           , CtrlNameSuffix: ''
           , EditBackgroundColor: ''
           , EditFontFamily: ''
           , EditFontOpt: ''
-          , EditIndexWidth: 30
+          , EditHeight: ''
+          , EditWidth: 30
           , NormalizeButtonWidths: true
           ; Orientation can be "H" for horizontal, "V" for vertical, or it can be a diagrammatic
           ; representation of the arrangement as described in the description of this class.
@@ -649,6 +711,10 @@ class ItemScroller {
           , TextBackgroundColor: ''
           , TextFontFamily: ''
           , TextFontOpt: ''
+          , TextOfHeight: ''
+          , TextOfWidth: ''
+          , TextTotalHeight: ''
+          , TextTotalWidth: ''
         }
 
         /**
