@@ -58,7 +58,7 @@ StrComparePtr(Ptr1, Ptr2, Len1 := -1, Len2 := -1, LocaleName := '', Flags := 0, 
         ) {
             return result
         } else {
-            throw OSError(A_LastError)
+            throw OSError()
         }
     } else {
         if LocaleName {
@@ -77,7 +77,7 @@ StrComparePtr(Ptr1, Ptr2, Len1 := -1, Len2 := -1, LocaleName := '', Flags := 0, 
             ) {
                 return result
             } else {
-                throw OSError(A_LastError)
+                throw OSError()
             }
         } else {
             if result := DllCall(
@@ -95,7 +95,7 @@ StrComparePtr(Ptr1, Ptr2, Len1 := -1, Len2 := -1, LocaleName := '', Flags := 0, 
             ) {
                 return result
             } else {
-                throw OSError(A_LastError)
+                throw OSError()
             }
         }
     }
