@@ -1,4 +1,13 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/test-files/demo-MsLlHookStruct.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
+/**
+ * This is a demo for using
+ * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MsLlHookStruct.ahk MsLlHookStruct}.
+ */
 test()
 
 class test {
@@ -7,17 +16,16 @@ class test {
         this.OnExitCallback := this.Handle := 0
     }
     static Call() {
-        ; Get handle to "user32.dll"
+        ; Get handle to "user32.dll".
         this.hMod := DllCall('GetModuleHandle', 'Str', 'user32.dll', 'Ptr')
-        ; Get address to functions (not strictly necessary, but having the address to "CallNextHookEx"
-        ; is beneficial and so we might as well get all three.
+        ; Get address to functions.
         for fn in ['SetWindowsHookExW', 'UnhookWindowsHookEx', 'CallNextHookEx'] {
             this.proc_%fn% := DllCall('GetProcAddress', 'Ptr', this.hMod, 'AStr', fn, 'Ptr')
             if !this.proc_%fn% {
                 throw OSError()
             }
         }
-        ; Get callback ptr
+        ; Get callback ptr.
         this.MouseHookProcPtr := CallbackCreate(LowLevelMouseProc)
 
         ; A gui is not necessary to use the library; this is for the example.
@@ -64,6 +72,9 @@ class test {
     }
 }
 
+/**
+ * {@link https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc}.
+ */
 LowLevelMouseProc(nCode, wParam, lParam) {
     ; Per the advisement "If nCode is less than zero, the hook procedure must pass the message to the
     ; CallNextHookEx function without further processing and should return the value returned by
@@ -101,7 +112,7 @@ LowLevelMouseProc(nCode, wParam, lParam) {
  *
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msllhookstruct}
  *
- * There is one other library for setting mouse hooks in this repo:
+ * There is one other library for setting a mouse hook in this repo:
  * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MouseHookStruct.ahk}.
  */
 class MsLlHookStruct {
