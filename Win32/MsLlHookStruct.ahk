@@ -106,7 +106,7 @@ class MsLlHookStruct {
     GetMouseData() {
         switch this.Msg {
             ; WM_MOUSEWHEEL
-            case 0x020E:
+            case 0x020A:
                 value := this.MouseData >> 16
                 return (value & 0x8000) ? value - 0x10000 : value
 
