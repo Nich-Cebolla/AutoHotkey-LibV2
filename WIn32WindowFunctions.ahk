@@ -59,6 +59,10 @@ DeferWindowPos(hWinPosInfo, Hwnd, X, Y, W, H, uFlags := 0, HwndInsertAfter := 0)
     , 'int', X, 'int', Y, 'int', W, 'int', H, 'uint', uFlags, 'ptr')
 }
 
+DestroyWindow(Hwnd) {
+    return DllCall('DestroyWindow', 'ptr', Hwnd, 'int')
+}
+
 /**
  * @description - Calls `EndDeferWindowPos`. Use this after setting the DWP struct.
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enddeferwindowpos}
