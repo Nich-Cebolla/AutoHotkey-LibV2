@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/MakeInputControlGroup.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 /**
  * `MakeInputControlGroup` is a function that creates a group of controls in a series of rows and
  * columns, where each row is associated with a particular input item from the parameter `LabelList`.
@@ -150,4 +155,6 @@ Options := {
   , paddingY: 5
   , setButton: true
   , setButtonPrefix: 'BtnSet'
+  , startX: ''
+  , startY: ''
 }
