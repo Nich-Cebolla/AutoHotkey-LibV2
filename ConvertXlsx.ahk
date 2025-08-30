@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/ConvertXlsx.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 class ConvertXlsx {
     /**
      * Opens an .xlsx file using the Excel COM object, then calls Workbook.SaveAs.
@@ -72,7 +77,7 @@ class ConvertXlsx {
      * |  xlXMLSpreadsheet               |  46         |  XML Spreadsheet                            |  *.xml                     |
      * @returns {String} - The path where the ile was saved.
      */
-    static Call(InPath, OutPath?, Overwrite := false, FileFormat := 6) {
+    static Call(InPath, OutPath?, Overwrite := false, FileFormat := 62) {
         if !IsSet(OutPath) {
             SplitPath(InPath, , &Dir, , &Name)
             OutPath := Dir '\' Name '.' this.Extensions.Get(FileFormat)
@@ -148,7 +153,7 @@ class ConvertXlsx {
           , 36, 'prn'
           , 20, 'txt'
           , 42, 'txt'
-          , 45, 'mhtl'
+          , 45, 'mhtml'
           , 14, 'wj2'
           , 40, 'wj3'
           , 41, 'wj3'
