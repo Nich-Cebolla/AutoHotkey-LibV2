@@ -197,7 +197,8 @@ class StructToClass {
                             ind(5) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, this.offset_' member.Symbol ')' le
                             ind(4) '}' le
                             ind(3) '} else {' le
-                            ind(4) 'this.__' member.Symbol ' := Buffer(StrPut(Value, ' q 'UTF-16' q ')' le
+                            ind(4) 'this.__' member.Symbol ' := Buffer(StrPut(Value, ' q 'UTF-16' q '))' le
+                            ind(4) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, this.offset_' member.Symbol ')' le
                             ind(3) '}' le
                             ind(3) 'StrPut(Value, this.__' member.Symbol ', ' q 'UTF-16' q ')' le
                             ind(2) '}' le
