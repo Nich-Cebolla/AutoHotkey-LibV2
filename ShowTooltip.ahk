@@ -5,6 +5,20 @@
 */
 
 class ShowTooltip {
+    /**
+     * By default, `ShowTooltip.Numbers` is an array with integers 1-20, and is used to track which
+     * tooltip id numbers are available and which are in use. If tooltips are created from multiple
+     * sources, then the list is invalid because it may not know about every existing tooltip. To
+     * overcome this, `ShowTooltip.Numbers` can be set with an array that is shared by other objects,
+     * sharing the pool of available id numbers.
+     *
+     * All instances of `ShowTooltip` will inherently draw from the same array, and so calling
+     * `ShowTooltip.SetNumbersList` is unnecessary if the objects handling tooltip creation are all
+     * `ShowTooltip` objects.
+     */
+    static SetNumbersList(List) {
+        this.Numbers := List
+    }
     static DefaultOptions := {
         Duration: 2000
       , X: 0
