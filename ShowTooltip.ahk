@@ -119,4 +119,12 @@ class ShowTooltip {
         ToolTip(,,,n)
         ShowTooltip.Numbers.Push(n)
     }
+    /**
+     * @param {Object} [DefaultOptions] - An object with zero or more options as property : value pairs.
+     * These options are used when a corresponding option is not passed to {@link ShowTooltip.Prototype.Call}.
+     * The existing default options are overwritten with the new object.
+     */
+    SetDefaultOptions(DefaultOptions) {
+        this.DefaultOptions := DefaultOptions
+    }
 }
