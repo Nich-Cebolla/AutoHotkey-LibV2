@@ -142,9 +142,10 @@ class MakeTable {
      * boundary between rows.
      * @param {String} [Options.LinePrefix = ""] - The literal string that is added before every line.
      * @param {String} [Options.LineSuffix = ""] - The literal string that is added after every line.
-     * @param {Integer[]} [Options.MaxWidths = ""] - If in use, `Options.MaxWidths` is an array of
+     * @param {Integer|Integer[]} [Options.MaxWidths = ""] - If in use, `Options.MaxWidths` is an array of
      * integers which define the maximum allowable width per column. If the text in a cell exceeds the
-     * maximum, `MakeTable` breaks the text into multiple lines.
+     * maximum, `MakeTable` breaks the text into multiple lines. If `Options.MaxWidths` is an integer,
+     * that value is applied as the max width of all columns.
      * @param {String} [Options.OutputColumnSeparator = ""] - The literal string that is used to
      * separate cells.
      * @param {Boolean} [OutputLineBetweenRows = false] - If true, there will be an extra line
@@ -190,6 +191,9 @@ class MakeTable {
         rows := []
         rows.Capacity := lines.Length
         maxWidths := Options.MaxWidths
+        if IsNumber(maxWidths) {
+            maxWidths := MaxWidthHelper(maxWidths)
+        }
         if maxWidths {
             Measure := _Measure1
         } else {
@@ -340,5 +344,14 @@ class MakeTable {
             }
             return Options
         }
+    }
+}
+
+class MaxWidthHelper {
+    __New(Value) {
+        this.Value := Value
+    }
+    __Item[index] {
+        Get => this.Value
     }
 }
