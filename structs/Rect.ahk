@@ -806,7 +806,7 @@ PtSetCaretPos(pt) {
  * If false, the function creates a new object.
  * @returns {Point}
  */
-PtToClient(Hwnd, InPlace := false) {
+PtToClient(pt, Hwnd, InPlace := false) {
     if !InPlace {
         pt := Point(pt.X, pt.Y)
     }
