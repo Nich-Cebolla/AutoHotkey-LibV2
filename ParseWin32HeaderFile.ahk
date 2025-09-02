@@ -503,6 +503,7 @@ class Win32StructGetMemberSize {
           , 'MSGBOXCALLBACK', 'A_PtrSize'
           , 'PEN_FLAGS', '4'
           , 'PEN_MASK', '4'
+          , 'PFNTVCOMPARE', 'A_PtrSize'
           , 'POINT', '8'
           , 'POINTER_BUTTON_CHANGE_TYPE', '4'
           , 'POINTER_DEVICE_CURSOR_TYPE', '4'
