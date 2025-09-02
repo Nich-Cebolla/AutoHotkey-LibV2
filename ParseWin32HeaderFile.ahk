@@ -484,6 +484,7 @@ class Win32StructGetMemberSize {
           , 'HINSTANCE', 'A_PtrSize'
           , 'HMENU', 'A_PtrSize'
           , 'HMONITOR', 'A_PtrSize'
+          , 'HTREEITEM', 'A_PtrSize'
           , 'HWND', 'A_PtrSize'
           , 'INT32', '4'
           , 'LCID', '4'
