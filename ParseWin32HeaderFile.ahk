@@ -4,9 +4,6 @@
     License: MIT
 */
 
-; https://github.com/Nich-Cebolla/StringifyAll
-#include <StringifyAll>
-
 /**
  * @description - This function is modeled after the WinUser.H file on my computer, which was presumably
  * created when Visual Studio was installed. It does a good job with that particular file. It will
