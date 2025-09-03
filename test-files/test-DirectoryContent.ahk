@@ -8,34 +8,39 @@
 ; Only needed if writing output to file
 #include *i <StringifyAll>
 
-wd := A_Temp '\test-DirectoryContent'
-if DirExist(wd) {
-    DirDelete(wd, 1)
-}
-DirCreate(wd)
-SetWorkingDir(wd)
-root := wd '\' test_DirectoryContent.directory
-for path in test_DirectoryContent.Paths {
-    if !path {
-        continue
-    }
-    if !DirExist(root '\' path) {
-        DirCreate(root '\' path)
-    }
-}
-for path in test_DirectoryContent.Files {
-    if !DirExist(root '\' path) {
-        FileAppend('', root '\' path)
-    }
-}
-OnExit(_DeleteDir.Bind(wd))
-_DeleteDir(wd, *) {
+SetWorkingDirectory()
+
+test_DirectoryContent(0)
+
+SetWorkingDirectory() {
+
+    wd := A_Temp '\test-DirectoryContent'
     if DirExist(wd) {
         DirDelete(wd, 1)
     }
+    DirCreate(wd)
+    SetWorkingDir(wd)
+    root := wd '\' test_DirectoryContent.directory
+    for path in test_DirectoryContent.Paths {
+        if !path {
+            continue
+        }
+        if !DirExist(root '\' path) {
+            DirCreate(root '\' path)
+        }
+    }
+    for path in test_DirectoryContent.Files {
+        if !DirExist(root '\' path) {
+            FileAppend('', root '\' path)
+        }
+    }
+    OnExit(_DeleteDir.Bind(wd))
+    _DeleteDir(wd, *) {
+        if DirExist(wd) {
+            DirDelete(wd, 1)
+        }
+    }
 }
-
-test_DirectoryContent(0)
 
 class test_DirectoryContent {
     static __New() {
@@ -144,9 +149,6 @@ class test_DirectoryContent {
             }
         }
 
-        _Recurse(items) {
-
-        }
         _Output1(line, what, arr) {
             if arr.Length {
                 s := ''
