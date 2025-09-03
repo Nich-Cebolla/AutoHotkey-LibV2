@@ -70,9 +70,22 @@ class StructToClass {
           , InitialIndent: 0
           , Quote: '`''
         }
-        this.MakeTableOpt := {
+        this.MakeTableOptMembers := {
             AddHeaderSeparator: false
           , ColumnPadding: ''
+          , InputColumnSeparator: '`t'
+          , InputRowSeparator: '\R'
+        ;   , LinePrefix: ''
+          , LineSuffix: ''
+          , MaxWidths: ''
+          , OutputColumnSeparator: ''
+          , OutputLineBetweenRows: false
+        ;   , OutputRowSeparator: '`n'
+          , TrimCharacters: ''
+        }
+        this.MakeTableOptOffsets := {
+            AddHeaderSeparator: false
+          , ColumnPadding: '`s'
           , InputColumnSeparator: '`t'
           , InputRowSeparator: '\R'
         ;   , LinePrefix: ''
@@ -97,9 +110,10 @@ class StructToClass {
         initialIndent := opt.InitialIndent
         indent := opt.Indent
         q := opt.Quote
-        makeTableOpt := this.MakeTableOpt
-        makeTableOpt.LinePrefix := ind(2)
-        makeTableOpt.OutputRowSeparator := le
+        makeTableOptMembers := this.MakeTableOptMembers
+        makeTableOptOffsets := this.MakeTableOptOffsets
+        makeTableOptMembers.LinePrefix := makeTableOptOffsets.LinePrefix := ind(2)
+        makeTableOptMembers.OutputRowSeparator := makeTableOptOffsets.OutputRowSeparator := le
         tableHeaders := '; Size`tType`tSymbol`tOffset`tPadding'
         if IsSet(Name) {
             for struct in parsed.Structs {
@@ -128,24 +142,24 @@ class StructToClass {
                     member := members[A_Index]
                     membersStr .= member.Size ' + `t; ' member.Type '    `t' member.Symbol '    `t0`t`n'
                     _ProcessMember1(member)
-                    offsets .= ind(2) 'proto.offset_' member.Symbol ' := 00' le
+                    offsets .= 'proto.offset_' member.Symbol '`t:= 00`n'
                 }
                 member := members[-1]
                 membersStr .= member.Size ' `t; ' member.Type '    `t' member.Symbol '    `t0`t`n'
                 _ProcessMember2(member)
-                offsets .= ind(2) 'proto.offset_' member.Symbol ' := 00' le
+                offsets .= 'proto.offset_' member.Symbol '`t:= 00`n'
             } else {
                 ; all offsets were calculated
                 loop members.Length - 1 {
                     member := members[A_Index]
                     membersStr .= member.EffectiveSize ' + `t; ' member.Type '    `t' member.Symbol '    `t' member.Offset '    `t' member.Padding '`n'
                     _ProcessMember1(member)
-                    offsets .= ind(2) 'proto.offset_' member.Symbol ' := ' member.Offset le
+                    offsets .= 'proto.offset_' member.Symbol '`t:= ' member.Offset '`n'
                 }
                 member := members[-1]
                 membersStr .= member.EffectiveSize ' `t; ' member.Type '    `t' member.Symbol '    `t' member.Offset '    `t' member.Padding '`n'
                 _ProcessMember2(member)
-                offsets .= ind(2) 'proto.offset_' member.Symbol ' := ' member.Offset le
+                offsets .= 'proto.offset_' member.Symbol '`t:= ' member.Offset '`n'
             }
             s .= (
                 ind(0) 'class ' RegExReplace(struct.Symbol, '^tag', '') ' {' le
@@ -153,8 +167,8 @@ class StructToClass {
                 ind(2) 'this.DeleteProp(' q '__New' q ')' le
                 ind(2) 'proto := this.Prototype' le
                 ind(2) 'proto.cbSize := ' le
-                MakeTable(SubStr(membersStr, 1, -1), makeTableOpt) le
-                offsets
+                MakeTable(SubStr(membersStr, 1, -1), makeTableOptMembers) le
+                MakeTable(SubStr(offsets, 1, -1), makeTableOptOffsets) le
                 ind(1) '}' le
                 ind(1) '__New(' params ') {' le
                 ind(2) 'this.Buffer := Buffer(this.cbSize)' le
