@@ -24,10 +24,10 @@ class MakeTable {
      *    , LineSuffix: "  |"           ; Adds two spaces and a pipe after every line
      *    , OutputColumnSeparator: "|"  ; Adds a pipe in-between every column
      *    , AddHeaderSeparator: true    ; Adds the markdown-style header separator
-     *    , ColumnPadding: '`s`s'       ; Adds two space characters on the left and right side of each column (default)
-     *    , MaxWidths: ''               ; No maximum widths (default)
-     *    , InputRowSeparator: '\R'     ; Rows are separated by line break characters (default)
-     *    , InputColumnSeparator: '`t'  ; Columns are separated by tab characters in the input text (default)
+     *    , ColumnPadding: "`s`s"       ; Adds two space characters on the left and right side of each column (default)
+     *    , MaxWidths: ""               ; No maximum widths (default)
+     *    , InputRowSeparator: "\R"     ; Rows are separated by line break characters (default)
+     *    , InputColumnSeparator: "`t"  ; Columns are separated by tab characters in the input text (default)
      *  }
      * @
      *
@@ -61,10 +61,9 @@ class MakeTable {
      *  Options := {
      *      MaxWidths: [20,20,22,20,25] ; Defines the maximum widths for each column
      *    , AddHeaderSeparator: true    ; Adds the markdown-style header separator (default)
-     *    , ColumnPadding: '`s`s'       ; Adds two space characters on the left and right side of each column (default)
-     *    , MaxWidths: ''               ; No maximum widths (default)
-     *    , InputRowSeparator: '\R'     ; Rows are separated by line break characters (default)
-     *    , InputColumnSeparator: '`t'  ; Columns are separated by tab characters in the input text (default)
+     *    , ColumnPadding: "`s`s"       ; Adds two space characters on the left and right side of each column (default)
+     *    , InputRowSeparator: "\R"     ; Rows are separated by line break characters (default)
+     *    , InputColumnSeparator: "`t"  ; Columns are separated by tab characters in the input text (default)
      *  }
      * @
      *
@@ -146,9 +145,21 @@ class MakeTable {
      * integers which define the maximum allowable width per column. If the text in a cell exceeds the
      * maximum, `MakeTable` breaks the text into multiple lines. If `Options.MaxWidths` is an integer,
      * that value is applied as the max width of all columns.
+     * @param {String[]} [Options.OutputColumnPrefix = ""] - Used to specify strings that prefixe
+     * columns. The difference between `Options.OutputColumnPrefix` and `Options.OutputColumnSeparator`
+     * is that `Options.OutputColumnSeparator` is applied to all columns, whereas
+     * `Options.OutputColumnPrefix` is used to linePrefix every line of a specific column with a specific
+     * string. The value of this option, if used, should be an array of strings. The indices of the
+     * array are associated with the column index that is to be prefixed by the string at that index.
+     * For example, if I have a table that is three columns, and I want to linePrefix each line of the
+     * third column with "; ", then I would set `Options.ColumnPrefix := ["", "", "; "]`. I added
+     * this option with the intent of using it to comment out portions of text when using `MakeTable`
+     * to generate pretty-formatted code.
+     * @param {Boolean} [Options.OutputColumnPrefixSkipFirstRow = false] - If true, the first
+     * line is not affected by `Options.OutputColumnPrefix`.
      * @param {String} [Options.OutputColumnSeparator = ""] - The literal string that is used to
      * separate cells.
-     * @param {Boolean} [OutputLineBetweenRows = false] - If true, there will be an extra line
+     * @param {Boolean} [Options.OutputLineBetweenRows = false] - If true, there will be an extra line
      * separating the rows. The line will look just like the header separator seen in the above
      * examples.
      * @param {String} [Options.OutputRowSeparator = "`n"] - The literal string that is used to
@@ -161,18 +172,20 @@ class MakeTable {
      * represent the number of lines each row occupies. This only has significance when
      * `Options.MaxWidths` is used.
      *
-     * @param {VarRef} [OutWidths] - A variable that will receive an array of integers that represent
-     * the actual width of each column.
-     *
      * @returns {String}
      *
      * @class
      */
-    static Call(Str?, Options?, &OutRowLines?, &OutWidths?) {
+    static Call(Str?, Options?, &OutRowLines?) {
         Options := this.Options(Options ?? {})
         if !IsSet(Str) {
             Str := A_Clipboard
         }
+        ; `MakeTable` allows regex patterns for `Options.InputRowSeparator` and
+        ; `Options.InputColumnSeparator`. To use the patterns with `StrSplit`, we must first use
+        ; `RegExReplace` with a single character. This block searches the input string for two
+        ; characters that do not exist in the string, then replaces the patterns with the characters,
+        ; then calls `StrSplit`.
         n := 0xFFFC
         while InStr(Str, Chr(n)) {
             n++
@@ -184,28 +197,57 @@ class MakeTable {
         inputColumnSeparator := Chr(n2)
         Str := RegExReplace(RegExReplace(Str, Options.InputColumnSeparator, inputColumnSeparator), Options.InputRowSeparator, Chr(n))
         lines := StrSplit(Str, Chr(n), Options.TrimCharacters)
-        OutWidths := []
-        OutWidths.Default := 0
-        OutRowLines := []
-        OutRowLines.Default := 1
-        rows := []
-        rows.Capacity := lines.Length
+
+        ; Prepare column linePrefix
+        columnPrefixSkipFirstLine := Options.OutputColumnPrefixSkipFirstRow
+        if columnPrefix := Options.OutputColumnPrefix {
+            columnPrefixLen := []
+            for str in columnPrefix {
+                columnPrefixLen.Push(StrLen(str))
+            }
+            columnPrefix.Default := ''
+            columnPrefixLen.Default := 0
+        } else {
+            columnPrefix := MakeTableValueHelper('')
+            columnPrefixLen := MakeTableValueHelper(0)
+        }
+
+        columnPadding := Options.ColumnPadding
+        columnPaddingLen := StrLen(columnPadding)
         maxWidths := Options.MaxWidths
         if IsNumber(maxWidths) {
-            maxWidths := MaxWidthHelper(maxWidths)
+            maxWidths := MakeTableValueHelper(maxWidths)
         }
         if maxWidths {
             Measure := _Measure1
         } else {
             Measure := _Measure2
         }
+
+        ; extraLen stores integers representing string length in characters that gets added to
+        ; a column. The value of the integers depends on the input options and the column index.
+        ; See `_Measure1` for how the values are determined.
+        extraLen := []
+        columnWidths := []
+        columnWidths.Default := 0
+        OutRowLines := []
+        OutRowLines.Default := 1
+        rows := []
+        rows.Capacity := lines.Length
         r := 0
-        padLen := StrLen(Options.ColumnPadding)
         loop lines.Length {
             ++r
             OutRowLines.Push(1)
             rows.Push(StrSplit(lines[r], inputColumnSeparator, Options.TrimCharacters))
-            OutWidths.Length := Max(OutWidths.Length, rows[r].Length)
+
+            ; Ensures the length of the arrays are equal to the number of columns in the table
+            if rows[r].Length > columnWidths.Length {
+                extraLen.Length := columnWidths.Length := rows[r].Length
+            }
+            if columnPrefix is Array {
+                columnPrefix.Length := columnPrefixLen.Length := columnWidths.Length
+            }
+
             c := 0
             loop rows[r].Length {
                 ++c
@@ -215,59 +257,69 @@ class MakeTable {
         r := 0
         loop lines.Length {
             ++r
-            if rows[r].Length < OutWidths.Length {
-                loop OutWidths.Length - rows[r].Length {
+            if rows[r].Length < columnWidths.Length {
+                loop columnWidths.Length - rows[r].Length {
                     rows[r].Push([''])
                 }
             }
         }
         r := 0
-        prefix := Options.LinePrefix
-        pad := Options.ColumnPadding
-        sep := Options.OutputColumnSeparator
+        linePrefix := Options.LinePrefix
+        columnSeparator := Options.OutputColumnSeparator
         le := Options.OutputRowSeparator
-        suffix := Options.LineSuffix
+        lineSuffix := Options.LineSuffix
         filler := FillStr('-')
-        rowLine := prefix
-        for width in OutWidths {
+        lineBetweenRows := linePrefix
+        for width in columnWidths {
             if A_Index > 1 {
-                rowLine .= filler[padLen]
+                lineBetweenRows .= filler[columnPaddingLen]
             }
-            rowLine .= filler[width]
-            if A_Index < OutWidths.Length {
-                rowLine .= filler[padLen] sep
+            lineBetweenRows .= filler[width + columnPrefixLen[A_Index]]
+            if A_Index < columnWidths.Length {
+                lineBetweenRows .= filler[columnPaddingLen] columnSeparator
             }
         }
-        rowLine .= suffix le
+        lineBetweenRows .= lineSuffix le
+        outputLineBetweenRows := Options.OutputLineBetweenRows
+        addHeaderSeparator := Options.AddHeaderSeparator
         table := ''
         loop rows.Length {
             ++r
-            if (Options.OutputLineBetweenRows && r > 1) || (r == 2 && Options.AddHeaderSeparator) {
-                table .= rowLine
+            if (outputLineBetweenRows && r > 1) || (r == 2 && addHeaderSeparator) {
+                table .= lineBetweenRows
             }
             k := 0
             loop OutRowLines[r] {
                 ++k
-                table .= prefix
+                table .= linePrefix
                 c := 0
                 loop rows[r].Length {
                     ++c
                     if c > 1 {
-                        table .= pad
+                        table .= columnPadding
                     }
                     if rows[r][c].Length >= k {
-                        table .= rows[r][c][k]
-                        diff := OutWidths[c] - StrLen(rows[r][c][k])
-                        if diff > 0 {
-                            table .= FillStr[diff]
+                        if !columnPrefixSkipFirstLine || r > 1 {
+                            table .= columnPrefix[c]
+                            table .= rows[r][c][k]
+                            diff := columnWidths[c] - StrLen(rows[r][c][k])
+                            if diff > 0 {
+                                table .= FillStr[diff]
+                            }
+                        } else {
+                            table .= rows[r][c][k]
+                            diff := columnWidths[c] - StrLen(rows[r][c][k]) + columnPrefixLen[c]
+                            if diff > 0 {
+                                table .= FillStr[diff]
+                            }
                         }
                     } else {
-                        table .= FillStr[OutWidths[c]]
+                        table .= FillStr[columnWidths[c] + columnPrefixLen[c]]
                     }
                     if c == rows[r].Length {
-                        table .= suffix le
+                        table .= lineSuffix le
                     } else {
-                        table .= pad sep
+                        table .= columnPadding columnSeparator
                     }
                 }
             }
@@ -276,9 +328,10 @@ class MakeTable {
         return SubStr(table, 1, -StrLen(le))
 
         _Measure1() {
-            maxWidth := maxWidths[c] - (c > 1 ? padLen * 2 : padLen)
-            if r == 13 && c == 3 {
-                sleep 1
+            if !columnPrefixSkipFirstLine || r > 1 {
+                maxWidth := maxWidths[c] - (c > 1 ? columnPaddingLen * 2 : columnPaddingLen) - columnPrefixLen[c]
+            } else {
+                maxWidth := maxWidths[c] - (c > 1 ? columnPaddingLen * 2 : columnPaddingLen)
             }
             if StrLen(rows[r][c]) > maxWidth {
                 p := 1
@@ -298,15 +351,15 @@ class MakeTable {
                 }
                 OutRowLines[r] := Max(OutRowLines[r], items.Length)
                 rows[r][c] := items
-                OutWidths[c] := maxWidth
+                columnWidths[c] := maxWidth
             } else {
                 rows[r][c] := [rows[r][c]]
-                OutWidths[c] := Max(StrLen(rows[r][c][1]), OutWidths[c])
+                columnWidths[c] := Max(StrLen(rows[r][c][1]), columnWidths[c])
             }
         }
         _Measure2() {
             rows[r][c] := [rows[r][c]]
-            OutWidths[c] := Max(StrLen(rows[r][c][1]), OutWidths[c])
+            columnWidths[c] := Max(StrLen(rows[r][c][1]), columnWidths[c])
         }
     }
     /**
@@ -315,16 +368,18 @@ class MakeTable {
     class Options {
         static Default := {
             AddHeaderSeparator: true
-          , ColumnPadding: '`s`s'
-          , InputColumnSeparator: '`t'
-          , InputRowSeparator: '\R'
-          , LinePrefix: ''
-          , LineSuffix: ''
-          , MaxWidths: ''
-          , OutputColumnSeparator: ''
-          , OutputLineBetweenRows: false
-          , OutputRowSeparator: '`n'
-          , TrimCharacters: '`s'
+            , ColumnPadding: '`s`s'
+            , InputColumnSeparator: '`t'
+            , InputRowSeparator: '\R'
+            , LinePrefix: ''
+            , LineSuffix: ''
+            , MaxWidths: ''
+            , OutputColumnPrefix: ''
+            , OutputColumnPrefixSkipFirstRow: false
+            , OutputColumnSeparator: ''
+            , OutputLineBetweenRows: false
+            , OutputRowSeparator: '`n'
+            , TrimCharacters: '`s'
         }
 
         /**
@@ -347,7 +402,7 @@ class MakeTable {
     }
 }
 
-class MaxWidthHelper {
+class MakeTableValueHelper {
     __New(Value) {
         this.Value := Value
     }
