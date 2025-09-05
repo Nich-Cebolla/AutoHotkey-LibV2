@@ -573,6 +573,7 @@ class RectBase {
         for modName, hModule in this.Modules {
             DllCall('FreeLibrary', 'ptr', hModule)
         }
+        this.Modules.Clear()
         this.Addresses.Clear()
     }
     static Make(Cls, Prefix := '', Suffix := '') {
