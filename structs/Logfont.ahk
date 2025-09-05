@@ -1576,6 +1576,9 @@ class FontSignature {
 }
 
 LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
+    if Offset < 0 {
+        throw ValueError('``Offset`` must be a positive integer.', -1, Offset)
+    }
     if IsSet(Buf) {
         if not Buf is Buffer && Type(Buf) != Self.__Class {
             throw TypeError('Invalid input parameter ``Buf``.', -1)
@@ -1593,7 +1596,7 @@ LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
       , 'int', Self.Size
       , 'ptr'
     )
-    if MakeInstance {
+    if MakeInstance && Type(Buf) != Self.__Class {
         b := Self
         loop {
             if b := b.Base {
@@ -1604,7 +1607,11 @@ LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
                 throw Error('Unable to identify the prototype object.', -1)
             }
         }
-        Obj := { Buffer: Buf }
+        if Offset {
+            Obj := { Buffer: { __Buffer: Buf, Ptr: Buf.Ptr + Offset, Size: Self.Size } }
+        } else {
+            Obj := { Buffer: Buf }
+        }
         ObjSetBase(Obj, b)
         return Obj
     }
