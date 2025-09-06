@@ -168,6 +168,21 @@ class MakeTable {
      * of `StrSplit` when breaking the input text into the individual cells.
      * {@link https://www.autohotkey.com/docs/v2/lib/StrSplit.htm}
      *
+     * @param {VarRef} [OutTable] - A variable that will receive an array of arrays of arrays of
+     * strings. Each item of the external array represents a row in the table. Each item of the
+     * row-arrays represents a column in the table. Each item of the column-arrays represent a line
+     * of text for that column for that row. If `Options.MaxWidths` is not in use, then the length
+     * of the text-arrays is always 1 (no cells are broken into multiple lines). Accessing a string
+     * value in the array looks like this:
+     * @example
+     *  ; Assume `inputStr` and `options` are appropriately defined.
+     *  str := MakeTable(inputStr, options, &tbl)
+     *  r := 1 ; row index
+     *  c := 1 ; column index
+     *  k := 1 ; text index
+     *  text := tbl[r][c][k]
+     * @
+     *
      * @param {VarRef} [OutRowLines] - A variable that will receive an array of integers that
      * represent the number of lines each row occupies. This only has significance when
      * `Options.MaxWidths` is used.
@@ -176,7 +191,7 @@ class MakeTable {
      *
      * @class
      */
-    static Call(Str?, Options?, &OutRowLines?) {
+    static Call(Str?, Options?, &OutTable?, &OutRowLines?) {
         Options := this.Options(Options ?? {})
         if !IsSet(Str) {
             Str := A_Clipboard
@@ -224,32 +239,28 @@ class MakeTable {
             Measure := _Measure2
         }
 
-        ; extraLen stores integers representing string length in characters that gets added to
-        ; a column. The value of the integers depends on the input options and the column index.
-        ; See `_Measure1` for how the values are determined.
-        extraLen := []
         columnWidths := []
         columnWidths.Default := 0
         OutRowLines := []
         OutRowLines.Default := 1
-        rows := []
-        rows.Capacity := lines.Length
+        OutTable := []
+        OutTable.Capacity := lines.Length
         r := 0
         loop lines.Length {
             ++r
             OutRowLines.Push(1)
-            rows.Push(StrSplit(lines[r], inputColumnSeparator, Options.TrimCharacters))
+            OutTable.Push(StrSplit(lines[r], inputColumnSeparator, Options.TrimCharacters))
 
             ; Ensures the length of the arrays are equal to the number of columns in the table
-            if rows[r].Length > columnWidths.Length {
-                extraLen.Length := columnWidths.Length := rows[r].Length
+            if OutTable[r].Length > columnWidths.Length {
+                columnWidths.Length := OutTable[r].Length
             }
             if columnPrefix is Array {
                 columnPrefix.Length := columnPrefixLen.Length := columnWidths.Length
             }
 
             c := 0
-            loop rows[r].Length {
+            loop OutTable[r].Length {
                 ++c
                 Measure()
             }
@@ -257,9 +268,9 @@ class MakeTable {
         r := 0
         loop lines.Length {
             ++r
-            if rows[r].Length < columnWidths.Length {
-                loop columnWidths.Length - rows[r].Length {
-                    rows[r].Push([''])
+            if OutTable[r].Length < columnWidths.Length {
+                loop columnWidths.Length - OutTable[r].Length {
+                    OutTable[r].Push([''])
                 }
             }
         }
@@ -283,7 +294,7 @@ class MakeTable {
         outputLineBetweenRows := Options.OutputLineBetweenRows
         addHeaderSeparator := Options.AddHeaderSeparator
         table := ''
-        loop rows.Length {
+        loop OutTable.Length {
             ++r
             if (outputLineBetweenRows && r > 1) || (r == 2 && addHeaderSeparator) {
                 table .= lineBetweenRows
@@ -293,22 +304,22 @@ class MakeTable {
                 ++k
                 table .= linePrefix
                 c := 0
-                loop rows[r].Length {
+                loop OutTable[r].Length {
                     ++c
                     if c > 1 {
                         table .= columnPadding
                     }
-                    if rows[r][c].Length >= k {
+                    if OutTable[r][c].Length >= k {
                         if !columnPrefixSkipFirstLine || r > 1 {
                             table .= columnPrefix[c]
-                            table .= rows[r][c][k]
-                            diff := columnWidths[c] - StrLen(rows[r][c][k])
+                            table .= OutTable[r][c][k]
+                            diff := columnWidths[c] - StrLen(OutTable[r][c][k])
                             if diff > 0 {
                                 table .= FillStr[diff]
                             }
                         } else {
-                            table .= rows[r][c][k]
-                            diff := columnWidths[c] - StrLen(rows[r][c][k]) + columnPrefixLen[c]
+                            table .= OutTable[r][c][k]
+                            diff := columnWidths[c] - StrLen(OutTable[r][c][k]) + columnPrefixLen[c]
                             if diff > 0 {
                                 table .= FillStr[diff]
                             }
@@ -316,7 +327,7 @@ class MakeTable {
                     } else {
                         table .= FillStr[columnWidths[c] + columnPrefixLen[c]]
                     }
-                    if c == rows[r].Length {
+                    if c == OutTable[r].Length {
                         table .= lineSuffix le
                     } else {
                         table .= columnPadding columnSeparator
@@ -333,33 +344,33 @@ class MakeTable {
             } else {
                 maxWidth := maxWidths[c] - (c > 1 ? columnPaddingLen * 2 : columnPaddingLen)
             }
-            if StrLen(rows[r][c]) > maxWidth {
+            if StrLen(OutTable[r][c]) > maxWidth {
                 p := 1
                 items := []
                 loop {
-                    if pos := InStr(s1 := SubStr(rows[r][c], p, maxWidth), ' ', , , -1) {
-                        items.Push(s2 := SubStr(rows[r][c], p, pos - 1))
+                    if pos := InStr(s1 := SubStr(OutTable[r][c], p, maxWidth), ' ', , , -1) {
+                        items.Push(s2 := SubStr(OutTable[r][c], p, pos - 1))
                         p += pos
                     } else {
-                        items.Push(SubStr(rows[r][c], p, maxWidth))
+                        items.Push(SubStr(OutTable[r][c], p, maxWidth))
                         p += maxWidth
                     }
-                    if p + maxWidth >= StrLen(rows[r][c]) {
-                        items.Push(SubStr(rows[r][c], p))
+                    if p + maxWidth >= StrLen(OutTable[r][c]) {
+                        items.Push(SubStr(OutTable[r][c], p))
                         break
                     }
                 }
                 OutRowLines[r] := Max(OutRowLines[r], items.Length)
-                rows[r][c] := items
+                OutTable[r][c] := items
                 columnWidths[c] := maxWidth
             } else {
-                rows[r][c] := [rows[r][c]]
-                columnWidths[c] := Max(StrLen(rows[r][c][1]), columnWidths[c])
+                OutTable[r][c] := [OutTable[r][c]]
+                columnWidths[c] := Max(StrLen(OutTable[r][c][1]), columnWidths[c])
             }
         }
         _Measure2() {
-            rows[r][c] := [rows[r][c]]
-            columnWidths[c] := Max(StrLen(rows[r][c][1]), columnWidths[c])
+            OutTable[r][c] := [OutTable[r][c]]
+            columnWidths[c] := Max(StrLen(OutTable[r][c][1]), columnWidths[c])
         }
     }
     /**
