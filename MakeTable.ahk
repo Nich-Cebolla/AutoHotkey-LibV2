@@ -379,18 +379,18 @@ class MakeTable {
     class Options {
         static Default := {
             AddHeaderSeparator: true
-            , ColumnPadding: '`s`s'
-            , InputColumnSeparator: '`t'
-            , InputRowSeparator: '\R'
-            , LinePrefix: ''
-            , LineSuffix: ''
-            , MaxWidths: ''
-            , OutputColumnPrefix: ''
-            , OutputColumnPrefixSkipFirstRow: false
-            , OutputColumnSeparator: ''
-            , OutputLineBetweenRows: false
-            , OutputRowSeparator: '`n'
-            , TrimCharacters: '`s'
+          , ColumnPadding: '`s`s'
+          , InputColumnSeparator: '`t'
+          , InputRowSeparator: '\R'
+          , LinePrefix: ''
+          , LineSuffix: ''
+          , MaxWidths: ''
+          , OutputColumnPrefix: ''
+          , OutputColumnPrefixSkipFirstRow: false
+          , OutputColumnSeparator: ''
+          , OutputLineBetweenRows: false
+          , OutputRowSeparator: '`n'
+          , TrimCharacters: '`s'
         }
 
         /**
