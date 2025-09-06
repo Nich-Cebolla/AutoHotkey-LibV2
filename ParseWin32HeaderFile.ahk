@@ -35,7 +35,7 @@ ParseWinuserHeaderFile(Str?, Path?, Encoding := 'utf-8') {
     content := RegExReplace(str, '/\*[\w\W]+?\*/|//.*', '') ; remove comments
     patternFunction := '(?<=[\r\n]|^)(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
     patternValue := '(?<=[\r\n]|^)#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
-    patternStruct := '(?<=[\r\n]|^)typedef[ \t]+struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
+    patternStruct := '(?<=[\r\n]|^)(?:typedef[ \t]+)?struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
     functions := _GetAll(patternFunction, [])
     values := _GetAll(patternValue, [])
     structs := _GetAll(patternStruct, [])
@@ -470,6 +470,7 @@ class Win32StructGetMemberSize {
           , 'BYTE', '1'
           , 'CHAR', '1'
           , 'COLORREF', '4'
+          , 'DebugEventProc', 'A_PtrSize'
           , 'DWORD', '4'
           , 'DWORD_PTR', 'A_PtrSize'
           , 'HANDLE', 'A_PtrSize'
