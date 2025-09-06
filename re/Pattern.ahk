@@ -358,6 +358,12 @@ class Pattern {
         '\s*(?:,|$)'
     )
 
+    /**
+     * Invalid characters for Ahk variables and properties.
+     * @memberof Pattern
+     */
+    static AhkInvalidSymbolChars := '[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
+
     static JsonPropertyValuePair := (
         '(?<=\s|^)"(?<name>.+)(?<!\\)(?:\\\\)*+":\s*'
         '(?<value>'
