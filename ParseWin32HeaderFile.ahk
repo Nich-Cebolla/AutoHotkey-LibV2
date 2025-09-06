@@ -499,6 +499,8 @@ class Win32StructGetMemberSize {
           , 'MONITORINFO', '40'
         ;   , 'MOUSEHOOKSTRUCT', '8 + A_PtrSize * 3'
           , 'MSGBOXCALLBACK', 'A_PtrSize'
+          , 'NotificationHookProc', 'A_PtrSize'
+          , 'NotificationUnhookProc', 'A_PtrSize'
           , 'PEN_FLAGS', '4'
           , 'PEN_MASK', '4'
           , 'PFNTVCOMPARE', 'A_PtrSize'
