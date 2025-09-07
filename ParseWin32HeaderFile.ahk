@@ -33,23 +33,13 @@ ParseWinuserHeaderFile(Str?, Path?, Encoding := 'utf-8') {
         }
     }
     content := RegExReplace(str, '/\*[\w\W]+?\*/|//.*', '') ; remove comments
-    patternFunction := '(?<=[\r\n]|^)(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
+    patternFunction := '(?<=[\r\n]|^)[^#\r\n(]+?(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
     patternValue := '(?<=[\r\n]|^)#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
     patternStruct := '(?<=[\r\n]|^)(?:typedef[ \t]+)?struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
     functions := _GetAll(patternFunction, [])
     values := _GetAll(patternValue, [])
     structs := _GetAll(patternStruct, [])
     pointerTypes := Map()
-    n := 0
-    loop functions.Length {
-        match := functions[A_Index - n]
-        if InStr(match[0], '`n') {
-            functions[A_Index - n] := FunctionDefinition(match)
-        } else {
-            functions.RemoveAt(A_Index - n)
-            n++
-        }
-    }
     for match in structs {
         if InStr(match[0], 'tagRawMouse') {
             sleep 1
