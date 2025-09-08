@@ -246,5 +246,39 @@ class StructToClass {
             return FillStr[(initialIndent + n) * indent]
         }
     }
-
+    static CodeHelper(Str) {
+        pos := 1
+        lines := StrSplit(RegExReplace(Str, '\R', '`n'), '`n')
+        code := ''
+        for line in lines {
+            RegExMatch(line, '^( *)(.+)', &Match)
+            Pos := 1
+            text := Match[2]
+            while RegExMatch(text, '(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2}', &MatchQuote, Pos) {
+                if SubStr(MatchQuote['text'], 1, 2) = '__' {
+                    replacement := '`' q `'__`' member.Symbol q `''
+                } else {
+                    replacement := '`' q `'' MatchQuote['text'] '`' q `''
+                }
+                text := StrReplace(text, MatchQuote[0], replacement, , , 1)
+                Pos := MatchQuote.Pos + StrLen(replacement) + 1
+            }
+            Pos := 1
+            while RegExMatch(text, 'this\.__\w+', &MatchSymbol, Pos) {
+                Pos := MatchSymbol.Pos
+                text := StrReplace(text, MatchSymbol[0], 'this.__`' member.Symbol `'', , , 1)
+            }
+            Pos := 1
+            while RegExMatch(text, 'this.offset_\w+', &MatchSymbol, Pos) {
+                Pos := MatchSymbol.Pos
+                text := StrReplace(text, MatchSymbol[0], 'this.offset_`' member.Symbol `'', , , 1)
+            }
+            if Match.Len[1] {
+                code .= 'ind(' Round(Match.Len[1] / 4, 0) ') `'' text '`' le`n'
+            } else {
+                code .= 'ind(0) `'' text '`' le`n'
+            }
+        }
+        return code
+    }
 }
