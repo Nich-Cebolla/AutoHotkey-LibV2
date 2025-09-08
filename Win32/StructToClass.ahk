@@ -211,17 +211,20 @@ class StructToClass {
                             ind(2) '}' le
                             ; set
                             ind(2) 'Set {' le
-                            ind(3) 'if this.HasOwnProp(' q '__' member.Symbol q ') {' le
-                            ind(4) 'bytes := StrPut(Value, ' q 'cp1200' q ')' le
-                            ind(4) 'if this.__' member.Symbol '.Size < bytes {' le
-                            ind(5) 'this.__' member.Symbol '.Size := bytes' le
+                            ind(3) 'if Type(Value) = ' q 'String' q ' {' le
+                            ind(4) 'if !this.HasOwnProp(' q '__' member.Symbol q ')' le
+                            ind(4) '|| (this.__' member.Symbol ' is Buffer && this.__' member.Symbol '.Size < StrPut(Value, ' q 'cp1200' q ')) {' le
+                            ind(5) 'this.__' member.Symbol ' := Buffer(StrPut(Value, ' q 'cp1200' q '))' le
                             ind(5) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, this.offset_' member.Symbol ')' le
                             ind(4) '}' le
-                            ind(3) '} else {' le
-                            ind(4) 'this.__' member.Symbol ' := Buffer(StrPut(Value, ' q 'cp1200' q '))' le
+                            ind(4) 'StrPut(Value, this.__' member.Symbol ', ' q 'cp1200' q ')' le
+                            ind(3) '} else if Value is Buffer {' le
+                            ind(4) 'this.__' member.Symbol ' := Value' le
                             ind(4) 'NumPut(' q 'ptr' q ', this.__' member.Symbol '.Ptr, this.Buffer, this.offset_' member.Symbol ')' le
+                            ind(3) '} else {' le
+                            ind(4) 'this.__' member.Symbol ' := Value' le
+                            ind(4) 'NumPut(' q 'ptr' q ', this.__' member.Symbol ', this.Buffer, this.offset_' member.Symbol ')' le
                             ind(3) '}' le
-                            ind(3) 'StrPut(Value, this.__' member.Symbol ', ' q 'cp1200' q ')' le
                             ind(2) '}' le
                             ind(1) '}' le
                         )
