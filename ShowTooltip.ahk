@@ -98,13 +98,15 @@ class ShowTooltip {
                 M := CoordMode('Mouse', 'Screen')
                 MouseGetPos(&X, &Y)
                 ToolTip(Str, X + Get('X'), Y + Get('Y'), n)
-                SetTimer(ObjBindMethod(this, 'End', n), -Abs(Get('Duration')))
                 CoordMode('Mouse', M)
             case 'A':
                 ToolTip(Str, Get('X'), Get('Y'), n)
-                SetTimer(ObjBindMethod(this, 'End', n), -Abs(Get('Duration')))
         }
         CoordMode('Tooltip', T)
+        duration := -Abs(Get('Duration'))
+        if duration {
+            SetTimer(ObjBindMethod(this, 'End', n), duration)
+        }
 
         return n
 
