@@ -201,7 +201,14 @@ class StructToClass {
                         properties .= (
                             ind(1) member.Symbol ' {' le
                             ; get
-                            ind(2) 'Get => StrGet(this.__' member.Symbol ', ' q 'cp1200' q ')' le
+                            ind(2) 'Get {' le
+                            ind(3) 'Value := NumGet(this.Buffer, this.offset_' member.Symbol ', ' q 'ptr' q ')' le
+                            ind(3) 'if Value > 0 {' le
+                            ind(4) 'return StrGet(Value, ' q 'cp1200' q ')' le
+                            ind(3) '} else {' le
+                            ind(4) 'return Value' le
+                            ind(3) '}' le
+                            ind(2) '}' le
                             ; set
                             ind(2) 'Set {' le
                             ind(3) 'if this.HasOwnProp(' q '__' member.Symbol q ') {' le
