@@ -215,6 +215,8 @@ class StructDefinition {
                 A_PtrSize_count++
             } else if IsNumber(member.EffectiveSize) {
                 offset += member.EffectiveSize
+            } else if RegExMatch(member.EffectiveSize, '(\d+)[ \t]*\+[ \t]*(\d+)', &Match) {
+                offset += Number(Match[1]) + Number(Match[2])
             } else {
                 throw Error('There is a logical error in the script.', -1)
             }
