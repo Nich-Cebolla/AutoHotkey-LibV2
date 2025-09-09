@@ -166,12 +166,12 @@ class StructToClass {
                 ind(1) 'static __New() {' le
                 ind(2) 'this.DeleteProp(' q '__New' q ')' le
                 ind(2) 'proto := this.Prototype' le
-                ind(2) 'proto.cbSize := ' le
+                ind(2) 'proto.cbSizeInstance := ' le
                 MakeTable(SubStr(membersStr, 1, -1), makeTableOptMembers) le
                 MakeTable(SubStr(offsets, 1, -1), makeTableOptOffsets) le
                 ind(1) '}' le
                 ind(1) '__New(' params ') {' le
-                ind(2) 'this.Buffer := Buffer(this.cbSize)' le
+                ind(2) 'this.Buffer := Buffer(this.cbSizeInstance)' le
                 body
                 ind(1) '}' le
                 properties
