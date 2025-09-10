@@ -326,11 +326,8 @@ class RawInputBase {
         A_PtrSize   ; WPARAM     wParam     8 + A_PtrSize
     }
     static Call(lParam) {
-        tracer := test.tracer
-       ;  tracer.Out('Entering ' A_ThisFunc)
         pcbSize := this.cbSize
         rawInputDevice := { Buffer: Buffer(pcbSize) }
-       ;  tracer.Out('Calling GetRawInputData')
         if DllCall(
             'GetRawInputData'
           , 'ptr', lParam
@@ -340,20 +337,16 @@ class RawInputBase {
           , 'uint', this.cbSizeHeader
           , 'uint'
         ) == 4294967295 {
-           ;  tracer.Out('GetRawInputData error ' A_LastError)
             if A_LastError {
                 throw OSError()
             } else {
                 throw OSError('``GetRawInputData`` failed.', -1)
             }
         }
-       ;  tracer.Out('GetRawInputData successful')
         if this.TypeId == NumGet(rawInputDevice.Buffer, 0, 'uint') {
-           ;  tracer.Out('Type id matched: ' this.TypeId)
             ObjSetBase(rawInputDevice, this.Prototype)
             return rawInputDevice
         }
-       ;  tracer.Out('Type id did not match: ' this.TypeId)
     }
     static FromPtr(Ptr) {
         rawInputDevice := { Ptr: Ptr, Size: NumGet(Ptr, 4, 'uint') }
