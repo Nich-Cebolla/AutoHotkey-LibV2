@@ -7,11 +7,9 @@
 /**
  * Sorts an array. The returned array is a new array; the original array is not modified.
  *
- * The process used by `QuickSort` makes liberal usage of the system's memory. The script
- * test-files\QuickSort-memory-eval.ahk can be used to evaluate the amount of memory used by
- * `QuickSort` during execution. My tests demonstrated an average memory consumption of over 9x
- * the capacity of the input array. These tests were performed using input arrays with 1000
- * numbers across an even distribution.
+ * The process used by `QuickSort` makes liberal usage of the system's memory. My tests demonstrated
+ * an average memory consumption of over 9x the capacity of the input array. These tests were
+ * performed using input arrays with 1000 numbers across an even distribution.
  *
  * @param {Array} Arr - The array to be sorted.
  *
