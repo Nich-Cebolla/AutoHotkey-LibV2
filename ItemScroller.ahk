@@ -401,7 +401,7 @@ class ItemScroller {
         }
 
         HClickButtonJump(Ctrl, *) {
-            Ctrl.Gui.__ItemScroller.Get(this.__Key).SetIndex(Ctrl.Gui.ItemScroller.CtrlIndex.Text)
+            Ctrl.Gui.__ItemScroller.Get(this.__Key).SetIndex(Ctrl.Gui.__ItemScroller.Get(this.__Key).CtrlIndex.Text)
         }
 
         _GetParam(Obj, Prop) {
