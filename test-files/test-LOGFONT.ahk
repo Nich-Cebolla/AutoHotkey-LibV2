@@ -130,6 +130,7 @@ g2.Lf := lf
 HClickButtonListFonts(Ctrl, *) {
     g := Ctrl.Gui
     lv := g['LvFonts']
+    lv.Delete()
     Logfont.EnumFonts(
         EnumFontFamExProc
       , g.InputControlGroup.Get('Face names').Edit.Text || unset
