@@ -205,7 +205,7 @@ class Logfont {
         lf.CharSet := CharSet
         result := ''
         hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
-        cb := CallbackCreate(Callback ?? Style ? EnumFontProc1 : EnumFontProc2)
+        cb := CallbackCreate(Callback ?? (Style ? EnumFontProc1 : EnumFontProc2))
         for faceName in ListFaceName {
             lf.FaceName := faceName
             if !DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', Lf, 'ptr', cb, 'ptr', Lf.Ptr + 28, 'uint', 0, 'uint') {
