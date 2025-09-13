@@ -408,9 +408,9 @@ class Logfont {
     EnumFontFamilies(Callback, lParam := 0) {
         result := ''
         cb := CallbackCreate(Callback)
-        hdc := DllCall('GetDC', 'ptr', 0, 'ptr')
+        hdc := DllCall('GetDC', 'ptr', this.Hwnd, 'ptr')
         result := DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', this, 'ptr', cb, 'ptr', lParam, 'uint', 0, 'uint')
-        DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
+        DllCall('ReleaseDC', 'ptr', this.Hwnd, 'ptr', hdc)
         CallbackFree(cb)
         return result
     }
