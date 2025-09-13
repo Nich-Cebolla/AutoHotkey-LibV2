@@ -374,7 +374,16 @@ class ItemScroller {
             this.CtrlTotal.Opt('Background' Options.TextBackgroundColor)
         }
         this.SetOrientation()
-        GuiObj.DefineProp('ItemScroller', { Value: this })
+        if !GuiObj.HasOwnProp('ItemScroller') {
+            GuiObj.DefineProp('ItemScroller', { Get: ItemScroller_PropertyAccessorGet, Set: ItemScroller_PropertyAccessorSet })
+            GuiObj.DefineProp('__ItemScroller', { Value: Map() })
+        }
+        i := 1
+        while GuiObj.__ItemScroller.Has(i) {
+            ++i
+        }
+        GuiObj.__ItemScroller.Set(i, this)
+        this.__Key := i
 
         return
 
@@ -384,15 +393,15 @@ class ItemScroller {
         }
 
         HClickButtonPrevious(Ctrl, *) {
-            Ctrl.Gui.ItemScroller.IncIndex(-1)
+            Ctrl.Gui.__ItemScroller.Get(this.__Key).IncIndex(-1)
         }
 
         HClickButtonNext(Ctrl, *) {
-            Ctrl.Gui.ItemScroller.IncIndex(1)
+            Ctrl.Gui.__ItemScroller.Get(this.__Key).IncIndex(1)
         }
 
         HClickButtonJump(Ctrl, *) {
-            Ctrl.Gui.ItemScroller.SetIndex(Ctrl.Gui.ItemScroller.CtrlIndex.Text)
+            Ctrl.Gui.__ItemScroller.Get(this.__Key).SetIndex(Ctrl.Gui.ItemScroller.CtrlIndex.Text)
         }
 
         _GetParam(Obj, Prop) {
@@ -802,4 +811,15 @@ class ItemScrollerSelectFontIntoDc {
             Proto.DefineProp('OldFont', { Value: '' })
         }
     }
+}
+
+
+ItemScroller_PropertyAccessorGet(Self, Index := 1) {
+    return Self.__ItemScroller[Index]
+}
+ItemScroller_PropertyAccessorSet(Self, Value, Index := 1) {
+    if !IsSet(Value) {
+        return
+    }
+    Self.__ItemScroller.Set(Index, Value)
 }
