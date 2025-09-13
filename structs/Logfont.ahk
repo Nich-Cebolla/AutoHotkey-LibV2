@@ -392,7 +392,7 @@ class Logfont {
      * When using {@link EnumFontFamExProcParams}, do not cache a reference to the object. You must
      * only use it within the scope of your callback function because the system is managing that
      * memory. If you need values outside of the callback function's scope, you'll have to copy
-     * the memory into an AHK buffer. I build in a "Clone" method for each of the classes, so
+     * the memory into an AHK buffer. I built in a "Clone" method for each of the classes, so
      * you can use that.
      *
      * See {@link EnumFontFamExProcParams}, {@link TextMetric}, {@link NewTextMetric},
