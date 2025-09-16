@@ -37,7 +37,7 @@
  *  class tcl {
  *      static __New() {
  *          this.DeleteProp('__New')
- *          this.__Item := Map()
+ *          this.DefineProp('__Item', { Value: Map() })
  *          this.__Item.CaseSense := false
  *
  *          ; Define config items
@@ -49,7 +49,7 @@
  *                    , Name: 'log'
  *                    , Ext: 'json'
  *                    , MaxFiles: 30
- *                    , MaxSize: 20000
+ *                    , MaxSize: 100000
  *                  }
  *                , Log: {
  *                      ToJson: true
@@ -106,7 +106,7 @@ class ConfigLibrary {
 
     static __New() {
         this.DeleteProp('__New')
-        this.__Item := Map()
+        this.DefineProp('__Item', { Value: Map() })
         this.__Item.CaseSense := false
 
         ; Define config items
