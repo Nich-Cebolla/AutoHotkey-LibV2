@@ -311,6 +311,8 @@ class ItemScroller {
      * @see {@link ItemScroller.Options}
      */
     __New(GuiObj, Pages, Callback, Options?) {
+        local buttonFontOpt := buttonFontFamily := textFontOpt := textFontFamily := editFontOpt := editFontFamily :=
+        textBackgroundColor := editBackgroundColor := ''
         Options := this.Options := ItemScroller.Options(Options ?? unset)
         this.GuiHwnd := GuiObj.Hwnd
         this.Index := 1
@@ -322,25 +324,32 @@ class ItemScroller {
         paddingX := Options.PaddingX
         paddingY := Options.PaddingY
         GreatestW := 0
+        for str in [ 'button', 'text', 'edit' ] {
+            %str%FontOpt := Options.%str%FontOpt || Options.AllFontOpt
+            %str%FontFamily := Options.%str%FontFamily || Options.AllFontFamily
+            if str != 'button' {
+                %str%BackgroundColor := Options.%str%BackgroundColor || Options.AllBackgroundColor
+            }
+        }
         for Name, Obj in Options.Controls.OwnProps() {
             ; Set the font first so it is reflected in the width.
             GuiObj.SetFont()
             switch Obj.Type, 0 {
                 case 'Button':
-                    if Options.ButtonFontOpt {
-                        GuiObj.SetFont(Options.ButtonFontOpt)
+                    if buttonFontOpt {
+                        GuiObj.SetFont(buttonFontOpt)
                     }
-                    _SetFontFamily(Options.ButtonFontFamily)
+                    _SetFontFamily(buttonFontFamily)
                 case 'Edit':
-                    if Options.EditFontOpt {
-                        GuiObj.SetFont(Options.EditFontOpt)
+                    if editFontOpt {
+                        GuiObj.SetFont(editFontOpt)
                     }
-                    _SetFontFamily(Options.EditFontFamily)
+                    _SetFontFamily(editFontFamily)
                 case 'Text':
-                    if Options.TextFontOpt {
-                        GuiObj.SetFont(Options.TextFontOpt)
+                    if textFontOpt {
+                        GuiObj.SetFont(textFontOpt)
                     }
-                    _SetFontFamily(Options.TextFontFamily)
+                    _SetFontFamily(textFontFamily)
             }
             this.Ctrl%Name% := List[Obj.Index] := GuiObj.Add(
                 Obj.Type
@@ -366,12 +375,12 @@ class ItemScroller {
                 }
             }
         }
-        if StrLen(Options.EditBackgroundColor) {
-            this.CtrlIndex.Opt('Background' Options.EditBackgroundColor)
+        if StrLen(editBackgroundColor) {
+            this.CtrlIndex.Opt('Background' editBackgroundColor)
         }
-        if StrLen(Options.TextBackgroundColor) {
-            this.CtrlOf.Opt('Background' Options.TextBackgroundColor)
-            this.CtrlTotal.Opt('Background' Options.TextBackgroundColor)
+        if StrLen(textBackgroundColor) {
+            this.CtrlOf.Opt('Background' textBackgroundColor)
+            this.CtrlTotal.Opt('Background' textBackgroundColor)
         }
         this.SetOrientation()
         if !GuiObj.HasOwnProp('ItemScroller') {
@@ -680,25 +689,11 @@ class ItemScroller {
      */
     class Options {
         static Default := {
-            Controls: {
-                ; The "Type" cannot be altered, but you can change their name, opt, text, or index.
-                ; If `Opt` or `Text` are function objects, the function will be called passing
-                ; these values to the function:
-                ; - The control options object (not the actual Gui.Control, but the object like the
-                ; ones below).
-                ; - The array that is being filled with these controls
-                ; - The Gui object
-                ; - The ItemScroller instance object.
-                ; The function should then return the string to be used for the options / text
-                ; parameter. I don't recommend returning a size or position value, because this
-                ; function handles that internally.
-                Previous: { Name: 'BtnPrevious', Type: 'Button', Opt: '', Text: '<', Index: 1 }
-              , Index: { Name: 'EdtIndex', Type: 'Edit', Opt: '', Text: '1', Index: 2 }
-              , Of: { Name: 'TxtOf', Type: 'Text', Opt: '', Text: 'of', Index: 3 }
-              , Total: { Name: 'TxtTotal', Type: 'Text', Opt: '', Text: '', Index: 4  }
-              , Jump: { Name: 'BtnJump', Type: 'Button', Opt: '', Text: 'Jump', Index: 5 }
-              , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: '>', Index: 6 }
-            }
+            ; "All" font options will apply to all three types of controls (text, edit, button)
+            ; but can be superceded by the option for a specific type.
+            AllFontFamily: ''
+          , AllFontOpt: ''
+          , AllBackgroundColor: ''
           , ButtonFontFamily: ''
           , ButtonFontOpt: ''
           , ButtonHeight: ''
@@ -724,22 +719,43 @@ class ItemScroller {
           , TextOfWidth: ''
           , TextTotalHeight: ''
           , TextTotalWidth: ''
+          , Controls: {
+                ; The "Type" cannot be altered, but you can change their name, opt, text, or index.
+                ; If `Opt` or `Text` are function objects, the function will be called passing
+                ; these values to the function:
+                ; - The control options object (not the actual Gui.Control, but the object like the
+                ; ones below).
+                ; - The array that is being filled with these controls
+                ; - The Gui object
+                ; - The ItemScroller instance object.
+                ; The function should then return the string to be used for the options / text
+                ; parameter. I don't recommend returning a size or position value, because this
+                ; function handles that internally.
+                Previous: { Name: 'BtnPrevious', Type: 'Button', Opt: '', Text: '<', Index: 1 }
+              , Index: { Name: 'EdtIndex', Type: 'Edit', Opt: '', Text: '1', Index: 2 }
+              , Of: { Name: 'TxtOf', Type: 'Text', Opt: '', Text: 'of', Index: 3 }
+              , Total: { Name: 'TxtTotal', Type: 'Text', Opt: '', Text: '', Index: 4  }
+              , Jump: { Name: 'BtnJump', Type: 'Button', Opt: '', Text: 'Jump', Index: 5 }
+              , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: '>', Index: 6 }
+            }
         }
 
         /**
-         * @description - Clones `ItemScroller.Options.Default` then iterates the input `Options`
-         * object's properties, overwriting the property values on the cloned object.
+         * Handles processing the input options.
          * @param {Object} [Options] - The input object.
          * @return {Object}
          */
         static Call(Options?) {
-            O := this.Default.Clone()
             if IsSet(Options) {
-                for prop, val in Options.OwnProps() {
-                    O.%prop% := val
+                o := {}
+                d := this.Default
+                for prop in d.OwnProps() {
+                    o.%prop% := HasProp(Options, prop) ? Options.%prop% : d.%prop%
                 }
+                return o
+            } else {
+                return this.Default.Clone()
             }
-            return O
         }
     }
 }
