@@ -498,6 +498,13 @@ class WinRect extends Rect {
 
 class Rect extends RectBase {
     static FromDimensions(X, Y, W, H, Buf?, Offset := 0) => this(X, Y, X + W, Y + H, Buf ?? unset, Offset)
+    static FromCursor() {
+        rc := this()
+        DllCall(RectBase.GetCursorPos, 'ptr', rc, 'int')
+        rc.R := rc.L
+        rc.B := rc.T
+        return rc
+    }
     __New(L := 0, T := 0, R := 0, B := 0, Buf?, Offset := 0) {
         if IsSet(Buf) {
             if Buf.Size < 16 + Offset {
@@ -632,7 +639,7 @@ class Point {
         this.DeleteProp('__New')
         this.Make(this)
     }
-    static FromCaretPos() {
+    static FromCaret() {
         pt := Point()
         DllCall(RectBase.GetCaretPos, 'ptr', pt, 'int')
         return pt
