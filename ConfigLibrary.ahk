@@ -59,6 +59,7 @@
  *                  }
  *                , Tracer: {
  *                      HistoryActive: true
+ *                    , DefaultWhat: -2
  *                  }
  *                , TracerGroup: {
  *                      GroupName: 'debug'
