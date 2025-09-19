@@ -73,6 +73,9 @@ class RectHighlight extends Gui {
         Options := this.Options(Options ?? {})
         ObjSetBase(G := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000', Options.Title), this.Prototype)
         G.Options := Options
+        if IsSet(Obj) {
+            Options.DefineProp('Obj', { Value: Obj })
+        }
         G.Timer := false
         ; Some gui methods return incorrect values if the window was never shown.
         G.Show()
@@ -81,7 +84,7 @@ class RectHighlight extends Gui {
         G.SetTimerFunc('', 1)
         G.SetTimerFunc('', 2)
         if ShowImmediately && IsSet(Obj) {
-            G(Obj, G.Options)
+            G(, G.Options)
         }
         return G
     }
