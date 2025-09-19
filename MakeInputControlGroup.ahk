@@ -106,7 +106,8 @@ MakeInputControlGroup(G, LabelList, Options?) {
     controls.Get(LabelList[1]).Label.GetPos(, , , &txth)
     txtYOffset := (rowh - txth) / 2
     edtYOffset := (rowh - edth) / 2
-    for prop, group in controls {
+    for label in LabelList {
+        group := controls.Get(label)
         group.Label.Move(x, y + txtYOffset, width)
         group.Edit.Move(x2, y + edtYOffset)
         if getButton {
@@ -151,6 +152,7 @@ Options := {
   , labelAlignment: 'Right'
   , labelPrefix: 'Txt'
   , maxY: ''
+  , NameSuffix: ''
   , paddingX: 5
   , paddingY: 5
   , setButton: true
