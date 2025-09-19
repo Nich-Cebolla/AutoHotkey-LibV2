@@ -465,6 +465,7 @@ class Win32StructGetMemberSize {
           , 'DebugEventProc', 'A_PtrSize'
           , 'DWORD', '4'
           , 'DWORD_PTR', 'A_PtrSize'
+          , 'GUID', 'A_PtrSize'
           , 'HANDLE', 'A_PtrSize'
           , 'HBITMAP', 'A_PtrSize'
           , 'HBRUSH', 'A_PtrSize'
