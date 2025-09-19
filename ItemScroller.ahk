@@ -318,6 +318,7 @@ class ItemScroller {
         this.Index := 1
         this.Callback := Callback
         this.__Item := Map()
+        this.CallbackClear := options.CallbackClear
         List := this.List := []
         List.Length := ObjOwnPropCount(Options.Controls)
         suffix := Options.CtrlNameSuffix
@@ -332,6 +333,9 @@ class ItemScroller {
             }
         }
         for Name, Obj in Options.Controls.OwnProps() {
+            if name = 'Clear' && !Options.CallbackClear {
+                continue
+            }
             ; Set the font first so it is reflected in the width.
             GuiObj.SetFont()
             switch Obj.Type, 0 {
@@ -399,6 +403,10 @@ class ItemScroller {
         HChangeEditIndex(Ctrl, *) {
             Ctrl.Text := RegExReplace(Ctrl.Text, '[^\d-]', '', &ReplaceCount)
             ControlSend('{End}', Ctrl)
+        }
+
+        HClickButtonClear(Ctrl, *) {
+            Ctrl.Gui.__ItemScroller.Get(this.__Key).CallbackClear.Call(this)
         }
 
         HClickButtonPrevious(Ctrl, *) {
@@ -651,6 +659,42 @@ class ItemScroller {
         this.SetOrientation()
     }
 
+    __Enum(VarCount := 2) {
+        list := [
+            this.CtrlPrevious
+          , this.CtrlIndex
+          , this.CtrlOf
+          , this.CtrlTotal
+          , this.CtrlJump
+          , this.CtrlNext
+          , this.CtrlClear
+        ]
+        i := 0
+        if VarCount = 1 {
+            return _Enum1
+        } else if VarCount = 2 {
+            return _Enum2
+        } else {
+            throw ValueError('Invalid ``VarCount``.', -1, VarCount)
+        }
+
+        _Enum1(&ctrl) {
+            if ++i <= list.Length {
+                ctrl := list[i]
+                return 1
+            }
+            return 0
+        }
+        _Enum2(&name, &ctrl) {
+            if ++i <= list.Length {
+                ctrl := list[i]
+                name := ctrl.Name
+                return 1
+            }
+            return 0
+        }
+    }
+
     Gui => GuiFromHwnd(this.GuiHwnd)
 
     Orientation {
@@ -698,6 +742,7 @@ class ItemScroller {
           , ButtonFontOpt: ''
           , ButtonHeight: ''
           , ButtonWidth: ''
+          , CallbackClear: ''
           , CtrlNameSuffix: ''
           , EditBackgroundColor: ''
           , EditFontFamily: ''
@@ -737,6 +782,7 @@ class ItemScroller {
               , Total: { Name: 'TxtTotal', Type: 'Text', Opt: '', Text: '', Index: 4  }
               , Jump: { Name: 'BtnJump', Type: 'Button', Opt: '', Text: 'Jump', Index: 5 }
               , Next: { Name: 'BtnNext', Type: 'Button', Opt: '', Text: '>', Index: 6 }
+              , Clear: { Name: 'BtnClear', Type: 'Button', Opt: '', Text: 'Clear', Index: 7 }
             }
         }
 
