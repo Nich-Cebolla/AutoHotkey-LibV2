@@ -5,15 +5,20 @@
 */
 
 /**
- * Sorts an array. The returned array is a new array; the original array is not modified.
+ * Characteristics of {@link Quicksort}:
+ * - Does not mutate the input array.
+ * - Unstable (does not preserve original order of equal elements).
+ * - Can sort either ascending or descending - adjust the comparator appropriately.
+ * - There's a built-in cutoff to use insertion sort for small arrays (16).
+ * - Makes liberal usage of system memory.
  *
- * The process used by `QuickSort` makes liberal usage of the system's memory. My tests demonstrated
- * an average memory consumption of over 9x the capacity of the input array. These tests were
- * performed using input arrays with 1000 numbers across an even distribution.
+ * If you need a comparable function that sorts in-place, see
+ * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Heapsort.ahk Heapsort}
+ * in this same repo.
  *
- * @param {Array} Arr - The array to be sorted.
+ * @param {array} arr - The array to be sorted.
  *
- * @param {*} [CompareFn = (a, b) => a - b] - A `Func` or callable object that compares two values.
+ * @param {*} [compare = (a, b) => a - b] - A `Func` or callable object that compares two values.
  *
  * Parameters:
  * 1. A value to be compared.
@@ -24,46 +29,30 @@
  * - If the number is zero it indicates the two parameters are equal.
  * - If the number is greater than zero it indicates the first parameter is greater than the second parameter.
  *
- * @param {Integer} [ArrSizeThreshold = 17] - Sets a threshold at which insertion sort is used to
- * sort the array instead of the core procedure. The default value of 17 was decided by testing various
- * values, but currently more testing is needed to evaluate arrays of various kinds of distributions.
+ * Reverse the return value to sort in descending order.
  *
- * @param {Integer} [PivotCandidates = 7] - Note that `PivotCandidates` must be an integer greater
- * than 1.
+ * @param {Integer} [arrSizeThreshold = 8] - Sets a threshold at which insertion sort is used to
+ * sort the array instead of the core procedure. The default value of 8 was determine by testing
+ * various distributions of numbers. `arrSizeThreshold` generally should be left at 8.
  *
- * Defines the sample size used when selecting a pivot from a random sample. This seeks to avoid the
- * efficiency cost associated with selecting a low quality pivot. By choosing from a random sample,
- * it is expected that, on average, the number of comparisons required to evaluate the middle pivot
- * in the sample is significantly less than the number of comparisons avoided due to selecting a low
- * quality pivot.
- *
- * The default value of 7 was decided by testing various values. More testing is needed to evaluate
- * arrays of various kinds of distributions.
- *
- * @returns {Array} - The sorted array.
- *
- * @throws {ValueError} - "`PivotCandidates` must be an integer greater than one."
+ * @returns {array} - The sorted array.
  */
-QuickSort(Arr, CompareFn := (a, b) => a - b, ArrSizeThreshold := 17, PivotCandidates := 7) {
-    if PivotCandidates <= 1 {
-        throw ValueError('``PivotCandidates`` must be an integer greater than one.', -1, PivotCandidates)
-    }
-    halfPivotCandidates := Ceil(PivotCandidates / 2)
-    if Arr.Length <= ArrSizeThreshold {
-        if Arr.Length == 2 {
-            if CompareFn(Arr[1], Arr[2]) > 0 {
-                return [Arr[2], Arr[1]]
+QuickSort(arr, compare := (a, b) => a - b, arrSizeThreshold := 8) {
+    if arr.Length <= 16 {
+        if arr.Length == 2 {
+            if compare(arr[1], arr[2]) > 0 {
+                return [arr[2], arr[1]]
             }
-            return Arr.Clone()
+            return arr.Clone()
         } else if arr.Length > 1 {
-            arr := Arr.Clone()
+            arr := arr.Clone()
             ; Insertion sort.
             i := 1
             loop arr.Length - 1 {
                 j := i
                 current := arr[++i]
                 loop j {
-                    if CompareFn(arr[j], current) < 0 {
+                    if compare(arr[j], current) < 0 {
                         break
                     }
                     arr[j + 1] := arr[j--]
@@ -75,62 +64,136 @@ QuickSort(Arr, CompareFn := (a, b) => a - b, ArrSizeThreshold := 17, PivotCandid
             return arr.Clone()
         }
     }
-
-    return _Proc(Arr)
-
-    _Proc(Arr) {
-        if Arr.Length <= ArrSizeThreshold {
-            if Arr.Length == 2 {
-                if CompareFn(Arr[1], Arr[2]) > 0 {
-                    return [Arr[2], Arr[1]]
+    candidates := []
+    candidates.Length := 3
+    stack := []
+    loop 3 {
+        candidates[A_Index] := arr[Random(1, arr.Length)]
+    }
+    i := 1
+    loop 2 {
+        j := i
+        current := candidates[++i]
+        loop j {
+            if compare(candidates[j], current) < 0 {
+                break
+            }
+            candidates[j + 1] := candidates[j--]
+        }
+        candidates[j + 1] := current
+    }
+    pivot := candidates[2]
+    left := []
+    right := []
+    left.Capacity := right.Capacity := arr.Length
+    for item in arr {
+        if compare(item, pivot) < 0 {
+            left.Push(item)
+        } else {
+            right.Push(item)
+        }
+    }
+    stack.Push([ left, right, 1 ])
+    _arr := stack[-1][stack[-1][3]]
+    loop {
+        if _arr.Length <= arrSizeThreshold {
+            if _arr.Length == 2 {
+                if compare(_arr[1], _arr[2]) > 0 {
+                    stack[-1][stack[-1][3]] := [_arr[2], _arr[1]]
                 }
-            } else if Arr.Length > 1 {
+            } else if _arr.Length > 1 {
                 ; Insertion sort.
                 i := 1
-                loop Arr.Length - 1 {
+                loop _arr.Length - 1 {
                     j := i
-                    current := Arr[++i]
+                    current := _arr[++i]
                     loop j {
-                        if CompareFn(Arr[j], current) < 0 {
+                        if compare(_arr[j], current) < 0 {
                             break
                         }
-                        Arr[j + 1] := Arr[j--]
+                        _arr[j + 1] := _arr[j--]
                     }
-                    Arr[j + 1] := current
+                    _arr[j + 1] := current
                 }
             }
-            return Arr
+            while stack[-1][3] == 2 {
+                complete := stack.Pop()
+                complete[1].Push(complete[2]*)
+                if !stack.Length {
+                    return complete[1]
+                }
+                stack[-1][stack[-1][3]] := complete[1]
+            }
+            stack[-1][3]++
+            _arr := stack[-1][2]
+            continue
         }
-        candidates := []
-        loop candidates.Capacity := PivotCandidates {
-            candidates.Push(Arr[Random(1, Arr.Length)])
+
+        loop 3 {
+            candidates[A_Index] := _arr[Random(1, _arr.Length)]
         }
         i := 1
-        loop candidates.Length - 1 {
+        loop 2 {
             j := i
             current := candidates[++i]
             loop j {
-                if CompareFn(candidates[j], current) < 0 {
+                if compare(candidates[j], current) < 0 {
                     break
                 }
                 candidates[j + 1] := candidates[j--]
             }
             candidates[j + 1] := current
         }
-        pivot := candidates[halfPivotCandidates]
+        pivot := candidates[2]
         left := []
         right := []
-        left.Capacity := right.Capacity := Arr.Length
-        for item in Arr {
-            if CompareFn(item, pivot) < 0 {
+        left.Capacity := right.Capacity := _arr.Length
+        for item in _arr {
+            if compare(item, pivot) < 0 {
                 left.Push(item)
             } else {
                 right.Push(item)
             }
         }
-        result := _Proc(left)
-        result.Push(_Proc(right)*)
-
-        return result
+        if left.Length {
+            _arr := left
+            if right.Length {
+                stack.Push([ left, right, 1 ])
+                continue
+            }
+        } else if right.Length {
+            _arr := right
+        }
+        if _arr.Length == 2 {
+            if compare(_arr[1], _arr[2]) > 0 {
+                stack[-1][stack[-1][3]] := [_arr[2], _arr[1]]
+            }
+        } else if _arr.Length > 1 {
+            ; Insertion sort.
+            i := 1
+            loop _arr.Length - 1 {
+                j := i
+                current := _arr[++i]
+                loop j {
+                    if compare(_arr[j], current) < 0 {
+                        break
+                    }
+                    _arr[j + 1] := _arr[j--]
+                }
+                _arr[j + 1] := current
+            }
+        }
+        stack[-1][stack[-1][3]] := _arr
+        while stack[-1][3] == 2 {
+            complete := stack.Pop()
+            complete[1].Push(complete[2]*)
+            if !stack.Length {
+                return complete[1]
+            }
+            stack[-1][stack[-1][3]] := complete[1]
+        }
+        stack[-1][3]++
+        _arr := stack[-1][2]
     }
 }
+
