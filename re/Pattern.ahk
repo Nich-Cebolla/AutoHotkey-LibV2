@@ -411,6 +411,27 @@ class Pattern {
         ')'
     )
 
+    /**
+     * I wrote this to correct floating point precision problems
+     * @example
+     *  Val := 0.1 + 0.2
+     *  if InStr(Val, '.') && RegExMatch(Val, Pattern.FloatingPointPrecision, &match) {
+     *      Val := Round(Val, StrLen(Val) - InStr(Val, '.') - match.Len)
+     *  }
+     * @
+     */
+    static FloatingPointPrecision := 'S)(?:0{3,}|9{3,})\d$'
+
+    static GetMatchingBrace(bracket) {
+        switch bracket {
+            case '{': return '}'
+            case '[': return ']'
+            case '(': return ')'
+            case '}': return '{'
+            case ']': return '['
+            case ')': return '('
+        }
+    }
 }
 
 
