@@ -28,6 +28,8 @@
  * - If the number is greater than zero it indicates the first parameter is greater than the second parameter.
  *
  * Reverse the return value to sort in descending order.
+ *
+ * @returns {Array} - The sorted input array.
  */
 Heapsort(arr, compare := (a, b) => a - b) {
     n := arr.Length
