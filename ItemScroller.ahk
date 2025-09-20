@@ -315,7 +315,7 @@ class ItemScroller {
         textBackgroundColor := editBackgroundColor := ''
         Options := this.Options := ItemScroller.Options(Options ?? unset)
         this.GuiHwnd := GuiObj.Hwnd
-        this.Index := 1
+        this.Index := 0
         this.Callback := Callback
         this.__Item := Map()
         this.CallbackClear := options.CallbackClear
