@@ -82,7 +82,7 @@ Heapsort(arr, compare := (a, b) => a - b) {
         while k * 2 <= n {
             j := k * 2
             if j + 1 <= n && compare(arr[j + 1], arr[j]) > 0 {
-                j += 1
+                j++
             }
             arr[k] := arr[j]
             k := j
@@ -126,7 +126,7 @@ Heapsort(arr, compare := (a, b) => a - b) {
         while k * 2 <= i {
             j := k * 2
             if j + 1 <= i && compare(arr[j + 1], arr[j]) > 0 {
-                j += 1
+                j++
             }
             arr[k] := arr[j]
             k := j
