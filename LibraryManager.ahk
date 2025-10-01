@@ -62,11 +62,11 @@
  * - Use a single file which initializes the variables.
  *
  * @example
- *  global g_proc_lib_Procedure1,
- *  g_proc_lib_Procedure2,
- *  g_proc_lib_Procedure3,
+ *  global g_proc_dllName_Procedure1,
+ *  g_proc_dllName_Procedure2,
+ *  g_proc_dllName_Procedure3,
  *  ; ...
- *  g_proc_lib_ProcedureN
+ *  g_proc_dllName_ProcedureN
  * @
  *
  * Then #include the file in your code. The auto-execute portion of the script must reach the
@@ -78,31 +78,31 @@
  *
  * script1.ahk:
  * @example
- *  global g_proc_lib_Procedure1, g_proc_lib_Procedure2
+ *  global g_proc_dllName_Procedure1, g_proc_dllName_Procedure2
  * @
  *
  * script2.ahk:
  * @example
- *  global g_proc_lib_Procedure1, g_proc_lib_Procedure3
+ *  global g_proc_dllName_Procedure1, g_proc_dllName_Procedure3
  * @
  *
  * script3.ahk:
  * @example
  *  #include script1.ahk
- *  token1 := LibraryManager(Map('lib', ['Procedure1', 'Procedure2']))
- *  DllCall(g_proc_lib_Procedure1, 'int', 0, 'int', 0)
+ *  token1 := LibraryManager('dllName', ['Procedure1', 'Procedure2'])
+ *  DllCall(g_proc_dllName_Procedure1, 'int', 0, 'int', 0)
  *
  *  ; Re-initializing the variables does not cause issues
- *  ; even though `g_proc_lib_Procedure1` has already been
+ *  ; even though `g_proc_dllName_Procedure1` has already been
  *  ; set with a value.
  *  #include script2.ahk
- *  token2 := LibraryManager(Map('lib', ['Procedure1', 'Procedure3']))
- *  DllCall(g_proc_lib_Procedure1, 'int', 0, 'int', 0)
+ *  token2 := LibraryManager('dllName', ['Procedure1', 'Procedure3'])
+ *  DllCall(g_proc_dllName_Procedure1, 'int', 0, 'int', 0)
  * @
  *
  * Using this approach, each library can initialize the variables it needs. However, depending
  * on the structure of the code, it is possible that "script2.ahk" is not reached prior to attempting
- * to read the value of `g_proc_lib_Procedure1` or `g_proc_lib_Procedure3`, resulting in a `VarUnset`
+ * to read the value of `g_proc_dllName_Procedure1` or `g_proc_dllName_Procedure3`, resulting in a `VarUnset`
  * error, even if the code is correctly written. One of the following approaches can be used to avoid
  * this eventuality.
  *
@@ -114,11 +114,11 @@
  *      static __New() {
  *          global
  *          this.DeleteProp('__New')
- *          if !IsSet(g_proc_lib_Precedure1) {
- *              g_proc_lib_Procedure1 := 0
+ *          if !IsSet(g_proc_dllName_Precedure1) {
+ *              g_proc_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_lib_Procedure2) {
- *              g_proc_lib_Procedure2 := 0
+ *          if !IsSet(g_proc_dllName_Procedure2) {
+ *              g_proc_dllName_Procedure2 := 0
  *          }
  *          ; ...
  *      }
@@ -138,11 +138,11 @@
  *      }
  *      static __InitializeProcedureVars() {
  *          global
- *          if !IsSet(g_proc_lib_Precedure1) {
- *              g_proc_lib_Procedure1 := 0
+ *          if !IsSet(g_proc_dllName_Precedure1) {
+ *              g_proc_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_lib_Procedure2) {
- *              g_proc_lib_Procedure2 := 0
+ *          if !IsSet(g_proc_dllName_Procedure2) {
+ *              g_proc_dllName_Procedure2 := 0
  *          }
  *          ; ...
  *      }
@@ -154,13 +154,13 @@
  * @example
  *  class MyClass {
  *      static __New() {
- *          global g_proc_lib_Precedure1, g_proc_lib_Procedure2
+ *          global g_proc_dllName_Precedure1, g_proc_dllName_Procedure2
  *          this.DeleteProp('__New')
- *          if !IsSet(g_proc_lib_Precedure1) {
- *              g_proc_lib_Procedure1 := 0
+ *          if !IsSet(g_proc_dllName_Precedure1) {
+ *              g_proc_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_lib_Procedure2) {
- *              g_proc_lib_Procedure2 := 0
+ *          if !IsSet(g_proc_dllName_Procedure2) {
+ *              g_proc_dllName_Procedure2 := 0
  *          }
  *      }
  *  }
@@ -171,11 +171,11 @@
  * @example
  *  InitializeProcedureVars() {
  *      global
- *      if !IsSet(g_proc_lib_Procedure1) {
- *          g_proc_lib_Procedure1 := 0
+ *      if !IsSet(g_proc_dllName_Procedure1) {
+ *          g_proc_dllName_Procedure1 := 0
  *      }
- *      if !IsSet(g_proc_lib_Procedure2) {
- *          g_proc_lib_Procedure2 := 0
+ *      if !IsSet(g_proc_dllName_Procedure2) {
+ *          g_proc_dllName_Procedure2 := 0
  *      }
  *      ; ...
  *  }
@@ -188,11 +188,11 @@
  * then calls `LoadLibraryW` for the dlls, and calls `GetProcAddress` for the procedures.
  *
  * @example
- *  global g_proc_somedll_Procedure1,
- *  g_proc_somedll_Procedure2,
- *  g_proc_somedll_Procedure3
+ *  global g_proc_dllName_Procedure1,
+ *  g_proc_dllName_Procedure2,
+ *  g_proc_dllName_Procedure3
  *
- *  procedures := Map('somedll', ['Procedure1', 'Procedure2', 'Procedure3'])
+ *  procedures := Map('dllName', ['Procedure1', 'Procedure2', 'Procedure3'])
  *  token := LibraryManager(procedures)
  *
  *  ; do work
@@ -231,7 +231,7 @@ class LibraryManager {
     static __New() {
         this.DeleteProp('__New')
         this.Tokens := LibraryManagerTokenCollection()
-        this.InvalidCharPattern := '[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
+        this.InvalidCharPattern := 'S)[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
         this.__InitializeProcedureVars()
     }
     static Free(Token) {
@@ -244,16 +244,30 @@ class LibraryManager {
             throw UnsetItemError('Token not found.', -1, Token.Id)
         }
     }
-    static Call(Procedures) {
+    static Call(Procedures*) {
         pattern := this.InvalidCharPattern
         token := LibraryManagerToken()
         this.Tokens.Set(token.Id, token)
-        for dllName, procedureList in Procedures {
-            if !(hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
-                throw Error('Failed to load the dll.', -1, dllName)
+        if Procedures[1] is Map {
+            for procedureMap in Procedures {
+                for dllName, procedureList in procedureMap {
+                    if !(hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                        throw Error('Failed to load the dll.', -1, dllName)
+                    }
+                    this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
+                    token.Add(hMod)
+                }
             }
-            this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
-            token.Add(hMod)
+        } else {
+            loop Procedures.Length / 2 {
+                dllName := Procedures[A_Index * 2 - 1]
+                procedureList := Procedures[A_Index * 2]
+                if !(hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                    throw Error('Failed to load the dll.', -1, dllName)
+                }
+                this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
+                token.Add(hMod)
+            }
         }
         return token
     }
