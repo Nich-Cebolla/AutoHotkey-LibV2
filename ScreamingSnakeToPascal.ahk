@@ -52,8 +52,8 @@ class ScreamingSnakeToPascal extends Array {
      * - in: The input path.
      * - out: The output path.
      * - prefix: (Optional) Include a "prefix" property to specify different prefixes than the
-     *   parameter `prefix`. If the "prefix" property is present, that value is used instead of the
-     *   `prefix` parameter. See the `prefix` parameter details for more info.
+     *   parameter `Options.prefix`. If the "prefix" property is present, that value is used instead
+     *   of the `Options.prefix` parameter. See the `Options.prefix` parameter details for more info.
      *
      * @param {Integer} Options.maxSegments - The greatest number of segments in a symbol. A "segment"
      * is a substring containing only non-underscore characters, e.g. "SCREAMING", "SNAKE", "CASE"
@@ -66,20 +66,24 @@ class ScreamingSnakeToPascal extends Array {
      * - If an object: An object with the following properties:
      *   - prefix: The substring that prefixes the symbols which are going to be modified.
      *   - replacement: The string that will replace the prefix substring.
+     * - If an array of objects: An array of objects as described above.
      *
-     * When `prefix` or the "prefix" property of an `input` object are strings, the prefix is modified
-     * so only the first character is capitalized. For prefixes that consist of more than one whole
-     * word, you may want to specify the replacement string because {@link ScreamingSnakeToPascal}
-     * won't recognize the words; only the first letter will be capitalized. For example, if my
-     * prefix is "GUICONTROL", {@link ScreamingSnakeToPascal} will modify that to "Guicontrol".
-     * Instead of passing "GUICONTROL' to `prefix` as a string, I would pass an object
-     * {prefix:"GUICONTROL",replacement:"GuiControl"} to specify the replacement string.
+     * When `Options.prefix` or the "prefix" property of an `Options.input` object are strings,\
+     * the prefix is modified so only the first character is capitalized. For prefixes that consist
+     * of more than one whole word, you may want to specify the replacement string because
+     * {@link ScreamingSnakeToPascal} won't recognize the words; only the first letter will be
+     * capitalized.
      *
-     * @param {Map} [Options.wordReplacements = ""] - A Map object where each key is a string word that might
-     * be used within the symbols that will be modified, and the value is the string that those
-     * words will be replaced with. `wordReplacements` serves the same purpose as passing an object
-     * to `prefix` - some segments might contain multiple words, but {@link ScreamingSnakeToPascal}
+     * For example, if my prefix is "GUICONTROL", {@link ScreamingSnakeToPascal} will modify that to
+     * "Guicontrol". Instead of passing "GUICONTROL' to `prefix` as a string, I would pass an object
+     * `{prefix:"GUICONTROL",replacement:"GuiControl"}` to specify the replacement string.
+     *
+     * @param {Map} [Options.wordReplacements = ""] - A Map object where each key is a string word
+     * that might be used within the symbols that will be modified, and the value is the string that
+     * those words will be replaced with. `wordReplacements` serves the same purpose as passing an
+     * object to `prefix` - some segments might contain multiple words, but {@link ScreamingSnakeToPascal}
      * will always only capitalize the first letter of the segment and the rest will be uncapitalized.
+     *
      * For each word in `wordReplacements`, {@link ScreamingSnakeToPascal} will replace it with
      * the corresponding replacement, allowing the caller to specify the replacement. For example,
      * if my code has a symbol GUICONTROL_TYPEINDEX, I could pass
@@ -92,12 +96,12 @@ class ScreamingSnakeToPascal extends Array {
      * symbol. This was a necessary design choice to avoid incorrectly modifying words that exist
      * inside of other words.
      *
-     * @param {Boolean} [Options.overwrite = false] - If true, overwrites files at the out paths. If false,
-     * throws an error if a file exists at an out path. This is ignored if `calculateOnly` is
-     * true.
+     * @param {Boolean} [Options.overwrite = false] - If true, overwrites files at the out paths.
+     * If false, throws an error if a file exists at an out path. This is ignored if
+     * `Options.calculateOnly` is true.
      *
-     * @param {Boolean} [Options.calculateOnly = false] - If true, {@link ScreamingSnakeToPascal} does
-     * not create the output files; it only performs the calculations.
+     * @param {Boolean} [Options.calculateOnly = false] - If true, {@link ScreamingSnakeToPascal}
+     * does not create the output files; it only performs the calculations.
      *
      * I included this option to help the developer get a list of symbols that will be replaced
      * to make it easier to define a map object to pass to `wordReplacements` so any muilti-word
@@ -120,7 +124,7 @@ class ScreamingSnakeToPascal extends Array {
      * - symbols: A {@link ScreamingSnakeToPascal.Symbols} object. {@link ScreamingSnakeToPascal.Symbols}
      *   inherits from `Map` and has one additional method,
      *   {@link ScreamingSnakeToPascal.Symbols.Prototype.GetSymbols}.
-     * - content: The entire modified content for the file at the input path.
+     * - content: The entire modified content for the file at the input path as string.
      *
      * The returned {@link ScreamingSnakeToPascal} object has one additional property, "symbols",
      * which is a {@link ScreamingSnakeToPascal.Symbols} object containing all the symbols that were
