@@ -1,5 +1,4 @@
 ﻿
-
 class ScreamingSnakeToPascal extends Array {
     /**
      * Converts SCREAMING_SNAKE_CASE to PascalCase. This is accomplished using RegExReplace, where
@@ -151,8 +150,8 @@ class ScreamingSnakeToPascal extends Array {
                 throw Error('A file exists at the output path.', , obj.out)
             }
             content := FileRead(obj.in, encoding ?? unset)
-            _result := ScreamingSnakeToPascal.Result(obj)
-            this.Push(_result)
+            result := ScreamingSnakeToPascal.Result(obj)
+            this.Push(result)
             _patternBase := patternBase
             if HasProp(obj, 'prefix') {
                 if obj.prefix is Array {
@@ -198,11 +197,11 @@ class ScreamingSnakeToPascal extends Array {
                         }
                         content := RegExReplace(content, '\b' match[0] '\b', _replacement)
                         symbols.Set(match[0], _replacement)
-                        _result.symbols.Set(match[0], _replacement)
+                        result.symbols.Set(match[0], _replacement)
                     }
                 }
             }
-            _result.content := content
+            result.content := content
             if !calculateOnly {
                 f := FileOpen(obj.out, 'w', Encoding ?? unset)
                 f.Write(content)
