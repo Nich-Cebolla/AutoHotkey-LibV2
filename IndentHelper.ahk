@@ -1,4 +1,10 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/IndentHelper.ahk
+    Author: Nich-Cebolla
+    Version: 1.0.0
+    License: MIT
+*/
+
 class IndentHelper extends Array {
     static __New() {
         this.DeleteProp('__New')
