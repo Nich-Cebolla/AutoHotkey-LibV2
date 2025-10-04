@@ -4,7 +4,7 @@
 #include ..\Quicksort.ahk
 
 
-Array.Prototype.DefineProp('Find', { Call: TestSort_Array_FInd })
+Array.Prototype.DefineProp('Find', { Call: TestSort_Array_Find })
 Array.Prototype.DefineProp('Reduce', { Call: TestSort_Array_Reduce })
 Array.Prototype.DefineProp('ForEach', { Call: TestSort_Array_ForEach })
 
