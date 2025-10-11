@@ -6,7 +6,7 @@
 
 /**
  * @classdesc -
- * BOOL SetWindowSubclass(
+ * BOOL SetWindowSubclass
  *   HWND          hWnd,
  *   SUBCLASSPROC  pfnSubclass,
  *   UINT_PTR      uIdSubclass,
@@ -16,26 +16,22 @@
 class WindowSubclass {
     static __New() {
         this.DeleteProp('__New')
-        this.Ids := []
+        this.Ids := Map()
         Proto := this.Prototype
-        Proto.pfnSubclass := 0
+        Proto.pfnSubclass := proto.__flag_callbackFree := 0
     }
     static GetUid() {
-        loop {
-            n := Random(0, 4294967295)
-            for id in this.Ids {
-                if n = id {
-                    OutputDebug('Congratulations, you should buy a lottery ticket today.`n')
-                    continue 2
-                }
+        loop 100 { ; 100 is arbitrary
+            id := Random(0, 2 ** 32 - 1)
+            if !this.Ids.Has(id) {
+                this.Ids.Set(id, 1)
+                return id
             }
-            this.Ids.Push(n)
-            return n
         }
+        throw Error('Failed to create a unique id.')
     }
     /**
-     * Calls `SetWindowSubclass`.
-     * {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass}
+     * Calls {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass SetWindowSubclass}
      *
      * @see {@link https://learn.microsoft.com/en-us/windows/win32/controls/subclassing-overview}
      *
@@ -44,39 +40,51 @@ class WindowSubclass {
      * Each hWnd can have multiple active subclass procedures, as long as each one has a unique uIdSubclass.
      *
      * - Calling SetWindowSubclass with the same hwnd and same uIdSubclass:
-     *   - Windows will replace the existing subclass proc
-     *   - The old `dwRefData` is no longer associated with the subclass
-     *   - This can be used to update `dwRefData` with new data.
+     *   - The system will replace the existing subclass proc.
+     *   - The system will update `dwRefData` with the new data.
      * - Calling with the same hwnd and a different uIdSubclass:
-     *   - Windows adds an additional subclass to the chain.
+     *   - The system adds an additional subclass to the chain.
      *   - All subclass procedures are called in reverse order (newest first) during message dispatch.
-     *
-     * When your code needs to check if the subclass is already installed or not, use the property
-     * "pfnSubclass" as your indicator. If zero, the subclass is not installed. If nonzero, the
-     * subclass is installed.
+     * - Calling with a different hwnd and the same uIdSubclass:
+     *   - The system will add the uIdSubclass to the window's subclass list, as each window maintains
+     *     a separate subclass list.
      *
      * @class
      *
-     * @param {Func|BoundFunc} SubclassProc - The function that will be used as the subclass procedure.
-     *
-     * @param {Integer} [Hwnd] - The handle to the window that represents the window class that will
-     * be subclassed. If unset, `A_ScriptHwnd` is used.
-     *
-     * @param {Integer} [uIdSubclass] - If set, this must be an integer between 0 and 4294967295. If
-     * unset, a random value is assigned.
+     * @param {Func|Integer} [SubclassProc = 0] - The function that will be used as the
+     * subclass procedure, or the pointer to the function. This is set to property
+     * {@link WindowSubclass#SubclassProc}. If `SubclassProc` is 0, `SetWindowSubclass`
+     * is not called; your code can set the property by calling {@link WindowSubclass.Prototype.SetSubclassProc}.
      *
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nc-commctrl-subclassproc}.
      *
+     * @param {Integer} [HwndSubclass] - The handle to the window for which `SubclassProc` will intercept
+     * its messages and notifications. If unset, `A_ScriptHwnd` is used.
+     *
+     * @param {Integer} [uIdSubclass] - Serves as the unique id for this subclass. If set, it must
+     * be a ptr-sized integer. If unset, a random integer is generated. This is set to property
+     * {@link WindowSubclass#uIdSubclass}.
+     *
      * @param {Buffer|Integer} [dwRefData = 0] - A buffer containing data that will be passed to the
-     * subclass procedure, or a pointer to a memory address containing the data.
+     * subclass procedure, or a pointer to a memory address containing the data, or the data itself
+     * if the data can be represented as a ptr-sized value.
      *
      * @param {Boolean} [DeferActivation = false] - If true, `SetWindowSubclass` is not called, your
-     * code must call `WindowSubclass.Prototype.Install`.
+     * code must call {@link WindowSubclass.Prototype.Install}. If `SubclassProc` is 0,
+     * `DeferActivation` is ignored; `SetWindowSubclass` is not called if `SubclassProc` is 0.
      */
-    __New(SubclassProc, Hwnd?, uIdSubclass?, dwRefData := 0, DeferActivation := false) {
+    __New(SubclassProc := 0, HwndSubclass?, uIdSubclass?, dwRefData := 0, DeferActivation := false) {
         this.SubclassProc := SubclassProc
-        this.Hwnd := Hwnd ?? A_ScriptHwnd
-        this.uIdSubclass := uIdSubclass ?? WindowSubclass.GetUid()
+        this.Hwnd := HwndSubclass ?? A_ScriptHwnd
+        if IsSet(uIdSubclass) {
+            if WindowSubclass.Ids.Has(uIdSubclass) {
+                throw Error('The ``uIdSubclass`` is already in use.', , uIdSubclass)
+            }
+            this.uIdSubclass := uIdSubclass
+            WindowSubclass.Ids.Set(uIdSubclass, 1)
+        } else {
+            this.uIdSubclass := WindowSubclass.GetUid()
+        }
         this.dwRefData := dwRefData
         if !DeferActivation {
             this.Install()
@@ -86,6 +94,7 @@ class WindowSubclass {
         if this.pfnSubclass {
             this.Uninstall()
         }
+        WindowSubclass.Ids.Delete(this.uIdSubclass)
         for prop in ['Hwnd', 'uIdSubclass', 'SubclassProc', 'dwRefData'] {
             if this.HasOwnProp(prop) {
                 this.DeleteProp(prop)
@@ -101,7 +110,13 @@ class WindowSubclass {
         if this.pfnSubclass {
             throw Error('The subclass is already installed.', -1)
         }
-        this.pfnSubclass := CallbackCreate(this.SubclassProc)
+        if IsObject(this.SubclassProc) {
+            this.pfnSubclass := CallbackCreate(this.SubclassProc)
+            this.__flag_callbackFree := 1
+        } else {
+            this.pfnSubclass := this.SubclassProc
+            this.__flag_callbackFree := 0
+        }
         if !DllCall(
             'Comctl32.Dll\SetWindowSubclass'
           , 'ptr', this.Hwnd
@@ -110,7 +125,10 @@ class WindowSubclass {
           , 'ptr', this.dwRefData
           , 'int'
         ) {
-            CallbackFree(this.pfnSubclass)
+            if this.__flag_callbackFree {
+                CallbackFree(this.pfnSubclass)
+                this.__flag_callbackFree := 0
+            }
             throw OSError('The call to ``SetWindowSubclass`` failed.', -1)
         }
     }
@@ -119,18 +137,47 @@ class WindowSubclass {
      *
      * @param {Buffer|Integer} dwRefData - A buffer containing data that will be passed to the
      * subclass procedure, or a pointer to a memory address containing the data.
+     *
+     * @returns {Buffer|Integer} - The previous value.
      */
     SetRefData(dwRefData) {
+        previous := this.dwRefData
         this.dwRefData := dwRefData
         this.Install()
+        return previous
     }
     /**
-     * Uninstalls the subclass.
+     * @param {Func|Integer} SubclassProc - The function that will be used as the
+     * subclass procedure, or the pointer to the function. This is set to property
+     * {@link WindowSubclass#SubclassProc}.
+     *
+     * @param {Boolean} [Activate = true] - If true, installs the subclass. If the subclass is already
+     * installed, it is first uninstalled, then reinstalled using the new function.
+     *
+     * If false, only the {@link WindowSubclass#SubclassProc} property is changed.
+     *
+     * @returns {Func|Integer} - The previous value.
+     */
+    SetSubclassProc(SubclassProc, Activate := true) {
+        previous := this.SubclassProc
+        this.SubclassProc := SubclassProc
+        if Activate {
+            if this.IsInstalled {
+                this.Uninstall()
+            }
+            this.Install()
+        }
+        return previous
+    }
+    /**
+     * Uninstalls the subclass by calling
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-removewindowsubclass RemoveWindowSubclass}.
+     * Sets property {@link WindowSubclass#pfnSubclass} := 0.
      * @throws {Error} - The subclass is not installed.
      * @throws {OSError} - The call to `RemoveWindowSubclass` failed.
      */
     Uninstall() {
-        if this.pfnSubclass {
+        if this.IsInstalled {
             pfnSubclass := this.pfnSubclass
             this.pfnSubclass := 0
             if !DllCall(
@@ -142,7 +189,10 @@ class WindowSubclass {
             ) {
                 err := OSError('The call to ``RemoveWindowSubclass`` failed.', -1)
             }
-            CallbackFree(pfnSubclass)
+            if this.__flag_callbackFree {
+                CallbackFree(pfnSubclass)
+                this.__flag_callbackFree := 0
+            }
             if IsSet(err) {
                 throw err
             }
@@ -155,6 +205,6 @@ class WindowSubclass {
             this.Uninstall()
         }
     }
+
+    IsInstalled => this.pfnSubclass ? 1 : 0
 }
-
-
