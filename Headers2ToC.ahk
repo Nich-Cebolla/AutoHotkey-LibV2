@@ -9,7 +9,7 @@ class Headers2ToC {
     static __New() {
         this.DeleteProp('__New')
         this.patternMarkdown := 'S)(?<=[\r\n]|^)[ \t]*(#+)(.+)'
-        this.patternHtml := 'S)(?<=[\r\n]|^)[ \t]*<h(\d)[^>]*>(.+)(?=</h)'
+        this.patternHtml := 'S)(?<=[\r\n]|^)[ \t]*<h(\d)[^>]*>(.+?)(?=</h)'
         this.patternFormatElement := '<([^>]+)>'
         ; 1 - indent
         ; 2 - li style
@@ -36,7 +36,7 @@ class Headers2ToC {
      * Identifies all of the headers in the input input text then constructs a string
      * with a table of contents for all of the headers.
      *
-     * If both `Str` and `Path` are unset, the clipboard's context is used.
+     * If both `Str` and `Path` are unset, the clipboard's content is used.
      *
      * For `Options.aStlye`, `Options.FormatElement`, `Options.liStyle`, `Options.olStyle`, and
      * `Options.olType`, the array index corresponds with the level in the table of contents at which
@@ -91,7 +91,7 @@ class Headers2ToC {
      *   ids are used, the first id would be "example-id", the second id would be "example-id-1",
      *   and the third would be "example-id-2".
      *
-     * The default value of `Options.Flags` is based off Github's markdown rendering. If you are
+     * The default value of `Options.Flags` is based off Github's html rendering. If you are
      * creating a table of contents to use with Github, leave `Options.Flags` the default value.
      *
      * Combine values using bitwise "or" ( | ), e.g. `Options.Flags := HEADERS2TOC_LOWERCASE | HEADERS2TOC_TRIMHYPHENS`.
@@ -132,7 +132,7 @@ class Headers2ToC {
      *
      * If false, the pattern used to identify headers is:
      *
-     * S)(?<=[\r\n]|^)[ \t]*<h(\d)[^>]*>(.+)(?=</h)
+     * S)(?<=[\r\n]|^)[ \t]*<h(\d)[^>]*>(.+?)(?=</h)
      *
      * and the header level is identified by the value of the first subcapture group.
      *
@@ -408,7 +408,7 @@ class Headers2ToC {
         feC := this.formatElementClose := []
         subFe := this.subheaderFormatElement := []
         subFeC := this.subheaderFormatElementClose := []
-        fe.Capacity := feC.Capacity := rng
+        fe.Capacity := feC.Capacity := subFe.Capacity := subFeC.Capacity := rng
         for quad in [
             [ options.FormatElement, options.FormatElementAll, fe, feC ]
           , [ options.SubheaderFormatElement, options.SubheaderFormatElementAll, subfe, subfeC ]
