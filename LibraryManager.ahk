@@ -26,7 +26,7 @@
  *
  * <prefix>_<library name>_<procedure name>
  *
- * By default, the <prefix> is "g_". The value of the prefix is defined by the global variable
+ * By default, the <prefix> is "g". The value of the prefix is defined by the global variable
  * `LIBRARYMANAGER_VAR_PREFIX` which is initialized within {@link LibraryManager.__New} (unless
  * `LIBRARYMANAGER_VAR_PREFIX` has already been set). Your code can overwrite `LIBRARYMANAGER_VAR_PREFIX`
  * and use a different prefix if necessary, but this should be avoided so open source code does not
@@ -284,7 +284,7 @@ class LibraryManager {
         global LIBRARYMANAGER_VAR_PREFIX, g_kernel32_GetProcAddress
         , g_kernel32_LoadLibraryW, g_kernel32_FreeLibrary
         if !IsSet(LIBRARYMANAGER_VAR_PREFIX) {
-            LIBRARYMANAGER_VAR_PREFIX := 'g_'
+            LIBRARYMANAGER_VAR_PREFIX := 'g'
         }
         hMod := DllCall('GetModuleHandleW', 'wstr', 'kernel32', 'ptr')
         if !IsSet(g_kernel32_GetProcAddress) {
