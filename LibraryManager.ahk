@@ -32,8 +32,8 @@
  * and use a different prefix if necessary, but this should be avoided so open source code does not
  * need to navigate various prefixes among shared libraries. If you do need to redefine
  * `LIBRARYMANAGER_VAR_PREFIX`, note that the variables used internally by {@link LibraryManager}
- * are always `g_proc_kernel32_GetProcAddress`, `g_proc_kernel32_LoadLibraryW`, and
- * `g_proc_kernel32_FreeLibrary`.
+ * are always `g_kernel32_GetProcAddress`, `g_kernel32_LoadLibraryW`, and
+ * `g_kernel32_FreeLibrary`.
  *
  * <library name> is the literal name of the dll without the ".dll" extension.
  *
@@ -47,8 +47,8 @@
  * Internally, the variable names are dereferenced with this logic:
  *
  * @example
- *  hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')
- *  address := DllCall(g_proc_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureName, 'ptr')
+ *  hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')
+ *  address := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureName, 'ptr')
  *  dllName := RegExReplace(StrReplace(dllName, '.dll', ''), LibraryManager.InvalidCharPattern, '')
  *  procedureName := RegExReplace(procedureName, LibraryManager.InvalidCharPattern, '')
  *  %LIBRARYMANAGER_VAR_PREFIX%_%dllName%_%procedureName% := address
@@ -62,11 +62,11 @@
  * - Use a single file which initializes the variables.
  *
  * @example
- *  global g_proc_dllName_Procedure1,
- *  g_proc_dllName_Procedure2,
- *  g_proc_dllName_Procedure3,
+ *  global g_dllName_Procedure1,
+ *  g_dllName_Procedure2,
+ *  g_dllName_Procedure3,
  *  ; ...
- *  g_proc_dllName_ProcedureN
+ *  g_dllName_ProcedureN
  * @
  *
  * Then #include the file in your code. The auto-execute portion of the script must reach the
@@ -78,31 +78,31 @@
  *
  * script1.ahk:
  * @example
- *  global g_proc_dllName_Procedure1, g_proc_dllName_Procedure2
+ *  global g_dllName_Procedure1, g_dllName_Procedure2
  * @
  *
  * script2.ahk:
  * @example
- *  global g_proc_dllName_Procedure1, g_proc_dllName_Procedure3
+ *  global g_dllName_Procedure1, g_dllName_Procedure3
  * @
  *
  * script3.ahk:
  * @example
  *  #include script1.ahk
  *  token1 := LibraryManager('dllName', ['Procedure1', 'Procedure2'])
- *  DllCall(g_proc_dllName_Procedure1, 'int', 0, 'int', 0)
+ *  DllCall(g_dllName_Procedure1, 'int', 0, 'int', 0)
  *
  *  ; Re-initializing the variables does not cause issues
- *  ; even though `g_proc_dllName_Procedure1` has already been
+ *  ; even though `g_dllName_Procedure1` has already been
  *  ; set with a value.
  *  #include script2.ahk
  *  token2 := LibraryManager('dllName', ['Procedure1', 'Procedure3'])
- *  DllCall(g_proc_dllName_Procedure1, 'int', 0, 'int', 0)
+ *  DllCall(g_dllName_Procedure1, 'int', 0, 'int', 0)
  * @
  *
  * Using this approach, each library can initialize the variables it needs. However, depending
  * on the structure of the code, it is possible that "script2.ahk" is not reached prior to attempting
- * to read the value of `g_proc_dllName_Procedure1` or `g_proc_dllName_Procedure3`, resulting in a `VarUnset`
+ * to read the value of `g_dllName_Procedure1` or `g_dllName_Procedure3`, resulting in a `VarUnset`
  * error, even if the code is correctly written. One of the following approaches can be used to avoid
  * this eventuality.
  *
@@ -114,11 +114,11 @@
  *      static __New() {
  *          global
  *          this.DeleteProp('__New')
- *          if !IsSet(g_proc_dllName_Precedure1) {
- *              g_proc_dllName_Procedure1 := 0
+ *          if !IsSet(g_dllName_Precedure1) {
+ *              g_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_dllName_Procedure2) {
- *              g_proc_dllName_Procedure2 := 0
+ *          if !IsSet(g_dllName_Procedure2) {
+ *              g_dllName_Procedure2 := 0
  *          }
  *          ; ...
  *      }
@@ -138,11 +138,11 @@
  *      }
  *      static __InitializeProcedureVars() {
  *          global
- *          if !IsSet(g_proc_dllName_Precedure1) {
- *              g_proc_dllName_Procedure1 := 0
+ *          if !IsSet(g_dllName_Precedure1) {
+ *              g_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_dllName_Procedure2) {
- *              g_proc_dllName_Procedure2 := 0
+ *          if !IsSet(g_dllName_Procedure2) {
+ *              g_dllName_Procedure2 := 0
  *          }
  *          ; ...
  *      }
@@ -154,13 +154,13 @@
  * @example
  *  class MyClass {
  *      static __New() {
- *          global g_proc_dllName_Precedure1, g_proc_dllName_Procedure2
+ *          global g_dllName_Precedure1, g_dllName_Procedure2
  *          this.DeleteProp('__New')
- *          if !IsSet(g_proc_dllName_Precedure1) {
- *              g_proc_dllName_Procedure1 := 0
+ *          if !IsSet(g_dllName_Precedure1) {
+ *              g_dllName_Procedure1 := 0
  *          }
- *          if !IsSet(g_proc_dllName_Procedure2) {
- *              g_proc_dllName_Procedure2 := 0
+ *          if !IsSet(g_dllName_Procedure2) {
+ *              g_dllName_Procedure2 := 0
  *          }
  *      }
  *  }
@@ -171,11 +171,11 @@
  * @example
  *  InitializeProcedureVars() {
  *      global
- *      if !IsSet(g_proc_dllName_Procedure1) {
- *          g_proc_dllName_Procedure1 := 0
+ *      if !IsSet(g_dllName_Procedure1) {
+ *          g_dllName_Procedure1 := 0
  *      }
- *      if !IsSet(g_proc_dllName_Procedure2) {
- *          g_proc_dllName_Procedure2 := 0
+ *      if !IsSet(g_dllName_Procedure2) {
+ *          g_dllName_Procedure2 := 0
  *      }
  *      ; ...
  *  }
@@ -188,9 +188,9 @@
  * then calls `LoadLibraryW` for the dlls, and calls `GetProcAddress` for the procedures.
  *
  * @example
- *  global g_proc_dllName_Procedure1,
- *  g_proc_dllName_Procedure2,
- *  g_proc_dllName_Procedure3
+ *  global g_dllName_Procedure1,
+ *  g_dllName_Procedure2,
+ *  g_dllName_Procedure3
  *
  *  procedures := Map('dllName', ['Procedure1', 'Procedure2', 'Procedure3'])
  *  token := LibraryManager(procedures)
@@ -237,7 +237,7 @@ class LibraryManager {
     static Free(Token) {
         if this.Tokens.Has(Token.Id) {
             for hMod in Token.Libraries {
-                DllCall(g_proc_kernel32_FreeLibrary, 'ptr', hMod)
+                DllCall(g_kernel32_FreeLibrary, 'ptr', hMod)
             }
             this.Tokens.Delete(Token.Id)
         } else {
@@ -251,7 +251,7 @@ class LibraryManager {
         if Procedures[1] is Map {
             for procedureMap in Procedures {
                 for dllName, procedureList in procedureMap {
-                    if !(hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                    if !(hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
                         throw Error('Failed to load the dll.', -1, dllName)
                     }
                     this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
@@ -262,7 +262,7 @@ class LibraryManager {
             loop Procedures.Length / 2 {
                 dllName := Procedures[A_Index * 2 - 1]
                 procedureList := Procedures[A_Index * 2]
-                if !(hMod := DllCall(g_proc_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                if !(hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
                     throw Error('Failed to load the dll.', -1, dllName)
                 }
                 this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
@@ -275,26 +275,26 @@ class LibraryManager {
         global
         loop procedureList.Length {
             if !(%LIBRARYMANAGER_VAR_PREFIX%_%ModifiedDllName%_%RegExReplace(procedureList[A_Index], pattern, '')%
-            := DllCall(g_proc_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureList[A_Index], 'ptr')) {
+            := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureList[A_Index], 'ptr')) {
                 throw Error('Failed to look up the procedure address.', -1, DllName ':' procedureList[A_Index])
             }
         }
     }
     static __InitializeProcedureVars() {
-        global LIBRARYMANAGER_VAR_PREFIX, g_proc_kernel32_GetProcAddress
-        , g_proc_kernel32_LoadLibraryW, g_proc_kernel32_FreeLibrary
+        global LIBRARYMANAGER_VAR_PREFIX, g_kernel32_GetProcAddress
+        , g_kernel32_LoadLibraryW, g_kernel32_FreeLibrary
         if !IsSet(LIBRARYMANAGER_VAR_PREFIX) {
             LIBRARYMANAGER_VAR_PREFIX := 'g_proc'
         }
         hMod := DllCall('GetModuleHandleW', 'wstr', 'kernel32', 'ptr')
-        if !IsSet(g_proc_kernel32_GetProcAddress) {
-            g_proc_kernel32_GetProcAddress := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetProcAddress', 'ptr')
+        if !IsSet(g_kernel32_GetProcAddress) {
+            g_kernel32_GetProcAddress := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetProcAddress', 'ptr')
         }
-        if !IsSet(g_proc_kernel32_LoadLibraryW) {
-            g_proc_kernel32_LoadLibraryW := DllCall(g_proc_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'LoadLibraryW', 'ptr')
+        if !IsSet(g_kernel32_LoadLibraryW) {
+            g_kernel32_LoadLibraryW := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'LoadLibraryW', 'ptr')
         }
-        if !IsSet(g_proc_kernel32_FreeLibrary) {
-            g_proc_kernel32_FreeLibrary := DllCall(g_proc_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'FreeLibrary', 'ptr')
+        if !IsSet(g_kernel32_FreeLibrary) {
+            g_kernel32_FreeLibrary := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'FreeLibrary', 'ptr')
         }
     }
 }

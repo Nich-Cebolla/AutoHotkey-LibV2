@@ -44,26 +44,26 @@ class GdipBitmap {
     }
     static __InitializeProcedureVars() {
         global
-        if !IsSet(g_proc_gdiplus_GdipDisposeImage) {
-            g_proc_gdiplus_GdipDisposeImage := 0
+        if !IsSet(g_gdiplus_GdipDisposeImage) {
+            g_gdiplus_GdipDisposeImage := 0
         }
-        if !IsSet(g_proc_gdiplus_GdipLoadImageFromFile) {
-            g_proc_gdiplus_GdipLoadImageFromFile := 0
+        if !IsSet(g_gdiplus_GdipLoadImageFromFile) {
+            g_gdiplus_GdipLoadImageFromFile := 0
         }
-        if !IsSet(g_proc_gdiplus_GdipGetImageHeight) {
-            g_proc_gdiplus_GdipGetImageHeight := 0
+        if !IsSet(g_gdiplus_GdipGetImageHeight) {
+            g_gdiplus_GdipGetImageHeight := 0
         }
-        if !IsSet(g_proc_gdiplus_GdipGetImageWidth) {
-            g_proc_gdiplus_GdipGetImageWidth := 0
+        if !IsSet(g_gdiplus_GdipGetImageWidth) {
+            g_gdiplus_GdipGetImageWidth := 0
         }
-        if !IsSet(g_proc_gdiplus_GdipCreateBitmapFromFile) {
-            g_proc_gdiplus_GdipCreateBitmapFromFile := 0
+        if !IsSet(g_gdiplus_GdipCreateBitmapFromFile) {
+            g_gdiplus_GdipCreateBitmapFromFile := 0
         }
-        if !IsSet(g_proc_gdiplus_GdipCreateHBITMAPFromBitmap) {
-            g_proc_gdiplus_GdipCreateHBITMAPFromBitmap := 0
+        if !IsSet(g_gdiplus_GdipCreateHBITMAPFromBitmap) {
+            g_gdiplus_GdipCreateHBITMAPFromBitmap := 0
         }
-        if !IsSet(g_proc_gdi32_DeleteObject) {
-            g_proc_gdi32_DeleteObject := 0
+        if !IsSet(g_gdi32_DeleteObject) {
+            g_gdi32_DeleteObject := 0
         }
     }
     __New(Path, Load := false) {
@@ -75,7 +75,7 @@ class GdipBitmap {
     }
     DeleteBitmap() {
         if this.pBitmap {
-            if status := DllCall(g_proc_gdiplus_GdipDisposeImage, 'ptr', this.pBitmap, 'uint') {
+            if status := DllCall(g_gdiplus_GdipDisposeImage, 'ptr', this.pBitmap, 'uint') {
                 throw OSError('``GdipDisposeImage`` failed.', -1, 'status: ' status)
             }
             this.pBitmap := 0
@@ -85,7 +85,7 @@ class GdipBitmap {
     }
     DeleteHBitmap() {
         if this.hBitmap {
-            if !DllCall(g_proc_gdi32_DeleteObject, 'ptr', this.hBitmap, 'uint'){
+            if !DllCall(g_gdi32_DeleteObject, 'ptr', this.hBitmap, 'uint'){
                 throw OSError()
             }
             this.hBitmap := 0
@@ -95,11 +95,11 @@ class GdipBitmap {
     }
     Dispose() {
         if this.hBitmap {
-            DllCall(g_proc_gdi32_DeleteObject, 'ptr', this.hBitmap, 'uint')
+            DllCall(g_gdi32_DeleteObject, 'ptr', this.hBitmap, 'uint')
             this.hBitmap := 0
         }
         if this.pBitmap {
-            DllCall(g_proc_gdiplus_GdipDisposeImage, 'ptr', this.pBitmap, 'int')
+            DllCall(g_gdiplus_GdipDisposeImage, 'ptr', this.pBitmap, 'int')
             this.pBitmap := 0
         }
     }
@@ -148,7 +148,7 @@ class GdipBitmap {
     }
     GetBitmapFromFile() {
         if !this.pBitmap {
-            if status := DllCall(g_proc_gdiplus_GdipCreateBitmapFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
+            if status := DllCall(g_gdiplus_GdipCreateBitmapFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
                 throw OSError('GdipCreateBitmapFromFile failed.', -1, 'status: ' status)
             }
         }
@@ -157,11 +157,11 @@ class GdipBitmap {
     GetHBitmap(Background := 0xFFFFFFFF) {
         if !this.hBitmap {
             if !this.pBitmap {
-                if status := DllCall(g_proc_gdiplus_GdipCreateBitmapFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
+                if status := DllCall(g_gdiplus_GdipCreateBitmapFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
                     throw OSError('GdipCreateBitmapFromFile failed.', -1, 'status: ' status)
                 }
             }
-            if status := DllCall(g_proc_gdiplus_GdipCreateHBITMAPFromBitmap, 'ptr', this.pBitmap, 'ptr', this.__hBitmap, 'uint', Background, 'uint') {
+            if status := DllCall(g_gdiplus_GdipCreateHBITMAPFromBitmap, 'ptr', this.pBitmap, 'ptr', this.__hBitmap, 'uint', Background, 'uint') {
                 throw OSError('GdipCreateHBITMAPFromBitmap failed.', -1, 'status: ' status)
             }
         }
@@ -169,7 +169,7 @@ class GdipBitmap {
     }
     LoadImage() {
         if !this.pBitmap {
-            if status := DllCall(g_proc_gdiplus_GdipLoadImageFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
+            if status := DllCall(g_gdiplus_GdipLoadImageFromFile, 'ptr', this.__Path, 'ptr', this.__pBitmap, 'uint') {
                 throw OSError('GdipLoadImageFromFile failed.', -1, 'status: ' status)
             }
         }
@@ -182,7 +182,7 @@ class GdipBitmap {
     Height {
         Get {
             h := 0
-            if status := DllCall(g_proc_gdiplus_GdipGetImageHeight, 'ptr', this.pBitmap, 'uint*', &h, 'int') {
+            if status := DllCall(g_gdiplus_GdipGetImageHeight, 'ptr', this.pBitmap, 'uint*', &h, 'int') {
                 throw OSError('GdipGetImageHeight failed.', -1, 'status: ' status)
             }
             return h
@@ -233,7 +233,7 @@ class GdipBitmap {
     Width {
         Get {
             w := 0
-            if status := DllCall(g_proc_gdiplus_GdipGetImageWidth, 'ptr', this.pBitmap, 'uint*', &w, 'int') {
+            if status := DllCall(g_gdiplus_GdipGetImageWidth, 'ptr', this.pBitmap, 'uint*', &w, 'int') {
                 throw OSError('GdipGetImageWidth failed.', -1, 'status: ' status)
             }
             return w

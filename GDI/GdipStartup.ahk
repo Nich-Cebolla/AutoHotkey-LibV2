@@ -33,14 +33,14 @@
  */
 class GdipStartup {
     static __New() {
-        global g_proc_gdiplus_GdiplusShutdown, g_proc_gdiplus_GdiplusStartup
+        global g_gdiplus_GdiplusShutdown, g_gdiplus_GdiplusStartup
         this.DeleteProp('__New')
         this.Prototype.LibToken := 0
-        if !IsSet(g_proc_gdiplus_GdiplusShutdown) {
-            g_proc_gdiplus_GdiplusShutdown := 0
+        if !IsSet(g_gdiplus_GdiplusShutdown) {
+            g_gdiplus_GdiplusShutdown := 0
         }
-        if !IsSet(g_proc_gdiplus_GdiplusStartup) {
-            g_proc_gdiplus_GdiplusStartup := 0
+        if !IsSet(g_gdiplus_GdiplusStartup) {
+            g_gdiplus_GdiplusStartup := 0
         }
     }
     /**
@@ -69,17 +69,17 @@ class GdipStartup {
                 if !this.HasOwnProp('Output') {
                     this.Output := GdiplusStartupOutput()
                 }
-                if status := DllCall(g_proc_gdiplus_GdiplusStartup, 'ptr', this.__Token, 'ptr', this.Input, 'ptr', this.Output, 'uint') {
+                if status := DllCall(g_gdiplus_GdiplusStartup, 'ptr', this.__Token, 'ptr', this.Input, 'ptr', this.Output, 'uint') {
                     throw OSError('``GdiplusStartup`` failed.', -1, 'Status: ' status)
                 }
-            } else if status := DllCall(g_proc_gdiplus_GdiplusStartup, 'ptr', this.__Token, 'ptr', this.Input, 'ptr', 0, 'uint') {
+            } else if status := DllCall(g_gdiplus_GdiplusStartup, 'ptr', this.__Token, 'ptr', this.Input, 'ptr', 0, 'uint') {
                 throw OSError('``GdiplusStartup`` failed.', -1, 'Status: ' status)
             }
         }
     }
     Shutdown() {
         if this.Token {
-            DllCall(g_proc_gdiplus_GdiplusShutdown, 'ptr', this.Token)
+            DllCall(g_gdiplus_GdiplusShutdown, 'ptr', this.Token)
             this.LibToken.Free()
             this.Token := this.LibToken := 0
             if this.HasOwnProp('Output') {

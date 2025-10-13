@@ -1,9 +1,9 @@
 ﻿
 #include ..\GdipStartup.ahk
 
-global g_proc_gdiplus_GdipLoadImageFromFile :=
-g_proc_gdiplus_GdipGetImageHeight :=
-g_proc_gdiplus_GdipGetImageWidth := 0
+global g_gdiplus_GdipLoadImageFromFile :=
+g_gdiplus_GdipGetImageHeight :=
+g_gdiplus_GdipGetImageWidth := 0
 
 test()
 
@@ -31,15 +31,15 @@ class test {
 
         _Proc() {
             hImage := Buffer(A_PtrSize)
-            if status := DllCall(g_proc_gdiplus_GdipLoadImageFromFile, 'ptr', path, 'ptr', hImage, 'uint') {
+            if status := DllCall(g_gdiplus_GdipLoadImageFromFile, 'ptr', path, 'ptr', hImage, 'uint') {
                 throw OSError('GdipLoadImageFromFile failed.', -1, 'status: ' status)
             }
             _hImage := NumGet(hImage, 0, 'ptr')
             w := h := 0
-            if status := DllCall(g_proc_gdiplus_GdipGetImageHeight, 'ptr', _hImage, 'uint*', &w, 'int') {
+            if status := DllCall(g_gdiplus_GdipGetImageHeight, 'ptr', _hImage, 'uint*', &w, 'int') {
                 throw OSError('GdipGetImageWidth failed.', -1, 'status: ' status)
             }
-            if status := DllCall(g_proc_gdiplus_GdipGetImageWidth, 'ptr', _hImage, 'uint*', &h, 'int') {
+            if status := DllCall(g_gdiplus_GdipGetImageWidth, 'ptr', _hImage, 'uint*', &h, 'int') {
                 throw OSError('GdipGetImageWidth failed.', -1, 'status: ' status)
             }
             if w != 20 || h != 20 {

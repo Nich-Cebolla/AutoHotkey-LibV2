@@ -70,133 +70,133 @@ class ImageList extends ImageStack {
         this.LibToken := 0
     }
     static __InitializeProcedureVars() {
-        global g_proc_comctl32_ImageList_Create
-        , g_proc_comctl32_ImageList_Destroy
-        ; , g_proc_comctl32_ImageList_GetImageCount
-        ; , g_proc_comctl32_ImageList_SetImageCount
-        , g_proc_comctl32_ImageList_Add
-        ; , g_proc_comctl32_ImageList_ReplaceIcon
-        ; , g_proc_comctl32_ImageList_SetBkColor
-        ; , g_proc_comctl32_ImageList_GetBkColor
-        ; , g_proc_comctl32_ImageList_SetOverlayImage
-        ; , g_proc_comctl32_ImageList_Draw
-        ; , g_proc_comctl32_ImageList_Replace
-        ; , g_proc_comctl32_ImageList_AddMasked
-        ; , g_proc_comctl32_ImageList_DrawEx
-        ; , g_proc_comctl32_ImageList_DrawIndirect
-        , g_proc_comctl32_ImageList_Remove
-        ; , g_proc_comctl32_ImageList_GetIcon
-        ; , g_proc_comctl32_ImageList_LoadImageA
-        ; , g_proc_comctl32_ImageList_LoadImageW
-        ; , g_proc_comctl32_ImageList_Copy
-        ; , g_proc_comctl32_ImageList_BeginDrag
-        ; , g_proc_comctl32_ImageList_EndDrag
-        ; , g_proc_comctl32_ImageList_DragEnter
-        ; , g_proc_comctl32_ImageList_DragLeave
-        ; , g_proc_comctl32_ImageList_DragMove
-        ; , g_proc_comctl32_ImageList_SetDragCursorImage
-        ; , g_proc_comctl32_ImageList_DragShowNolock
-        ; , g_proc_comctl32_ImageList_Read
-        ; , g_proc_comctl32_ImageList_Write
-        ; , g_proc_comctl32_ImageList_ReadEx
-        ; , g_proc_comctl32_ImageList_WriteEx
-        ; , g_proc_comctl32_ImageList_Merge
-        ; , g_proc_comctl32_ImageList_Duplicate
-        if !IsSet(g_proc_comctl32_ImageList_Create) {
-            g_proc_comctl32_ImageList_Create := 0
+        global g_comctl32_ImageList_Create
+        , g_comctl32_ImageList_Destroy
+        ; , g_comctl32_ImageList_GetImageCount
+        ; , g_comctl32_ImageList_SetImageCount
+        , g_comctl32_ImageList_Add
+        ; , g_comctl32_ImageList_ReplaceIcon
+        ; , g_comctl32_ImageList_SetBkColor
+        ; , g_comctl32_ImageList_GetBkColor
+        ; , g_comctl32_ImageList_SetOverlayImage
+        ; , g_comctl32_ImageList_Draw
+        ; , g_comctl32_ImageList_Replace
+        ; , g_comctl32_ImageList_AddMasked
+        ; , g_comctl32_ImageList_DrawEx
+        ; , g_comctl32_ImageList_DrawIndirect
+        , g_comctl32_ImageList_Remove
+        ; , g_comctl32_ImageList_GetIcon
+        ; , g_comctl32_ImageList_LoadImageA
+        ; , g_comctl32_ImageList_LoadImageW
+        ; , g_comctl32_ImageList_Copy
+        ; , g_comctl32_ImageList_BeginDrag
+        ; , g_comctl32_ImageList_EndDrag
+        ; , g_comctl32_ImageList_DragEnter
+        ; , g_comctl32_ImageList_DragLeave
+        ; , g_comctl32_ImageList_DragMove
+        ; , g_comctl32_ImageList_SetDragCursorImage
+        ; , g_comctl32_ImageList_DragShowNolock
+        ; , g_comctl32_ImageList_Read
+        ; , g_comctl32_ImageList_Write
+        ; , g_comctl32_ImageList_ReadEx
+        ; , g_comctl32_ImageList_WriteEx
+        ; , g_comctl32_ImageList_Merge
+        ; , g_comctl32_ImageList_Duplicate
+        if !IsSet(g_comctl32_ImageList_Create) {
+            g_comctl32_ImageList_Create := 0
         }
-        if !IsSet(g_proc_comctl32_ImageList_Destroy) {
-            g_proc_comctl32_ImageList_Destroy := 0
+        if !IsSet(g_comctl32_ImageList_Destroy) {
+            g_comctl32_ImageList_Destroy := 0
         }
-        ; if !IsSet(g_proc_comctl32_ImageList_GetImageCount) {
-        ;     g_proc_comctl32_ImageList_GetImageCount := 0
+        ; if !IsSet(g_comctl32_ImageList_GetImageCount) {
+        ;     g_comctl32_ImageList_GetImageCount := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_SetImageCount) {
-        ;     g_proc_comctl32_ImageList_SetImageCount := 0
+        ; if !IsSet(g_comctl32_ImageList_SetImageCount) {
+        ;     g_comctl32_ImageList_SetImageCount := 0
         ; }
-        if !IsSet(g_proc_comctl32_ImageList_Add) {
-            g_proc_comctl32_ImageList_Add := 0
+        if !IsSet(g_comctl32_ImageList_Add) {
+            g_comctl32_ImageList_Add := 0
         }
-        ; if !IsSet(g_proc_comctl32_ImageList_ReplaceIcon) {
-        ;     g_proc_comctl32_ImageList_ReplaceIcon := 0
+        ; if !IsSet(g_comctl32_ImageList_ReplaceIcon) {
+        ;     g_comctl32_ImageList_ReplaceIcon := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_SetBkColor) {
-        ;     g_proc_comctl32_ImageList_SetBkColor := 0
+        ; if !IsSet(g_comctl32_ImageList_SetBkColor) {
+        ;     g_comctl32_ImageList_SetBkColor := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_GetBkColor) {
-        ;     g_proc_comctl32_ImageList_GetBkColor := 0
+        ; if !IsSet(g_comctl32_ImageList_GetBkColor) {
+        ;     g_comctl32_ImageList_GetBkColor := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_SetOverlayImage) {
-        ;     g_proc_comctl32_ImageList_SetOverlayImage := 0
+        ; if !IsSet(g_comctl32_ImageList_SetOverlayImage) {
+        ;     g_comctl32_ImageList_SetOverlayImage := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Draw) {
-        ;     g_proc_comctl32_ImageList_Draw := 0
+        ; if !IsSet(g_comctl32_ImageList_Draw) {
+        ;     g_comctl32_ImageList_Draw := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Replace) {
-        ;     g_proc_comctl32_ImageList_Replace := 0
+        ; if !IsSet(g_comctl32_ImageList_Replace) {
+        ;     g_comctl32_ImageList_Replace := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_AddMasked) {
-        ;     g_proc_comctl32_ImageList_AddMasked := 0
+        ; if !IsSet(g_comctl32_ImageList_AddMasked) {
+        ;     g_comctl32_ImageList_AddMasked := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DrawEx) {
-        ;     g_proc_comctl32_ImageList_DrawEx := 0
+        ; if !IsSet(g_comctl32_ImageList_DrawEx) {
+        ;     g_comctl32_ImageList_DrawEx := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DrawIndirect) {
-        ;     g_proc_comctl32_ImageList_DrawIndirect := 0
+        ; if !IsSet(g_comctl32_ImageList_DrawIndirect) {
+        ;     g_comctl32_ImageList_DrawIndirect := 0
         ; }
-        if !IsSet(g_proc_comctl32_ImageList_Remove) {
-            g_proc_comctl32_ImageList_Remove := 0
+        if !IsSet(g_comctl32_ImageList_Remove) {
+            g_comctl32_ImageList_Remove := 0
         }
-        ; if !IsSet(g_proc_comctl32_ImageList_GetIcon) {
-        ;     g_proc_comctl32_ImageList_GetIcon := 0
+        ; if !IsSet(g_comctl32_ImageList_GetIcon) {
+        ;     g_comctl32_ImageList_GetIcon := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_LoadImageA) {
-        ;     g_proc_comctl32_ImageList_LoadImageA := 0
+        ; if !IsSet(g_comctl32_ImageList_LoadImageA) {
+        ;     g_comctl32_ImageList_LoadImageA := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_LoadImageW) {
-        ;     g_proc_comctl32_ImageList_LoadImageW := 0
+        ; if !IsSet(g_comctl32_ImageList_LoadImageW) {
+        ;     g_comctl32_ImageList_LoadImageW := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Copy) {
-        ;     g_proc_comctl32_ImageList_Copy := 0
+        ; if !IsSet(g_comctl32_ImageList_Copy) {
+        ;     g_comctl32_ImageList_Copy := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_BeginDrag) {
-        ;     g_proc_comctl32_ImageList_BeginDrag := 0
+        ; if !IsSet(g_comctl32_ImageList_BeginDrag) {
+        ;     g_comctl32_ImageList_BeginDrag := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_EndDrag) {
-        ;     g_proc_comctl32_ImageList_EndDrag := 0
+        ; if !IsSet(g_comctl32_ImageList_EndDrag) {
+        ;     g_comctl32_ImageList_EndDrag := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DragEnter) {
-        ;     g_proc_comctl32_ImageList_DragEnter := 0
+        ; if !IsSet(g_comctl32_ImageList_DragEnter) {
+        ;     g_comctl32_ImageList_DragEnter := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DragLeave) {
-        ;     g_proc_comctl32_ImageList_DragLeave := 0
+        ; if !IsSet(g_comctl32_ImageList_DragLeave) {
+        ;     g_comctl32_ImageList_DragLeave := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DragMove) {
-        ;     g_proc_comctl32_ImageList_DragMove := 0
+        ; if !IsSet(g_comctl32_ImageList_DragMove) {
+        ;     g_comctl32_ImageList_DragMove := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_SetDragCursorImage) {
-        ;     g_proc_comctl32_ImageList_SetDragCursorImage := 0
+        ; if !IsSet(g_comctl32_ImageList_SetDragCursorImage) {
+        ;     g_comctl32_ImageList_SetDragCursorImage := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_DragShowNolock) {
-        ;     g_proc_comctl32_ImageList_DragShowNolock := 0
+        ; if !IsSet(g_comctl32_ImageList_DragShowNolock) {
+        ;     g_comctl32_ImageList_DragShowNolock := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Read) {
-        ;     g_proc_comctl32_ImageList_Read := 0
+        ; if !IsSet(g_comctl32_ImageList_Read) {
+        ;     g_comctl32_ImageList_Read := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Write) {
-        ;     g_proc_comctl32_ImageList_Write := 0
+        ; if !IsSet(g_comctl32_ImageList_Write) {
+        ;     g_comctl32_ImageList_Write := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_ReadEx) {
-        ;     g_proc_comctl32_ImageList_ReadEx := 0
+        ; if !IsSet(g_comctl32_ImageList_ReadEx) {
+        ;     g_comctl32_ImageList_ReadEx := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_WriteEx) {
-        ;     g_proc_comctl32_ImageList_WriteEx := 0
+        ; if !IsSet(g_comctl32_ImageList_WriteEx) {
+        ;     g_comctl32_ImageList_WriteEx := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Merge) {
-        ;     g_proc_comctl32_ImageList_Merge := 0
+        ; if !IsSet(g_comctl32_ImageList_Merge) {
+        ;     g_comctl32_ImageList_Merge := 0
         ; }
-        ; if !IsSet(g_proc_comctl32_ImageList_Duplicate) {
-        ;     g_proc_comctl32_ImageList_Duplicate := 0
+        ; if !IsSet(g_comctl32_ImageList_Duplicate) {
+        ;     g_comctl32_ImageList_Duplicate := 0
         ; }
 
     }
@@ -254,7 +254,7 @@ class ImageList extends ImageStack {
             case 2: this.__AddListFromBitmap(List)
         }
         this.Handle := DllCall(
-            g_proc_comctl32_ImageList_Create
+            g_comctl32_ImageList_Create
           , 'int', this[1].Width
           , 'int', this[1].Height
           , 'uint', options.Flags
@@ -267,7 +267,7 @@ class ImageList extends ImageStack {
             case 1:
                 for img in this {
                     hBitmap := img.GetHBitmap(this.Background)
-                    result := DllCall(g_proc_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
+                    result := DllCall(g_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
                     if result == -1 {
                         throw Error('Failed to load image.', -1, 'path: ' img.Path)
                     }
@@ -277,7 +277,7 @@ class ImageList extends ImageStack {
             case 2:
                 for img in this {
                     hBitmap := img.GetHBitmap(this.Background)
-                    result := DllCall(g_proc_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
+                    result := DllCall(g_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
                     if result == -1 {
                         throw Error('Failed to load image.', -1, 'pBitmap: ' img.pBitmap)
                     }
@@ -288,7 +288,7 @@ class ImageList extends ImageStack {
     AddFromBitmap(pBitmap, hbmMask := 0, Background?) {
         img := this.__AddFromBitmap(pBitmap)
         hBitmap := img.GetHBitmap(Background ?? this.Background)
-        result := DllCall(g_proc_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
+        result := DllCall(g_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
         if result == -1 {
             this.Pop()
         }
@@ -324,7 +324,7 @@ class ImageList extends ImageStack {
     AddFromPath(ImagePath, hbmMask := 0, Background?) {
         img := this.__AddFromPath(ImagePath, false)
         hBitmap := img.GetHBitmap(Background ?? this.Background)
-        result := DllCall(g_proc_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
+        result := DllCall(g_comctl32_ImageList_Add, 'ptr', this.Handle, 'ptr', hBitmap, 'ptr', hbmMask, 'int')
         if result == -1 {
             this.Pop()
         }
@@ -339,7 +339,7 @@ class ImageList extends ImageStack {
         if this.Handle {
             Handle := this.Handle
             this.Handle := 0
-            return DllCall(g_proc_comctl32_ImageList_Destroy, 'ptr', Handle, 'int')
+            return DllCall(g_comctl32_ImageList_Destroy, 'ptr', Handle, 'int')
         } else {
             return -1
         }
@@ -351,7 +351,7 @@ class ImageList extends ImageStack {
      */
     Remove(Index) {
         img := this[Index]
-        if result := DllCall(g_proc_comctl32_ImageList_Remove, 'ptr', this.Handle, 'int', Index - 1, 'int') {
+        if result := DllCall(g_comctl32_ImageList_Remove, 'ptr', this.Handle, 'int', Index - 1, 'int') {
             this.RemoveAt(Index)
             return img
         }
@@ -360,11 +360,11 @@ class ImageList extends ImageStack {
         if ClearArray {
             this.Length := 0
         }
-        return DllCall(g_proc_comctl32_ImageList_Remove, 'ptr', this.Handle, 'int', -1, 'int')
+        return DllCall(g_comctl32_ImageList_Remove, 'ptr', this.Handle, 'int', -1, 'int')
     }
     __Delete() {
         if this.Handle {
-            DllCall(g_proc_comctl32_ImageList_Destroy, 'ptr', this.Handle, 'int')
+            DllCall(g_comctl32_ImageList_Destroy, 'ptr', this.Handle, 'int')
         }
     }
 

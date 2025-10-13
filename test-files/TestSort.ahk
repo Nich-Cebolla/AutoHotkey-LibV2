@@ -12,9 +12,9 @@ class test {
     static __New() {
         this.DeleteProp('__New')
         hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
-        global g_proc_user32_BeginDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'BeginDeferWindowPos', 'ptr')
-        , g_proc_user32_DeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'DeferWindowPos', 'ptr')
-        , g_proc_user32_EndDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'EndDeferWindowPos', 'ptr')
+        global g_user32_BeginDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'BeginDeferWindowPos', 'ptr')
+        , g_user32_DeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'DeferWindowPos', 'ptr')
+        , g_user32_EndDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'EndDeferWindowPos', 'ptr')
         , g_TestSort_swp_flags := 0x0002 | 0x0010 | 0x0200 | 0x0004 ; SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
         , ObjGetOwnPropDesc := Object.Prototype.GetOwnPropDesc
         this.Tabs := [ 'Even', 'Exponential', 'Gaussian', 'Weighted', 'Quicksort', 'Heapsort_kary' ]
@@ -956,14 +956,14 @@ class test {
     static HSize(g, minmax, width, height) {
         ; https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos
         if !(hDwp := DllCall(
-            g_proc_user32_BeginDeferWindowPos
+            g_user32_BeginDeferWindowPos
           , 'int', g.OnSizeControlsX.Length + g.OnSizeControlsBoth.Length
           , 'ptr'
         )) {
             throw Error('``BeginDeferWindowPos`` failed.', -1)
         }
         for _ctrl in g.OnSizeControlsX {
-            if !(hDwp := DllCall(g_proc_user32_DeferWindowPos
+            if !(hDwp := DllCall(g_user32_DeferWindowPos
                 , 'ptr', hDwp
                 , 'ptr', _ctrl.Hwnd
                 , 'ptr', 0                      ; hWndInsertAfter
@@ -978,7 +978,7 @@ class test {
             }
         }
         for _ctrl in g.OnSizeControlsBoth {
-            if !(hDwp := DllCall(g_proc_user32_DeferWindowPos
+            if !(hDwp := DllCall(g_user32_DeferWindowPos
                 , 'ptr', hDwp
                 , 'ptr', _ctrl.Hwnd
                 , 'ptr', 0                      ; hWndInsertAfter
@@ -992,7 +992,7 @@ class test {
                 throw OSError()
             }
         }
-        if !DllCall(g_proc_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
+        if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
             throw OSError()
         }
     }
