@@ -202,6 +202,12 @@ class GuiResizer {
          * @type {Integer}
          */
         this.Status := 0
+        this.Rect := GuiResizer_Rect()
+        constructor := this.Constructor := Class()
+        constructor.Base := GuiResizer_Item
+        constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
+        ObjRelease(ObjPtr(this))
+        ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
         if !DeferActivation {
             this.Activate(Controls ?? unset)
         }
@@ -215,6 +221,10 @@ class GuiResizer {
      *
      * {@link GuiResizer.Prototype.Activate} must be called once before using the {@link GuiResizer}.
      *
+     * {@link GuiResizer.Prototype.Activate} can be called multiple times to update the controls
+     * that are adjusted when the Size event is raised, and/or change individual controls' resizer
+     * options.
+     *
      * @param {Gui.Control[]} [Controls] - If `Controls` is set, it is an array of `Gui.Control`
      * objects with property "Resizer" with the resize options for that control. See the description
      * above {@link GuiResizer.Prototype.__New} for more information.
@@ -224,8 +234,10 @@ class GuiResizer {
      * object.
      */
     Activate(Controls?) {
+        if this.Status {
+            this.Gui.OnEvent('Size', this, 0)
+        }
         this.Status := 1
-        originalCritical := Critical(-1)
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
         }
@@ -233,20 +245,14 @@ class GuiResizer {
         if this.MinMax = -1 {
             throw Error('The window may not be minimized when calling ``' A_ThisFunc '``.')
         }
-        enum := ObjBindMethod(IsSet(Controls) ? Controls : this.Gui, '__Enum')
-        rc := this.Rect := GuiResizer_Rect()
-        rc.Client(this.HwndGui)
-        this.BaseW := this.LastW := rc.W
-        this.BaseH := this.LastH := rc.H
+        this.Rect.Client(this.HwndGui)
+        this.BaseW := this.LastW := this.Rect.W
+        this.BaseH := this.LastH := this.Rect.H
         size := this.Size := []
         move := this.Move := []
         moveAndSize := this.MoveAndSize := []
-        constructor := this.Constructor := Class()
-        constructor.Base := GuiResizer_Item
-        constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
-        ObjRelease(ObjPtr(this))
-        ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
-        for ctrl in enum(1) {
+        constructor := this.Constructor
+        for ctrl in (Controls ?? this.Gui) {
             if !HasProp(ctrl, 'Resizer') {
                 continue
             }
@@ -260,11 +266,10 @@ class GuiResizer {
             } else if item.Size {
                 size.Push(item)
             } else {
-                throw Error('The control`'s resizer parameters are invalid.', , 'Control`'s name: ' ctrl.Name)
+                throw Error('The control`'s resizer parameters are invalid.', , HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
             }
         }
         this.Status := 3
-        Critical(originalCritical)
         this.Gui.OnEvent('Size', this, 1)
     }
     /**
