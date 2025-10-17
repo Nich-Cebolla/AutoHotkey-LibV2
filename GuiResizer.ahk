@@ -580,144 +580,96 @@ class GuiResizer_Item {
         switch this.Move {
             case 1:
                 switch this.MinMaxX {
-                    case 0:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
-                    case 1:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
-                    case 2:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Min'))
-                    case 3:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_MaxMin'))
+                    case 0: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
+                    case 1: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
+                    case 2: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Min'))
+                    case 3: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_MaxMin'))
                 }
                 this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Base'))
             case 2:
                 switch this.MinMaxY {
-                    case 0:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_NoMaxNoMin'))
-                    case 1:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Max'))
-                    case 2:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Min'))
-                    case 3:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_MaxMin'))
+                    case 0: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_NoMaxNoMin'))
+                    case 1: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Max'))
+                    case 2: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Min'))
+                    case 3: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_MaxMin'))
                 }
                 this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Base'))
             case 3:
                 switch this.MinMaxX {
-                    case 0:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
-                    case 1:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
-                    case 2:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Min'))
-                    case 3:
-                        this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_MaxMin'))
+                    case 0: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
+                    case 1: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
+                    case 2: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Min'))
+                    case 3: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_MaxMin'))
                 }
                 switch this.MinMaxY {
-                    case 0:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_NoMaxNoMin'))
-                    case 1:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Max'))
-                    case 2:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Min'))
-                    case 3:
-                        this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_MaxMin'))
+                    case 0: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_NoMaxNoMin'))
+                    case 1: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Max'))
+                    case 2: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Min'))
+                    case 3: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_MaxMin'))
                 }
         }
         if this.Scale {
             switch this.Size {
                 case 1:
                     switch this.MinMaxW {
-                        case 0:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
-                        case 1:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
-                        case 2:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min_Scale'))
-                        case 3:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin_Scale'))
+                        case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
+                        case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
+                        case 2: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min_Scale'))
+                        case 3: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin_Scale'))
                     }
                     this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Base'))
                 case 2:
                     switch this.MinMaxH {
-                        case 0:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin_Scale'))
-                        case 1:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max_Scale'))
-                        case 2:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min_Scale'))
-                        case 3:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin_Scale'))
+                        case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin_Scale'))
+                        case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max_Scale'))
+                        case 2: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min_Scale'))
+                        case 3: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin_Scale'))
                     }
                     this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Base'))
                 case 3:
                     switch this.MinMaxW {
-                        case 0:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
-                        case 1:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
-                        case 2:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min_Scale'))
-                        case 3:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin_Scale'))
+                        case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
+                        case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
+                        case 2: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min_Scale'))
+                        case 3: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin_Scale'))
                     }
                     switch this.MinMaxH {
-                        case 0:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin_Scale'))
-                        case 1:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max_Scale'))
-                        case 2:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min_Scale'))
-                        case 3:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin_Scale'))
+                        case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin_Scale'))
+                        case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max_Scale'))
+                        case 2: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min_Scale'))
+                        case 3: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin_Scale'))
                     }
             }
         } else {
             switch this.Size {
                 case 1:
                     switch this.MinMaxW {
-                        case 0:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
-                        case 1:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
-                        case 2:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min'))
-                        case 3:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin'))
+                        case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
+                        case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
+                        case 2: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min'))
+                        case 3: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin'))
                     }
                     this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Base'))
                 case 2:
                     switch this.MinMaxH {
-                        case 0:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin'))
-                        case 1:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max'))
-                        case 2:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min'))
-                        case 3:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin'))
+                        case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin'))
+                        case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max'))
+                        case 2: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min'))
+                        case 3: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin'))
                     }
                     this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Base'))
                 case 3:
                     switch this.MinMaxW {
-                        case 0:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
-                        case 1:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
-                        case 2:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min'))
-                        case 3:
-                            this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin'))
+                        case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
+                        case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
+                        case 2: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Min'))
+                        case 3: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_MaxMin'))
                     }
                     switch this.MinMaxH {
-                        case 0:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin'))
-                        case 1:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max'))
-                        case 2:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min'))
-                        case 3:
-                            this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin'))
+                        case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin'))
+                        case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max'))
+                        case 2: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Min'))
+                        case 3: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_MaxMin'))
                     }
             }
         }
