@@ -320,8 +320,6 @@ class GuiResizer {
                 this.Count := 0
             } else {
                 if ++this.Count >= this.StopCount {
-                    this.LastH := this.LastH
-                    this.LastW := this.LastW
                     this.DeleteProp('Call')
                     this.Status := 3
                     Critical(originalCritical)
