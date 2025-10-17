@@ -23,10 +23,112 @@ class GuiResizer {
     }
 
     /**
-     * Creates an object that acts as a callback function for the Size event. This class is working
-     * but I'm going to finish the documentation tomorrow. See test\test-GuiResizer.ahk for guidance.
+     * @description
+     * Creates an object that acts as a callback function for the Size event. See
+     * test\demo-GuiResizer.ahk for a descriptive demo. See test\test-GuiResizer.ahk to test
+     * specific setups.
+     *
+     * In this documentation, "delta" means the change of position or change in size.
+     *
+     * All references to the parent window's width or height are referring to the **parent window's
+     * client area**.
+     *
+     * # CtrlObj.Resizer
+     *
+     * To specify how a control should be modified when the parent window's dimensions change, create
+     * a property "Resizer" on the Gui.Control object. The property should be an object with one or
+     * more of the following properties:
+     *
+     * @param {Boolean} [CtrlObj.Resizer.Scale = false] - If set to true, and if the W and/or H
+     * properties are set, when the width/height of the gui window changes, the respective width/height
+     * of the control is changed according to the scale, not the direct value. For example:
+     * - My gui window has a client area of 500w x 500h
+     * - I set `CtrlObj.Resizer.Scale =: true`
+     * - I set `CtrlObj.Resizer.H := 1`
+     * - The current height of `CtrlObj` is 100
+     *
+     * If the height of the window's client area changes to 550, then the height of `CtrlObj` changes
+     * to 110. This is because the gui's height delta is 50, which represents a 10% increase.
+     * `100 + 100 * 0.1 = 110`.
+     *
+     * The scale is also multiplied by the respective W / H value. Using the same example scenario,
+     * if I instead set `CtrlObj.Resizer.H := 2`, then the height of `CtrlObj` would change to 120.
+     * If I set `CtrlObj.Resizer.H := 0.5`, then the height of `CtrlObj` would change to 105.
+     *
+     * If `CtrlObj.Resizer.Scale = false`, when the width/height of the gui window changes, the
+     * respective width/height of the control is changed by the quotient of the value of the
+     * respective W/H property and the gui window's width/height delta. Using a similar example scenario:
+     * - My gui window has a client area of 500w x 500h
+     * - I set `CtrlObj.Resizer.Scale =: false`
+     * - I set `CtrlObj.Resizer.H := 1`
+     * - The current height of `CtrlObj` is 100
+     *
+     * If the height of the window's client area changes to 550, then the height of `CtrlObj` changes
+     * to 150. This is because the gui's height delta is 50, and 50 * 1 = 50, and 100 + 50 = 150.
+     *
+     * The delta is multiplied by the respective W / H value. Using the same example scenario,
+     * if I instead set `CtrlObj.Resizer.H := 2`, then the height of `CtrlObj` would change to 200.
+     * If I set `CtrlObj.Resizer.H := 0.5`, then the height of `CtrlObj` would change to 125.
+     *
+     * @property {Number} [CtrlObj.Resizer.X] - If set, the control's position along the horizontal axis
+     * will be changed when the gui's width changes. The control's position delta is the quotient
+     * of the gui's width delta * this value. For example, if the X value is 0.5 and the gui's width
+     * changes by +5, then the control is moved 3 pixels to the right.
+     *
+     * @property {Number} [CtrlObj.Resizer.MaxX] - If set, the control's position along the horizontal axis
+     * will not be permitted to exceed this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.MinX] - If set, the control's position along the horizontal axis
+     * will not be permitted to drop below this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.W] - If set, the control's width will be changed when the
+     * gui's width changes. The control's width delta is the quotient of the gui's width delta * this
+     * value. For example, if the W value is 1 and the gui's width changes by +5, then the control's
+     * width increases by 5 pixels on the right side.
+     *
+     * @property {Number} [CtrlObj.Resizer.MaxW] - If set, the control's width will not be permitted to
+     * exceed this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.MinW] - If set, the control's width will not be permitted to
+     * drop below this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.Y] - If set, the control's position along the vertical axis
+     * will be changed when the gui's height changes. The control's position delta is the quotient
+     * of the gui's height delta * this value. For example, if the Y value is 0.3 and the gui's height
+     * changes by +10, then the control is moved 3 pixels down.
+     *
+     * @property {Number} [CtrlObj.Resizer.MaxY] - If set, the control's position along the vertical axis
+     * will not be permitted to exceed this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.MinY] - If set, the control's position along the vertical axis
+     * will not be permitted to drop below this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.H] - If set, the control's height will be changed when the
+     * gui's height changes. The control's height delta is the quotient of the gui's height delta * this
+     * value. For example, if the H value is 1 and the gui's height changes by +5, then the control's
+     * height increases by 5 pixels on bottom.
+     *
+     * @property {Number} [CtrlObj.Resizer.MaxH] - If set, the control's height will not be permitted to
+     * exceed this value.
+     *
+     * @property {Number} [CtrlObj.Resizer.MinH] - If set, the control's height will not be permitted to
+     * drop below this value.
+     *
+     *
      *
      * @param {Gui} GuiObj - The Gui object.
+     *
+     * @param {Gui.Control[]} [Controls] - If `Controls` is set, it is an array of `Gui.Control`
+     * objects with property "Resizer" with the resize options for that control. See the description
+     * above {@link GuiResizer.Prototype.__New} for more information. If `DeferActivation` is true,
+     * `Controls` is ignored.
+     *
+     * @param {Boolean} [DeferActivation = false] - If true, {@link GuiResizer.Prototype.Activate}
+     * is not called; your code must call it. If true, `Controls` is ignored. If false,
+     * {@link GuiResizer.Prototype.Activate} is called, passing `Controls` as an argument if
+     * `Controls` is set.
+     *
+     *
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
      *
@@ -35,9 +137,18 @@ class GuiResizer {
      * setting the Size event handler.
      *
      * @param {*} [Options.Callback] - A `Func` or callable object that is called once per resize
-     * cycle. The function receives this {@link GuiResizer} object and the return value is ignored.
-     * The controls are collected among three arrays, {@link GuiResizer#Move}, {@link GuiResizer#Size}
-     * and {@link GuiResizer#MoveAndSize}.
+     * cycle.
+     *
+     * Parameters:
+     * 1. The {@link GuiResizer} object
+     *
+     * The return value is ignored.
+     *
+     * If your callback must act on the control objects in some way, they are collected among
+     * three arrays:
+     * - {@link GuiResizer#Move}
+     * - {@link GuiResizer#Size}
+     * - {@link GuiResizer#MoveAndSize}.
      *
      * @param {Integer} [Options.Delay = -5] - A negative integer specifying the value passed to
      * the `Period` parameter of {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer}.
@@ -73,20 +184,23 @@ class GuiResizer {
      * @param {Number} [Options.WinDelay = 10] - If nonzero, immediately before each resize cycle,
      * {@link https://www.autohotkey.com/docs/v2/lib/SetWinDelay.htm SetWinDelay} is called with
      * this value.
-     *
-     * @param {Gui.Control[]} [Controls] - If `Controls` is set, it is an array of `Gui.Control`
-     * objects with property "Resizer" with the resize options for that control. See the description
-     * above {@link GuiResizer.Prototype.__New} for more information. If `DeferActivation` is true,
-     * `Controls` is ignored.
-     *
-     * @param {Boolean} [DeferActivation = false] - If true, {@link GuiResizer.Prototype.Activate}
-     * is not called; your code must call it. If true, `Controls` is ignored. If false,
-     * {@link GuiResizer.Prototype.Activate} is called, passing `Controls` as an argument if
-     * `Controls` is set.
      */
     __New(GuiObj, Options?, Controls?, DeferActivation := false) {
         GuiResizer.Options(this, Options ?? unset)
         this.HwndGui := GuiObj.Hwnd
+        /**
+         * One of the following values:
+         * - 0 : The {@link GuiResizer} is not currently a callback for the Size event.
+         * - 1 : The {@link GuiResizer} is activating.
+         * - 2 : The {@link GuiResizer} is updating.
+         * - 3 : The {@link GuiResizer} is set as a callback for the Size event and is idle.
+         * - 4 : The {@link GuiResizer} has been called in response to the Size event.
+         * - 5 : The {@link GuiResizer} is active in the core resize loop and is adjusting the controls.
+         * - 6 : The {@link GuiResizer} is active in the core resize loop and is awaiting the timer.
+         * @memberof GuiResizer
+         * @instance
+         * @type {Integer}
+         */
         this.Status := 0
         if !DeferActivation {
             this.Activate(Controls ?? unset)
@@ -95,11 +209,11 @@ class GuiResizer {
 
     /**
      * Performs initial calculations and creates the {@link GuiResizer_Item} objects for each
-     * control with a "Resizer" property.
+     * control with a "Resizer" property. Also sets the Size event handler.
      *
      * {@link GuiResizer.Prototype.Activate} cannot be called when the gui is minimized.
      *
-     * {@link GuiResizer.Prototype.Activate} must be called once before using the GuiResizer.
+     * {@link GuiResizer.Prototype.Activate} must be called once before using the {@link GuiResizer}.
      *
      * @param {Gui.Control[]} [Controls] - If `Controls` is set, it is an array of `Gui.Control`
      * objects with property "Resizer" with the resize options for that control. See the description
@@ -110,7 +224,7 @@ class GuiResizer {
      * object.
      */
     Activate(Controls?) {
-        this.Status := 2
+        this.Status := 1
         originalCritical := Critical(-1)
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
@@ -129,7 +243,7 @@ class GuiResizer {
         moveAndSize := this.MoveAndSize := []
         constructor := this.Constructor := Class()
         constructor.Base := GuiResizer_Item
-        constructor.Prototype := { GuiResizer: this }
+        constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
         ObjRelease(ObjPtr(this))
         ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
         for ctrl in enum(1) {
@@ -149,10 +263,15 @@ class GuiResizer {
                 throw Error('The control`'s resizer parameters are invalid.', , 'Control`'s name: ' ctrl.Name)
             }
         }
-        this.Status := 0
+        this.Status := 3
         Critical(originalCritical)
         this.Gui.OnEvent('Size', this, 1)
     }
+    /**
+     * Called when the Size event is raised. This disables the Size event handler, overrides the
+     * "Call" property with the "Resize" method, then calls {@link GuiResizer.Prototype.Resize} to
+     * start the core resize loop.
+     */
     Call(GuiObj, MinMax, Width, Height) {
         if MinMax = 1 {
             this.MinMax := 1
@@ -163,14 +282,25 @@ class GuiResizer {
             this.MinMax := -1
             return
         }
+        this.Status := 4
         GuiObj.OnEvent('Size', this, 0)
         this.Count := 0
         this.DefineProp('Call', GuiResizer.Prototype.GetOwnPropDesc('Resize'))
         this.Resize()
     }
+    /**
+     * Disables the Size event callback.
+     */
+    Deactivate() {
+        this.Gui.OnEvent('Size', this, 0)
+        this.Status := 0
+    }
+    /**
+     * Called from {@link GuiResizer.Prototype.Call}. This is the core resize loop.
+     */
     Resize() {
         originalCritical := Critical(-1)
-        this.Status := 1
+        this.Status := 5
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
         }
@@ -193,10 +323,12 @@ class GuiResizer {
                     this.LastH := this.LastH
                     this.LastW := this.LastW
                     this.DeleteProp('Call')
+                    this.Status := 3
                     Critical(originalCritical)
                     this.Gui.OnEvent('Size', this, this.AddRemove)
                     return
                 }
+                this.Status := 6
                 Critical(originalCritical)
                 SetTimer(this, this.Delay, this.Priority)
             }
@@ -281,14 +413,28 @@ class GuiResizer {
             if IsObject(this.Callback) {
                 this.Callback.Call(this)
             }
+            this.Status := 6
             Critical(originalCritical)
             SetTimer(this, this.Delay, this.Priority)
         } else {
             throw OSError()
         }
     }
+    /**
+     * Updates the cached size and dimension values for the gui window and the controls to their
+     * current values. Call {@link GuiResizer.Prototype.Update} when your code has manually made
+     * adjustments to the size / position of the controls. For example, if your code responds to
+     * a window DPI change, your code should call {@link GuiResizer.Prototype.Update} when finished
+     * making those changes so those changes can be reflected when processing future Size events.
+     * If {@link GuiResizer.Prototype.Update} is not called, the next Size event will cause
+     * unexpected behavior.
+     *
+     * Do not use {@link GuiResizer.Prototype.Update} if your intent is to add / remove controls
+     * from the collection of controls that will be adjusted when the Size event is raised.
+     * Use {@link GuiResizer.Prototype.Activate} instead.
+     */
     Update() {
-        this.Status := 3
+        this.Status := 2
         originalCritical := Critical(-1)
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
@@ -307,7 +453,7 @@ class GuiResizer {
                 item.Update()
             }
         }
-        this.Status := 0
+        this.Status := 3
         Critical(originalCritical)
         this.Gui.OnEvent('Size', this, 1)
     }
