@@ -29,9 +29,10 @@ class demo {
 
         ; Since we have the buttons to the right of the ListView, we need to make sure they move out
         ; of the way. Since the ListView will be growing at a rate of 1, the buttons must move at
-        ; a rate of 1. We set the X value to 1.
+        ; a rate of 1. We set the X value to 1. We can use the same object for all of them.
+        resizerX := { X: 1 }
         for btn in buttons {
-            btn.Resizer := { X: 1 }
+            btn.Resizer := resizerX
         }
 
         ; Let's have both the ListView and the edit control consume a portion of the change in height.
