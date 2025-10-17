@@ -278,16 +278,18 @@ class GuiResizer {
      * start the core resize loop.
      */
     Call(GuiObj, MinMax, Width, Height) {
+        this.Status := 4
         if MinMax = 1 {
             this.MinMax := 1
             if Width = this.LastW && Height = this.LastH {
+                this.Status := 3
                 return
             }
         } else if MinMax = -1 {
             this.MinMax := -1
+            this.Status := 3
             return
         }
-        this.Status := 4
         GuiObj.OnEvent('Size', this, 0)
         this.Count := 0
         this.DefineProp('Call', GuiResizer.Prototype.GetOwnPropDesc('Resize'))
