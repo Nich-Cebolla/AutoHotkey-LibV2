@@ -88,7 +88,12 @@ class test {
         this.reposition.OnEvent('Click', 'Reposition')
         this.resize := g.Add('Checkbox', 'ys Section vChkResize', 'Resize')
         this.resize.OnEvent('Click', 'Resize')
-        this.n := 0
+        g.Add('Button', 'ys vBtnCallGetRelativePosition', 'Call GetRelativePosition').OnEvent('Click', 'GetRelativePosition')
+        g.Add('Text', 'ys vTxtSubject', 'Subject:')
+        this.subject := g.Add('Edit', 'ys w100 vEdtSubject')
+        g.Add('Text', 'ys vTxtTarget', 'Target:')
+        this.target := g.Add('Edit', 'ys w100 vEdtTarget')
+        this.getRelativePositionResult := g.Add('Text', 'ys w100 vTxtGetRelativePositionResult')
 
         this.X.Text := txtX
         this.Y.Text := txtY
@@ -279,6 +284,22 @@ class EventHandler {
         } else {
             Hotkey('+LButton', DynamicResizeControl, 'Off')
         }
+    }
+    GetRelativePosition(*) {
+        controls := test.controls
+        if controls.Count == 2 {
+            for id, txt in controls {
+                if A_Index == 1 {
+                    subject := txt
+                } else {
+                    target := txt
+                }
+            }
+        } else {
+            subject := controls.Get(test.subject.Text)
+            target := controls.Get(test.target.Text)
+        }
+        test.getRelativePositionResult.Text := GuiResizer.GetRelativePosition(subject, target)
     }
 }
 
