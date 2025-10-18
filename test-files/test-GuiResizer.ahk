@@ -1,6 +1,7 @@
 ﻿
 #SingleInstance force
 #include ..\GuiResizer.ahk
+#include ..\GetRelativePosition.ahk
 
 test()
 
@@ -299,7 +300,7 @@ class EventHandler {
             subject := controls.Get(test.subject.Text)
             target := controls.Get(test.target.Text)
         }
-        test.getRelativePositionResult.Text := GuiResizer.GetRelativePosition(subject, target)
+        test.getRelativePositionResult.Text := GetRelativePosition(subject, target)
     }
 }
 
