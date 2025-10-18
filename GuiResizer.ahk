@@ -114,6 +114,11 @@ class GuiResizer {
      * @property {Number} [CtrlObj.Resizer.MinH] - If set, the control's height will not be permitted to
      * drop below this value.
      *
+     * @property {Integer} [CtrlObj.Resizer.Flags] - If set, the value to pass to the uFlags parameter
+     * of {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos DeferWindowPos}
+     * for that control. If unset, the relevant default is used ({@link GuiResizer_Swp_Move},
+     * {@link GuiResizer_Swp_Size}, or {@link GuiResizer_Swp_MoveAndSize}).
+     *
      *
      *
      * @param {Gui} GuiObj - The Gui object.
@@ -234,9 +239,7 @@ class GuiResizer {
      * object.
      */
     Activate(Controls?) {
-        if this.Status {
-            this.Gui.OnEvent('Size', this, 0)
-        }
+        flag_status := this.Status
         this.Status := 1
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
@@ -269,8 +272,10 @@ class GuiResizer {
                 throw Error('The control`'s resizer parameters are invalid.', , HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
             }
         }
+        if !flag_status {
+            this.Gui.OnEvent('Size', this, this.AddRemove)
+        }
         this.Status := 3
-        this.Gui.OnEvent('Size', this, 1)
     }
     /**
      * Called when the Size event is raised. This disables the Size event handler, overrides the
@@ -370,7 +375,7 @@ class GuiResizer {
                     , 'int', item.GetY(diffH)               ; Y
                     , 'int', 0                              ; W
                     , 'int', 0                              ; H
-                    , 'uint', GuiResizer_Swp_Move           ; flags
+                    , 'uint', item.Flags_Move                     ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -387,7 +392,7 @@ class GuiResizer {
                     , 'int', 0                              ; Y
                     , 'int', item.GetW(diffW)               ; W
                     , 'int', item.GetH(diffH)               ; H
-                    , 'uint', GuiResizer_Swp_Size           ; flags
+                    , 'uint', item.Flags_Size                     ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -404,7 +409,7 @@ class GuiResizer {
                     , 'int', item.GetY(diffH)               ; Y
                     , 'int', item.GetW(diffW)               ; W
                     , 'int', item.GetH(diffH)               ; H
-                    , 'uint', GuiResizer_Swp_MoveAndSize    ; flags
+                    , 'uint', item.Flags_MoveAndSize              ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -476,7 +481,7 @@ class GuiResizer {
 
     class Options {
         static Default := {
-            AddRemove: 1
+            AddRemove: -1
           , Callback: ''
           , Delay: -5
           , DpiAwarenessContext: ''
@@ -520,7 +525,7 @@ class GuiResizer_Item {
         proto.W := proto.MaxW := proto.MinW :=
         proto.H := proto.MaxH := proto.MinH :=
         proto.MinMaxX := proto.MinMaxY := proto.MinMaxW := proto.MinMaxH :=
-        proto.Scale := proto.Move := proto.Size := 0
+        proto.Scale := proto.Move := proto.Size := proto.Group := 0
         proto.SharedRect := GuiResizer_Rect()
     }
     __New(obj, hwnd) {
@@ -579,6 +584,7 @@ class GuiResizer_Item {
         proto := GuiResizer_Item.Prototype
         switch this.Move {
             case 1:
+                this.Group := 1
                 switch this.MinMaxX {
                     case 0: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
                     case 1: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
@@ -587,6 +593,7 @@ class GuiResizer_Item {
                 }
                 this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Base'))
             case 2:
+                this.Group := 1
                 switch this.MinMaxY {
                     case 0: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_NoMaxNoMin'))
                     case 1: this.DefineProp('GetY', proto.GetOwnPropDesc('GetY_Max'))
@@ -595,6 +602,7 @@ class GuiResizer_Item {
                 }
                 this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Base'))
             case 3:
+                this.Group := 1
                 switch this.MinMaxX {
                     case 0: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_NoMaxNoMin'))
                     case 1: this.DefineProp('GetX', proto.GetOwnPropDesc('GetX_Max'))
@@ -611,6 +619,7 @@ class GuiResizer_Item {
         if this.Scale {
             switch this.Size {
                 case 1:
+                    this.Group := this.Group + 2
                     switch this.MinMaxW {
                         case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
                         case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
@@ -619,6 +628,7 @@ class GuiResizer_Item {
                     }
                     this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Base'))
                 case 2:
+                    this.Group := this.Group + 2
                     switch this.MinMaxH {
                         case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin_Scale'))
                         case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max_Scale'))
@@ -627,6 +637,7 @@ class GuiResizer_Item {
                     }
                     this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Base'))
                 case 3:
+                    this.Group := this.Group + 2
                     switch this.MinMaxW {
                         case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin_Scale'))
                         case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max_Scale'))
@@ -643,6 +654,7 @@ class GuiResizer_Item {
         } else {
             switch this.Size {
                 case 1:
+                    this.Group := this.Group + 2
                     switch this.MinMaxW {
                         case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
                         case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
@@ -651,6 +663,7 @@ class GuiResizer_Item {
                     }
                     this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Base'))
                 case 2:
+                    this.Group := this.Group + 2
                     switch this.MinMaxH {
                         case 0: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_NoMaxNoMin'))
                         case 1: this.DefineProp('GetH', proto.GetOwnPropDesc('GetH_Max'))
@@ -659,6 +672,7 @@ class GuiResizer_Item {
                     }
                     this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Base'))
                 case 3:
+                    this.Group := this.Group + 2
                     switch this.MinMaxW {
                         case 0: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_NoMaxNoMin'))
                         case 1: this.DefineProp('GetW', proto.GetOwnPropDesc('GetW_Max'))
@@ -674,6 +688,13 @@ class GuiResizer_Item {
             }
         }
         this.Update()
+        if HasProp(obj, 'Flags') {
+            switch this.Group {
+                case 1: this.DefineProp('Flags_Move', { Value: obj.Flags })
+                case 2: this.DefineProp('Flags_Size', { Value: obj.Flags })
+                case 3: this.DefineProp('Flags_MoveAndSize', { Value: obj.Flags })
+            }
+        }
     }
     Update() {
         rc := this.SharedRect
@@ -756,6 +777,10 @@ class GuiResizer_Item {
             return Max(h, this.MinH)
         }
     }
+
+    Flags_Move => GuiResizer_Swp_Move
+    Flags_MoveAndSize => GuiResizer_Swp_MoveAndSize
+    Flags_Size => GuiResizer_Swp_Size
 }
 
 class GuiResizer_Rect extends Buffer {
