@@ -532,6 +532,7 @@ class Win32StructGetMemberSize {
           , 'int', '4'
           , 'struct', -1
           , 'union', -1
+          , 'void', 'A_PtrSize'
         )
     }
     static Call(typeStr) {
