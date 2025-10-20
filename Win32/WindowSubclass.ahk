@@ -121,8 +121,8 @@ class WindowSubclass {
             'Comctl32.Dll\SetWindowSubclass'
           , 'ptr', this.Hwnd
           , 'ptr', this.pfnSubclass
-          , 'ptr', this.uIdSubclass
-          , 'ptr', this.dwRefData
+          , 'uptr', this.uIdSubclass
+          , 'uptr', this.dwRefData
           , 'int'
         ) {
             if this.__flag_callbackFree {
@@ -184,7 +184,7 @@ class WindowSubclass {
                 'Comctl32.Dll\RemoveWindowSubclass'
               , 'ptr', this.Hwnd
               , 'ptr', pfnSubclass
-              , 'ptr', this.uIdSubclass
+              , 'uptr', this.uIdSubclass
               , 'int'
             ) {
                 err := OSError('The call to ``RemoveWindowSubclass`` failed.', -1)
