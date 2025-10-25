@@ -72,26 +72,28 @@ GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
             }
         }
     } else {
-        if IsSet(FlagStopBefore) {
-            Loop {
-                if !(b := b.Base) {
-                    _Throw()
-                    break
+        if !CheckStopAt() {
+            if IsSet(FlagStopBefore) {
+                Loop {
+                    if !(b := b.Base) {
+                        _Throw()
+                        break
+                    }
+                    if CheckStopAt() {
+                        break
+                    }
+                    Result.Push(b)
                 }
-                if CheckStopAt() {
-                    break
-                }
-                Result.Push(b)
-            }
-        } else {
-            Loop {
-                if !(b := b.Base) {
-                    _Throw()
-                    break
-                }
-                Result.Push(b)
-                if CheckStopAt() {
-                    break
+            } else {
+                Loop {
+                    if !(b := b.Base) {
+                        _Throw()
+                        break
+                    }
+                    Result.Push(b)
+                    if CheckStopAt() {
+                        break
+                    }
                 }
             }
         }
