@@ -462,9 +462,11 @@ class Win32StructGetMemberSize {
           , 'BYTE', '1'
           , 'CHAR', '1'
           , 'COLORREF', '4'
+          , 'const', -1
           , 'DebugEventProc', 'A_PtrSize'
-          , 'DWORD', '4'
           , 'DWORD_PTR', 'A_PtrSize'
+          , 'DWORD', '4'
+          , 'float', '4'
           , 'GUID', 'A_PtrSize'
           , 'HANDLE', 'A_PtrSize'
           , 'HBITMAP', 'A_PtrSize'
@@ -480,6 +482,7 @@ class Win32StructGetMemberSize {
           , 'HTREEITEM', 'A_PtrSize'
           , 'HWND', 'A_PtrSize'
           , 'IMAGELISTDRAWPARAMS', 'A_PtrSize'
+          , 'int', '4'
           , 'INT32', '4'
           , 'LCID', '4'
           , 'LOGFONTA', 'A_PtrSize'
@@ -493,7 +496,6 @@ class Win32StructGetMemberSize {
           , 'LPWSTR', 'A_PtrSize'
           , 'LRESULT', 'A_PtrSize'
           , 'MONITORINFO', '40'
-        ;   , 'MOUSEHOOKSTRUCT', '8 + A_PtrSize * 3'
           , 'MSGBOXCALLBACK', 'A_PtrSize'
           , 'NotificationHookProc', 'A_PtrSize'
           , 'NotificationUnhookProc', 'A_PtrSize'
@@ -505,34 +507,28 @@ class Win32StructGetMemberSize {
           , 'POINTER_DEVICE_CURSOR_TYPE', '4'
           , 'POINTER_DEVICE_TYPE', '4'
           , 'POINTER_FLAGS', '4'
-        ;   , 'POINTER_INFO', '72 + A_PtrSize * 2'
           , 'POINTER_INPUT_TYPE', '4'
           , 'POINTS', '4'
           , 'PVOID', 'A_PtrSize'
           , 'PWINDOWPOS', 'A_PtrSize'
-        ;   , 'RAWINPUTHEADER', '8 + A_PtrSize * 2'
-        ;   , 'RECT', '16'
+          , 'struct', -1
           , 'TOUCH_FLAGS', '4'
           , 'TOUCH_MASK', '4'
+          , 'UINT_PTR', 'A_PtrSize'
           , 'UINT', '4'
           , 'UINT16', '2'
           , 'UINT32', '4'
           , 'UINT64', '8'
-          , 'UINT_PTR', 'A_PtrSize'
+          , 'ULONG_PTR', 'A_PtrSize'
           , 'ULONG', '4'
           , 'ULONGLONG', '8'
-          , 'ULONG_PTR', 'A_PtrSize'
+          , 'union', -1
           , 'USHORT', '2'
+          , 'void', 'A_PtrSize'
           , 'WCHAR', '1'
           , 'WNDPROC', 'A_PtrSize'
           , 'WORD', '2'
           , 'WPARAM', 'A_PtrSize'
-          , 'const', -1
-          , 'float', '4'
-          , 'int', '4'
-          , 'struct', -1
-          , 'union', -1
-          , 'void', 'A_PtrSize'
         )
     }
     static Call(typeStr) {
