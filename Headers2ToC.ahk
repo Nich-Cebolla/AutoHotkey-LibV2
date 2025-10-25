@@ -8,7 +8,7 @@
 class Headers2ToC {
     static __New() {
         this.DeleteProp('__New')
-        this.patternMarkdown := 'S)(?<=[\r\n]|^)[ \t]*(#+)(.+)'
+        this.patternMarkdown := 'Si)(?<=[\r\n]|^)[ \t]*(#+)[ \t]+(.+)'
         this.patternHtml := 'S)(?<=[\r\n]|^)[ \t]*<h(\d)[^>]*>(.+?)(?=</h)'
         this.patternFormatElement := '<([^>]+)>'
         ; 1 - indent
