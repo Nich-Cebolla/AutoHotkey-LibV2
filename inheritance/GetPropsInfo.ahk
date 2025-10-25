@@ -1832,7 +1832,7 @@ class PropsInfoItem {
      * variable remains unset.
      * - 2: An error occurred while calling the `Get` function, and `OutValue` is the error object.
      */
-    GetValue(&OutValue, FromOwner := false) {
+    GetValue(&OutValue?, FromOwner := false) {
         switch this.KindIndex {
             case 1, 4: return 1 ; Call, Set
             case 2, 3:
