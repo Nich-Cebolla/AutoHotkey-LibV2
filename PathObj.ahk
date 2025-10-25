@@ -68,9 +68,10 @@ class PathObj {
     static InitialBufferSize := 256
     static __New() {
         this.DeleteProp('__New')
-        this.hModule := DllCall('LoadLibrary', 'Str', 'msvcrt.dll', 'Ptr')
-        this.memmove := DllCall('GetProcAddress', 'Ptr', this.hModule, 'AStr', 'memmove', 'Ptr')
-        this.Prototype.DefineProp('propdesc', { Value:this.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U') })
+        PathObj_SetConstants()
+        proto := this.Prototype
+        proto.propdesc := this.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
+        proto.Type := PATHOBJ_TYPE_ROOT
     }
     /**
      * An instance of `PathObj` should be used as the root object of the path is being constructed.
@@ -96,6 +97,7 @@ class PathObj {
         if EscapePropNames {
             this.DefineProp('propdesc', { Value: propdesc })
         }
+        this.Index := 1
     }
     Call(*) {
         if !this.HasOwnProp('__Path') {
@@ -115,7 +117,7 @@ class PathObj {
     }
     MakeProp(Name) {
         static desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
-        ObjSetBase(Segment := { Name: Name }, this)
+        ObjSetBase(Segment := { Name: Name, Index: this.Index + 1, Type: PATHOBJ_TYPE_PROP }, this)
         Segment.DefineProp('GetPathSegment', this.propdesc)
         Segment.DefineProp('GetPathSegment_U', desc_u)
         return Segment
@@ -124,7 +126,7 @@ class PathObj {
         static descNumber := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number')
         , descString := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String1')
         , descString_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U1')
-        ObjSetBase(Segment := { Name: Name }, this)
+        ObjSetBase(Segment := { Name: Name, Index: this.Index + 1, Type: PATHOBJ_TYPE_ITEM }, this)
         if IsNumber(Name) {
             Segment.DefineProp('GetPathSegment', descNumber)
             Segment.DefineProp('GetPathSegment_U', descNumber)
@@ -158,7 +160,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -186,7 +188,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -212,7 +214,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -238,7 +240,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -268,7 +270,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -288,7 +290,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -308,7 +310,7 @@ class PathObj {
                 PathObj.InitialBufferSize *= 2
                 buf.Size *= 2
                 DllCall(
-                    PathObj.memmove
+                    g_msvcrt_memmove
                   , 'ptr', buf.Ptr + buf.Size - count
                   , 'ptr', buf.Ptr + offset
                   , 'int', count
@@ -325,4 +327,21 @@ class PathObj {
 
     Path => this()
     PathUnescaped => this.Unescaped()
+}
+
+PathObj_SetConstants(force := false) {
+    global
+    if !force && IsSet(g_PathObj_constants_set) {
+        return
+    }
+    local hModule := DllCall('LoadLibrary', 'Str', 'msvcrt.dll', 'Ptr')
+    g_msvcrt_memmove := DllCall('GetProcAddress', 'Ptr', hModule, 'AStr', 'memmove', 'Ptr')
+
+    local i := 0
+    PATHOBJ_TYPE_ITEM := ++i
+    PATHOBJ_TYPE_PROP := ++i
+    PATHOBJ_TYPE_ROOT := ++i
+    PATHOBJ_TYPE_END := i
+
+    g_PathObj_constants_set := 1
 }
