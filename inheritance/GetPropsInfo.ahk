@@ -1838,9 +1838,9 @@ class PropsInfoItem {
             case 2, 3:
                 try {
                     if FromOwner {
-                        OutValue := (Get := this.Get)(this.Owner)
+                        OutValue := this.Get.Call(this.Owner)
                     } else {
-                        OutValue := (Get := this.Get)(this.Root)
+                        OutValue := this.Get.Call(this.Root)
                     }
                 } catch Error as err {
                     OutValue := err
