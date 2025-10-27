@@ -214,7 +214,7 @@ class GetIncludedFile {
                                         continue 3
                                     }
                                 }
-                                lib := SubStr(lib, InStr(lib, '_') + 1)
+                                lib := SubStr(lib, 1, InStr(lib, '_') - 1)
                             }
                         }
                     }
