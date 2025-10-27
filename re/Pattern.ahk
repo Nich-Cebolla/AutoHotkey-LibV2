@@ -83,7 +83,7 @@ class Pattern {
      *  unit being a single commodity. Our investigation must therefore begin with the analysis
      *  of a commodity.`
      * @example
-     *  RegExMatch(FileRead('Kapital.js'), Re.Pattern.ContinuationSectionJs, &Match)
+     *  RegExMatch(FileRead('Kapital.js'), Pattern.ContinuationSectionJs, &Match)
      *  MsgBox(Match['content']) ; The wealth of those societies... analysis of a commodity.
      * @
      */
@@ -146,6 +146,9 @@ class Pattern {
         , Pattern.GetMatchingBrace(BracketChar))
     }
 
+    /**
+     * Matches a quoted string, skipping any properly escaped quote characters.
+     */
     static QuotedString := '(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2}'
 
     /**
@@ -234,13 +237,6 @@ class Pattern {
      * @description - Matches text between any two substrings. There is one subcapture group
      * available:
      * - content - The text between the two substrings.
-     * @example
-     *  ; We can capture all of the comments in this code file thusly:
-     *  Result := Re.Loop(FileRead(A_ScriptFullPath), Re.Pattern.GetTextBetweenSubstrings('/\*\*', '\*/'), &Match)
-     *  for Match in Result {
-     *      MsgBox(Match['content'])
-     *  }
-     * @
      * @param {String} OpenSubstring - The opening substring.
      * @param {String} CloseSubstring - The closing substring.
      */
@@ -249,9 +245,12 @@ class Pattern {
     }
 
     /**
-     * @property {String} Pattern.Parentheses - Matches a string enclosed by parentheses while also
-     * allowing for any number of nested escaped parentheses which do not affect the match, and
-     * requires an even number of not-escaped parentheses for the match to succeed.
+     * @property {String} Pattern.Parentheses - Attempts to match a string enclosed by parentheses
+     * while also allowing for any number of nested escaped parentheses which do not affect the match,
+     * and requires an even number of not-escaped parentheses for the match to succeed.
+     *
+     * This pattern does not accomplish this all the time, but sometimes it works.
+     *
      * @example
      *  Str := '[a-z]+(?<somegroup>.+\(.+?\))'
      *  p := Pattern.Parentheses
@@ -283,12 +282,13 @@ class Pattern {
     )
 
     /**
-     * @property {String} Pattern.NamedSubcaptureGroup - Matches a named subcapture group.
+     * @property {String} Pattern.NamedSubcaptureGroup - Matches a named subcapture group in a
+     * regex pattern.
      */
     static NamedSubcaptureGroup := '(?<!\\)(?:\\\\)*\(\?[<`'p]{1,2}(?<name>[_\p{L}][_\p{L}\p{Nd}]*)>'
 
     /**
-     * @property {String} Pattern.Mark - Matches a named control verb.
+     * @property {String} Pattern.Mark - Matches a named control verb in a regex pattern.
      */
     static Mark := (
         '(?<!\\)(?:\\\\)*'
@@ -307,6 +307,9 @@ class Pattern {
         '(?<!\\)(?:\\\\)*\)'
     )
 
+    /**
+     * Matches a callout in a regex pattern.
+     */
     static Callout := (
         'J)(?<!\\)(?:\\\\)*'
         '\(\?C'
@@ -324,7 +327,8 @@ class Pattern {
      */
     static AhkAllowedSymbolChars := '(?:[\p{L}_0-9]|[^\x00-\x7F\x80-\x9F])'
     /**
-     * Valid characters for Ahk variables and properties excluding digits
+     * Valid characters for Ahk variables and properties excluding digits (the first character
+     * of a variable symbol cannot be a digit).
      * @memberof Pattern
      */
     static AhkAllowedSymbolCharsNoDigits := '(?:[\p{L}_]|[^\x00-\x7F\x80-\x9F])'
