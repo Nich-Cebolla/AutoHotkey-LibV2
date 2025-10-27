@@ -312,6 +312,14 @@ class GetIncludedFile {
         }
         return this.Unique
     }
+    /**
+     * Constructs a string of the contents of the file passed to the parameter `Path`, recursively
+     * replacing each #include and #IncludeAgain statement with the content from the appropriate file.
+     * The created string is set to property {@link GetIncludedFile#Content}.
+     */
+    Build(Encoding?) {
+        return this.Content := this.Result[1].Build(Encoding ?? unset)
+    }
 
     class File {
         __New(match, fullPath, parent, line) {
@@ -322,6 +330,18 @@ class GetIncludedFile {
             this.Line := line
             this.Parent := parent
             this.Children := []
+        }
+        /**
+         * Constructs a string of the file's contents, recursively replacing each #include and
+         * #IncludeAgain statement with the content from the appropriate file. The created string
+         * is set to property {@link GetIncludedFile.File#Content}.
+         */
+        Build(Encoding?) {
+            s := FileRead(this.FullPath, Encoding ?? unset)
+            for item in this.Children {
+                s := RegExReplace(s, '(?<=[\r\n]|^)\Q' item.Match[0] '\E(?=[\r\n]|$)', item.Build(Encoding ?? unset), , 1)
+            }
+            return this.Content := s
         }
         Ignore => this.Match ? this.Match['i'] ? 1 : 0 : 0
         IsAgain => this.Match ? this.Match['again'] ? 1 : 0 : 0
