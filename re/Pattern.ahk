@@ -56,7 +56,7 @@ class Pattern {
     static ContinuationSectionAhk := (
         '(?(DEFINE)(?<singleline>\s*;.*))'
         '(?(DEFINE)(?<multiline>\s*/\*[\w\W]*?\*/))'
-        '(?<=[\r\n]).*?'
+        '(?<=[\r\n]|^).*?'
         '(?<text>'
             '(?<=[\s=:,&(.[?]|^)'
             '(?<quote>[`'"])'
@@ -68,7 +68,6 @@ class Pattern {
             '\s*+\('
             '(?<body>[\w\W]*?)'
             '\R[ \t]*+\).*?\g{quote}'
-            '(*MARK:SPC_STRING)'
         ')'
         '(?<tail>.*)'
     )
