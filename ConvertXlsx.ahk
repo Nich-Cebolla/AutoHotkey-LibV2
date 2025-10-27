@@ -75,7 +75,7 @@ class ConvertXlsx {
      * |  xlWorks2FarEast                |  28         |  Microsoft Works 2.0 Asian format           |  *.wks                     |
      * |  xlWQ1                          |  34         |  Quattro Pro format                         |  *.wq1                     |
      * |  xlXMLSpreadsheet               |  46         |  XML Spreadsheet                            |  *.xml                     |
-     * @returns {String} - The path where the ile was saved.
+     * @returns {String} - The path where the file was saved.
      */
     static Call(InPath, OutPath?, Overwrite := false, FileFormat := 62) {
         if !IsSet(OutPath) {
