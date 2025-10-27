@@ -18,14 +18,14 @@
  * each individual file is only read a maximum of one time.
  *
  * {@link GetIncludedFile.File} has the following properties:
- * - Match - The `RegExMatchInfo` object generated during processing.
+ * - Children - An array of {@link GetIncludedFile.File} objects representing #include or #IncludeAgain statements in the file.
  * - FullPath - The full path to the file.
- * - Name - The file name without extension of the file.
- * - Line - The line number on which the #include or #IncludeAgain statement was encountered.
- * - Parent - The full path of the script that contained the #include or #IncludeAgain statement.
- * - Children - An array of {@link GetIncludedFile.File} objects representing #include or #IncludeAgain
- *   statements in the file.
+ * - Ignore - Returns 1 if the #include or #IncludeAgain statement had the *i option. Returns 0 otherwise.
  * - IsAgain - Returns 1 if it was an #IncludeAgain statement. Returns 0 if it was an #include statement.
+ * - Line - The line number on which the #include or #IncludeAgain statement was encountered.
+ * - Match - The `RegExMatchInfo` object generated during processing.
+ * - Name - The file name without extension of the file.
+ * - Parent - The full path of the script that contained the #include or #IncludeAgain statement.
  * - Path - The unmodified path string from the script's content.
  *
  * The first item in the {@link GetIncludedFile#Result} array will not have all of the properties
@@ -181,7 +181,7 @@ class GetIncludedFile {
                     }
                     ct++
                     line := f.ReadLine()
-                    if RegExMatch(line, 'iS)^[ \t]*\K#include(?<again>again)?[ \t]+(?:<(?<lib>[^>]+)>|(?<path>.+))', &match) {
+                    if RegExMatch(line, 'iS)^[ \t]*\K#include(?<again>again)?[ \t]+(?<i>\*i[ \t]+)?(?:<(?<lib>[^>]+)>|(?<path>.+))', &match) {
                         if _path := match['path'] {
                             _path := Trim(StrReplace(_path, '``;', ';'), '"')
                             if RegExMatch(_path, '[ \t]+;.*', &match_comment) {
@@ -323,6 +323,7 @@ class GetIncludedFile {
             this.Parent := parent
             this.Children := []
         }
+        Ignore => this.Match ? this.Match['i'] ? 1 : 0 : 0
         IsAgain => this.Match ? this.Match['again'] ? 1 : 0 : 0
         Path => this.Match ? this.Match['path'] : ''
     }
