@@ -147,6 +147,7 @@ class GetIncludedFile {
         result := this.Result
         notFound := this.NotFound
         read := Map()
+        read.CaseSense := false
         SplitPath(Path, , , , , &drive)
         if !drive {
             path := ResolveRelativePath(&Path)
@@ -219,6 +220,57 @@ class GetIncludedFile {
                     }
                 }
             }
+        } else {
+            active := pending.Pop()
+            SplitPath(active.FullPath, , &cwd)
+            ct := 0
+            f := FileOpen(active.FullPath, 'r', Encoding ?? unset)
+            loop {
+                if f.AtEoF {
+                    f.Close()
+                    break
+                }
+                ct++
+                line := f.ReadLine()
+                if RegExMatch(line, 'iS)^[ \t]*\K#include(?<again>again)?[ \t]+(?:<(?<lib>[^>]+)>|(?<path>.+))', &match) {
+                    if _path := match['path'] {
+                        _path := Trim(StrReplace(_path, '``;', ';'), '"')
+                        if RegExMatch(_path, '[ \t]+;.*', &match_comment) {
+                            _path := StrReplace(_path, match_comment[0], '')
+                        }
+                        while RegExMatch(_path, 'iS)%(A_(?:AhkPath|AppData|AppDataCommon|'
+                        'ComputerName|ComSpec|Desktop|DesktopCommon|IsCompiled|LineFile|MyDocuments|'
+                        'ProgramFiles|Programs|ProgramsCommon|ScriptDir|ScriptFullPath|ScriptName|'
+                        'Space|StartMenu|StartMenuCommon|Startup|StartupCommon|Tab|Temp|UserName|'
+                        'WinDir))%', &match_a) {
+                            _path := StrReplace(match_a[0], %match_a[1]%)
+                        }
+                        SplitPath(_path, , , &ext, , &drive)
+                        if !drive {
+                            ResolveRelativePath(&_path, cwd)
+                        }
+                        ; If it is a file path
+                        if ext {
+                            _Add(_path)
+                        } else {
+                            ; change the current working directory
+                            cwd := _path
+                        }
+                    } else {
+                        lib := match['lib']
+                        loop 2 {
+                            for dir in libDirs {
+                                if FileExist(dir '\' lib '.ahk') {
+                                    _Add(dir '\' lib '.ahk')
+                                    continue 3
+                                }
+                            }
+                            lib := SubStr(lib, InStr(lib, '_') + 1)
+                        }
+                    }
+                }
+            }
+            f.Close()
         }
 
         return
