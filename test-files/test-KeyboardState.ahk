@@ -18,19 +18,19 @@ kbs()
 
 
 QueryLButton() {
-    kbs.CallAsync()
+    kbs.Async()
     MsgBox(kbs.LBUTTON)
 }
 QueryRButton() {
-    kbs.CallAsync()
+    kbs.Async()
     MsgBox(kbs.RBUTTON)
 }
 QueryYButton() {
-    kbs.CallAsync()
+    kbs.Async()
     MsgBox(kbs.Y)
 }
 QuerySpaceBar() {
-    kbs.CallAsync()
+    kbs.Async()
     MsgBox(kbs.SPACE)
 }
 
@@ -90,7 +90,7 @@ class KeyboardState {
             throw OSError()
         }
     }
-    CallAsync() {
+    Async() {
         ; Update 'down' (bit 7) from live async state
         loop 256 {
             vk := A_Index - 1
