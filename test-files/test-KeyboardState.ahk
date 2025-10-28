@@ -1,11 +1,56 @@
 ﻿#singleInstance force
 g := Gui()
-g.Add('Text', 'w400 h400')
+g.Add('Text', 'w400 h400 vTxt')
+g.Add('Button', 'Section vBtn', 'Start loop').OnEvent('Click', ObjBindMethod(ToggleLoop, 'Call'))
+g.Add('Button', 'ys vExit', 'Exit').OnEvent('Click', (*) => ExitApp())
 g.Show()
 
-global kbs := KeyboardState()
+kbs := KeyboardState()
 ; To get the keyboard state, call the object
 kbs()
+
+class ToggleLoop {
+    static Status := 0
+    static Call(*) {
+        global kbs, g
+        this.Status := !this.Status
+        if this.Status {
+            this.Loop()
+            g['Btn'].Text := 'Stop loop'
+        } else {
+            g['Btn'].Text := 'Start loop'
+        }
+    }
+    static Loop(*) {
+        global kbs, g
+        if !this.Status {
+            return
+        }
+        proto := KeyboardState.Prototype
+        kbs()
+        s := ''
+        ct := 0
+        for prop in proto.OwnProps() {
+            desc := proto.GetOwnPropDesc(prop)
+            if desc.HasOwnProp('Get') {
+                if !InStr(',Toggle,__Item,Byte,Ptr,Size,', ',' prop ',') {
+                    if kbs.%prop% {
+                        if ++ct > 10 {
+                            s := SubStr(s, 1, -2) '`n'
+                            ct := 0
+                        }
+                        s .= prop ', '
+                    }
+                }
+            }
+        }
+        g['txt'].Text := SubStr(s, 1, -2)
+        if this.Status {
+            SetTimer(ObjBindMethod(this, 'Loop'), -25)
+        }
+    }
+}
+
 
 !1::QueryLButton()
 !2::QueryRButton()
