@@ -1,5 +1,5 @@
 ﻿
-class Msg {
+class wMsg {
     static __New() {
         this.DeleteProp('__New')
         proto := this.Prototype
@@ -22,7 +22,7 @@ class Msg {
         proto.offset_y         := 8 + A_PtrSize * 4
         proto.offset_lPrivate  := 12 + A_PtrSize * 4
 
-        Msg_SetConstants()
+        wMsg_SetConstants()
     }
     __New(hwnd?, message?, wParam?, lParam?, time?, x?, y?, lPrivate?) {
         this.Buffer := Buffer(this.cbSizeInstance)
@@ -53,7 +53,7 @@ class Msg {
     }
     Peek(Hwnd := 0, MsgFilterMin := 0, MsgFilterMax := 0, RemoveMsg := PM_NOREMOVE) {
         return DllCall(
-            'PeekMessageW'
+            g_user32_PeekMessageW
           , 'ptr', this
           , 'ptr', Hwnd
           , 'uint', MsgFilterMin
@@ -114,11 +114,14 @@ class Msg {
     Size => this.Buffer.Size
 }
 
-Msg_SetConstants(force := false) {
+wMsg_SetConstants(force := false) {
     global
-    if IsSet(Msg_constants_set) && !force {
+    if IsSet(wMsg_constants_set) && !force {
         return
     }
+
+    local hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
+    g_user32_PeekMessageW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'PeekMessageW', 'ptr')
 
     WM_KEYFIRST             := 0x0100
     WM_MOUSEFIRST           := 0x0200
@@ -147,5 +150,5 @@ Msg_SetConstants(force := false) {
     PM_QS_PAINT := QS_PAINT << 16
     PM_QS_SENDMESSAGE := QS_SENDMESSAGE << 16
 
-    Msg_constants_set := 1
+    wMsg_constants_set := 1
 }

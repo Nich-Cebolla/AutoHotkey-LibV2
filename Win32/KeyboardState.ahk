@@ -1,5 +1,5 @@
 ﻿
-#include Msg.ahk
+#include wMsg.ahk
 /**
  * @classdesc - Gets the state of all keys on the keyboard, or sets the state of the keys for
  * the current thread.
@@ -7,17 +7,28 @@
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getkeyboardstate}
  *
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setkeyboardstate}
+ *
+ * There are two methods for getting the state of every key:
+ * - {@link KeyboardState.Prototype.Call} will get the key state only for the script's thread. That
+ *   is, if the foreground window is not owned by the script's process, it will not capture any changes
+ *   in the up/down state of the keys.
+ * - {@link KeyboardState.Prototype.Async} will work regadless of the owner of the foreground window.
+ *
+ * See the test script test-files\test-KeyboardState.ahk for a demo.
  */
 class KeyboardState {
+    static __New() {
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.Msg := wMsg()
+    }
     /**
      * Thread-local keyboard state wrapper around GetKeyboardState / SetKeyboardState.
      * High bit (0x80) = key is down; low bit (0x01) = toggle (for toggle keys).
      */
-    __New(deferActivation := false) {
+    __New() {
         this.Buffer := Buffer(256, 0)
-        this.MSG := Msg()
-        if !deferActivation
-            this() ; Call()
+        this()
     }
 
     /**
@@ -33,7 +44,7 @@ class KeyboardState {
      * Applies the values to the current thread.
      */
     Apply() {
-        if !DllCall('SetKeyboardState', 'ptr', this.Buffer, 'int') {
+        if !DllCall(g_user32_SetKeyboardState, 'ptr', this.Buffer, 'int') {
             throw OSError()
         }
     }
@@ -41,7 +52,7 @@ class KeyboardState {
         ; Update 'down' (bit 7) from live async state
         loop 256 {
             vk := A_Index - 1
-            async := DllCall('GetAsyncKeyState', 'int', vk, 'short')
+            async := DllCall(g_user32_GetAsyncKeyState, 'int', vk, 'short')
             b := NumGet(this.Buffer, vk, 'uchar') & 0x01 ; keep toggle bit
             if (async & 0x8000)
                 b |= 0x80
@@ -49,7 +60,7 @@ class KeyboardState {
         }
         ; Refresh toggle keys' bit 0 from GetKeyState so toggles are accurate
         for vk in [0x14, 0x90, 0x91] { ; CAPS, NUM, SCROLL
-            s := DllCall('GetKeyState', 'int', vk, 'short')
+            s := DllCall(g_user32_GetKeyState, 'int', vk, 'short')
             b := NumGet(this.Buffer, vk, 'uchar') & 0xFE
             if (s & 1)
                 b |= 1
@@ -58,7 +69,7 @@ class KeyboardState {
         return this
     }
     Get() {
-        if !DllCall('GetKeyboardState', 'ptr', this.Buffer, 'int') {
+        if !DllCall(g_user32_GetKeyboardState, 'ptr', this.Buffer, 'int') {
             throw OSError()
         }
     }
@@ -834,4 +845,18 @@ class KeyboardState {
 
     Ptr  => this.Buffer.Ptr
     Size => this.Buffer.Size
+}
+
+KeyboardState_SetConstants(force := false) {
+    global
+    if IsSet(KeyboardState_constants_set) && !force {
+        return
+    }
+    local hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
+    g_user32_SetKeyboardState := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'SetKeyboardState', 'ptr')
+    g_user32_GetAsyncKeyState := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetAsyncKeyState', 'ptr')
+    g_user32_GetKeyState := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetKeyState', 'ptr')
+    g_user32_GetKeyboardState := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetKeyboardState', 'ptr')
+
+    KeyboardState_constants_set := 1
 }
