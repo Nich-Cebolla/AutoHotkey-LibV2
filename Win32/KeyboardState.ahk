@@ -1,4 +1,5 @@
 ﻿
+#include Msg.ahk
 /**
  * @classdesc - Gets the state of all keys on the keyboard, or sets the state of the keys for
  * the current thread.
@@ -8,1094 +9,829 @@
  * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setkeyboardstate}
  */
 class KeyboardState {
-    __New(DeferActivation := false) {
-        this.Buffer := Buffer(256)
-        if !DeferActivation {
-            this()
-        }
+    /**
+     * Thread-local keyboard state wrapper around GetKeyboardState / SetKeyboardState.
+     * High bit (0x80) = key is down; low bit (0x01) = toggle (for toggle keys).
+     */
+    __New(deferActivation := false) {
+        this.Buffer := Buffer(256, 0)
+        this.MSG := Msg()
+        if !deferActivation
+            this() ; Call()
     }
+
+    /**
+     * Refreshes the values.
+     */
+    Call() {
+        while this.Msg.Peek() {
+            Sleep(16)
+        }
+        this.Get()
+    }
+    /**
+     * Applies the values to the current thread.
+     */
     Apply() {
-        if !DllCall(
-            'SetKeyboardState'
-          , 'ptr', this.Buffer
-          , 'int'
-        ) {
+        if !DllCall('SetKeyboardState', 'ptr', this.Buffer, 'int') {
             throw OSError()
         }
     }
-    Call() {
-        if !DllCall(
-            'GetKeyboardState'
-          , 'ptr', this.Buffer
-          , 'int'
-        ) {
+    CallAsync() {
+        ; Update 'down' (bit 7) from live async state
+        loop 256 {
+            vk := A_Index - 1
+            async := DllCall('GetAsyncKeyState', 'int', vk, 'short')
+            b := NumGet(this.Buffer, vk, 'uchar') & 0x01 ; keep toggle bit
+            if (async & 0x8000)
+                b |= 0x80
+            NumPut('uchar', b, this.Buffer, vk)
+        }
+        ; Refresh toggle keys' bit 0 from GetKeyState so toggles are accurate
+        for vk in [0x14, 0x90, 0x91] { ; CAPS, NUM, SCROLL
+            s := DllCall('GetKeyState', 'int', vk, 'short')
+            b := NumGet(this.Buffer, vk, 'uchar') & 0xFE
+            if (s & 1)
+                b |= 1
+            NumPut('uchar', b, this.Buffer, vk)
+        }
+        return this
+    }
+    Get() {
+        if !DllCall('GetKeyboardState', 'ptr', this.Buffer, 'int') {
             throw OSError()
         }
     }
 
-    LBUTTON {    ; Left mouse button
-        Get => NumGet(this, 0x01, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x01)
+    /**
+     * Boolean up/down accessor by VK code.
+     */
+    __Item[vk] {
+        ; returns 0/1 (false/true)
+        get => (NumGet(this.Buffer, vk, 'uchar') >> 7) & 1
+        set {
+            b := NumGet(this.Buffer, vk, 'uchar')
+            NumPut('uchar', Value ? (b | 0x80) : (b & 0x7F), this.Buffer, vk)
         }
     }
-    RBUTTON {    ; Right mouse button
-        Get => NumGet(this, 0x02, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x02)
+
+    /**
+     * Toggle-bit accessor (bit 0) for toggle keys
+     */
+    Toggle[vk] {
+        get => NumGet(this.Buffer, vk, 'uchar') & 1
+        set {
+            b := NumGet(this.Buffer, vk, 'uchar')
+            NumPut('uchar', Value ? (b | 0x01) : (b & 0xFE), this.Buffer, vk)
         }
     }
-    CANCEL {    ; Control-break processing
-        Get => NumGet(this, 0x03, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x03)
-        }
+
+    /**
+     * Optional: raw byte accessor (handy for debugging)
+     */
+    Byte[vk] {
+        get => NumGet(this.Buffer, vk, 'uchar')            ; 0..255
+        set => NumPut('uchar', Value & 0xFF, this.Buffer, vk)
     }
-    MBUTTON {    ; Middle mouse button
-        Get => NumGet(this, 0x04, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x04)
-        }
+
+    LBUTTON {
+        get => this[0x01]
+        set => this[0x01] := Value
     }
-    XBUTTON1 {    ; X1 mouse button
-        Get => NumGet(this, 0x05, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x05)
-        }
+    RBUTTON {
+        get => this[0x02]
+        set => this[0x02] := Value
     }
-    XBUTTON2 {    ; X2 mouse button
-        Get => NumGet(this, 0x06, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x06)
-        }
+    CANCEL {
+        get => this[0x03]
+        set => this[0x03] := Value
     }
-    BACK {    ; Backspace key
-        Get => NumGet(this, 0x08, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x08)
-        }
+    MBUTTON {
+        get => this[0x04]
+        set => this[0x04] := Value
     }
-    TAB {    ; Tab key
-        Get => NumGet(this, 0x09, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x09)
-        }
+    XBUTTON1 {
+        get => this[0x05]
+        set => this[0x05] := Value
     }
-    CLEAR {    ; Clear key
-        Get => NumGet(this, 0x0C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x0C)
-        }
+    XBUTTON2 {
+        get => this[0x06]
+        set => this[0x06] := Value
     }
-    RETURN {    ; Enter key
-        Get => NumGet(this, 0x0D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x0D)
-        }
+
+    BACK {
+        get => this[0x08]
+        set => this[0x08] := Value
     }
-    SHIFT {    ; Shift key
-        Get => NumGet(this, 0x10, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x10)
-        }
+    TAB {
+        get => this[0x09]
+        set => this[0x09] := Value
     }
-    CONTROL {    ; Ctrl key
-        Get => NumGet(this, 0x11, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x11)
-        }
+    CLEAR {
+        get => this[0x0C]
+        set => this[0x0C] := Value
     }
-    MENU {    ; Alt key
-        Get => NumGet(this, 0x12, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x12)
-        }
+    RETURN {
+        get => this[0x0D]
+        set => this[0x0D] := Value
     }
-    PAUSE {    ; Pause key
-        Get => NumGet(this, 0x13, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x13)
-        }
+
+    SHIFT {
+        get => this[0x10]
+        set => this[0x10] := Value
     }
-    CAPITAL {    ; Caps lock key
-        Get => NumGet(this, 0x14, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x14)
-        }
+    CONTROL {
+        get => this[0x11]
+        set => this[0x11] := Value
     }
+    MENU {
+        get => this[0x12]
+        set => this[0x12] := Value
+    } ; Alt
+    PAUSE {
+        get => this[0x13]
+        set => this[0x13] := Value
+    }
+
+    CAPITAL {
+        get => this[0x14]
+        set => this[0x14] := Value
+    } ; CapsLock
     CAPITAL_TOGGLE {
-        Get => NumGet(this, 0x14, 'uchar') & 0x01
-        Set {
-            SetCapsLockState(Value)
-        }
-    }
-    KANA {    ; IME Kana mode
-        Get => NumGet(this, 0x15, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x15)
-        }
-    }
-    HANGUL {    ; IME Hangul mode
-        Get => NumGet(this, 0x15, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x15)
-        }
-    }
-    IME_ON {    ; IME On
-        Get => NumGet(this, 0x16, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x16)
-        }
-    }
-    JUNJA {    ; IME Junja mode
-        Get => NumGet(this, 0x17, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x17)
-        }
-    }
-    FINAL {    ; IME final mode
-        Get => NumGet(this, 0x18, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x18)
-        }
-    }
-    HANJA {    ; IME Hanja mode
-        Get => NumGet(this, 0x19, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x19)
-        }
-    }
-    KANJI {    ; IME Kanji mode
-        Get => NumGet(this, 0x19, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x19)
-        }
-    }
-    IME_OFF {    ; IME Off
-        Get => NumGet(this, 0x1A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1A)
-        }
-    }
-    ESCAPE {    ; Esc key
-        Get => NumGet(this, 0x1B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1B)
-        }
-    }
-    CONVERT {    ; IME convert
-        Get => NumGet(this, 0x1C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1C)
-        }
-    }
-    NONCONVERT {    ; IME nonconvert
-        Get => NumGet(this, 0x1D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1D)
-        }
-    }
-    ACCEPT {    ; IME accept
-        Get => NumGet(this, 0x1E, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1E)
-        }
-    }
-    MODECHANGE {    ; IME mode change request
-        Get => NumGet(this, 0x1F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x1F)
-        }
-    }
-    SPACE {    ; Spacebar key
-        Get => NumGet(this, 0x20, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x20)
-        }
-    }
-    PRIOR {    ; Page up key
-        Get => NumGet(this, 0x21, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x21)
-        }
-    }
-    NEXT {    ; Page down key
-        Get => NumGet(this, 0x22, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x22)
-        }
-    }
-    END {    ; End key
-        Get => NumGet(this, 0x23, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x23)
-        }
-    }
-    HOME {    ; Home key
-        Get => NumGet(this, 0x24, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x24)
-        }
-    }
-    LEFT {    ; Left arrow key
-        Get => NumGet(this, 0x25, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x25)
-        }
-    }
-    UP {    ; Up arrow key
-        Get => NumGet(this, 0x26, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x26)
-        }
-    }
-    RIGHT {    ; Right arrow key
-        Get => NumGet(this, 0x27, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x27)
-        }
-    }
-    DOWN {    ; Down arrow key
-        Get => NumGet(this, 0x28, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x28)
-        }
-    }
-    SELECT {    ; Select key
-        Get => NumGet(this, 0x29, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x29)
-        }
-    }
-    PRINT {    ; Print key
-        Get => NumGet(this, 0x2A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2A)
-        }
-    }
-    EXECUTE {    ; Execute key
-        Get => NumGet(this, 0x2B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2B)
-        }
-    }
-    SNAPSHOT {    ; Print screen key
-        Get => NumGet(this, 0x2C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2C)
-        }
-    }
-    INSERT {    ; Insert key
-        Get => NumGet(this, 0x2D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2D)
-        }
-    }
-    DELETE {    ; Delete key
-        Get => NumGet(this, 0x2E, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2E)
-        }
-    }
-    HELP {    ; Help key
-        Get => NumGet(this, 0x2F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x2F)
-        }
-    }
-    0 {    ; 0 key
-        Get => NumGet(this, 0x30, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x30)
-        }
-    }
-    1 {    ; 1 key
-        Get => NumGet(this, 0x31, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x31)
-        }
-    }
-    2 {    ; 2 key
-        Get => NumGet(this, 0x32, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x32)
-        }
-    }
-    3 {    ; 3 key
-        Get => NumGet(this, 0x33, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x33)
-        }
-    }
-    4 {    ; 4 key
-        Get => NumGet(this, 0x34, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x34)
-        }
-    }
-    5 {    ; 5 key
-        Get => NumGet(this, 0x35, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x35)
-        }
-    }
-    6 {    ; 6 key
-        Get => NumGet(this, 0x36, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x36)
-        }
-    }
-    7 {    ; 7 key
-        Get => NumGet(this, 0x37, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x37)
-        }
-    }
-    8 {    ; 8 key
-        Get => NumGet(this, 0x38, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x38)
-        }
-    }
-    9 {    ; 9 key
-        Get => NumGet(this, 0x39, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x39)
-        }
-    }
-    A {    ; A key
-        Get => NumGet(this, 0x41, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x41)
-        }
-    }
-    B {    ; B key
-        Get => NumGet(this, 0x42, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x42)
-        }
-    }
-    C {    ; C key
-        Get => NumGet(this, 0x43, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x43)
-        }
-    }
-    D {    ; D key
-        Get => NumGet(this, 0x44, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x44)
-        }
-    }
-    E {    ; E key
-        Get => NumGet(this, 0x45, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x45)
-        }
-    }
-    F {    ; F key
-        Get => NumGet(this, 0x46, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x46)
-        }
-    }
-    G {    ; G key
-        Get => NumGet(this, 0x47, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x47)
-        }
-    }
-    H {    ; H key
-        Get => NumGet(this, 0x48, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x48)
-        }
-    }
-    I {    ; I key
-        Get => NumGet(this, 0x49, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x49)
-        }
-    }
-    J {    ; J key
-        Get => NumGet(this, 0x4A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4A)
-        }
-    }
-    K {    ; K key
-        Get => NumGet(this, 0x4B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4B)
-        }
-    }
-    L {    ; L key
-        Get => NumGet(this, 0x4C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4C)
-        }
-    }
-    M {    ; M key
-        Get => NumGet(this, 0x4D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4D)
-        }
-    }
-    N {    ; N key
-        Get => NumGet(this, 0x4E, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4E)
-        }
-    }
-    O {    ; O key
-        Get => NumGet(this, 0x4F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x4F)
-        }
-    }
-    P {    ; P key
-        Get => NumGet(this, 0x50, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x50)
-        }
-    }
-    Q {    ; Q key
-        Get => NumGet(this, 0x51, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x51)
-        }
-    }
-    R {    ; R key
-        Get => NumGet(this, 0x52, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x52)
-        }
-    }
-    S {    ; S key
-        Get => NumGet(this, 0x53, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x53)
-        }
-    }
-    T {    ; T key
-        Get => NumGet(this, 0x54, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x54)
-        }
-    }
-    U {    ; U key
-        Get => NumGet(this, 0x55, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x55)
-        }
-    }
-    V {    ; V key
-        Get => NumGet(this, 0x56, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x56)
-        }
-    }
-    W {    ; W key
-        Get => NumGet(this, 0x57, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x57)
-        }
-    }
-    X {    ; X key
-        Get => NumGet(this, 0x58, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x58)
-        }
-    }
-    Y {    ; Y key
-        Get => NumGet(this, 0x59, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x59)
-        }
-    }
-    Z {    ; Z key
-        Get => NumGet(this, 0x5A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x5A)
-        }
-    }
-    LWIN {    ; Left Windows logo key
-        Get => NumGet(this, 0x5B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x5B)
-        }
-    }
-    RWIN {    ; Right Windows logo key
-        Get => NumGet(this, 0x5C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x5C)
-        }
-    }
-    APPS {    ; Application key
-        Get => NumGet(this, 0x5D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x5D)
-        }
-    }
-    SLEEP {    ; Computer Sleep key
-        Get => NumGet(this, 0x5F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x5F)
-        }
-    }
-    NUMPAD0 {    ; Numeric keypad 0 key
-        Get => NumGet(this, 0x60, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x60)
-        }
-    }
-    NUMPAD1 {    ; Numeric keypad 1 key
-        Get => NumGet(this, 0x61, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x61)
-        }
-    }
-    NUMPAD2 {    ; Numeric keypad 2 key
-        Get => NumGet(this, 0x62, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x62)
-        }
-    }
-    NUMPAD3 {    ; Numeric keypad 3 key
-        Get => NumGet(this, 0x63, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x63)
-        }
-    }
-    NUMPAD4 {    ; Numeric keypad 4 key
-        Get => NumGet(this, 0x64, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x64)
-        }
-    }
-    NUMPAD5 {    ; Numeric keypad 5 key
-        Get => NumGet(this, 0x65, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x65)
-        }
-    }
-    NUMPAD6 {    ; Numeric keypad 6 key
-        Get => NumGet(this, 0x66, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x66)
-        }
-    }
-    NUMPAD7 {    ; Numeric keypad 7 key
-        Get => NumGet(this, 0x67, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x67)
-        }
-    }
-    NUMPAD8 {    ; Numeric keypad 8 key
-        Get => NumGet(this, 0x68, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x68)
-        }
-    }
-    NUMPAD9 {    ; Numeric keypad 9 key
-        Get => NumGet(this, 0x69, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x69)
-        }
-    }
-    MULTIPLY {    ; Multiply key
-        Get => NumGet(this, 0x6A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6A)
-        }
-    }
-    ADD {    ; Add key
-        Get => NumGet(this, 0x6B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6B)
-        }
-    }
-    SEPARATOR {    ; Separator key
-        Get => NumGet(this, 0x6C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6C)
-        }
-    }
-    SUBTRACT {    ; Subtract key
-        Get => NumGet(this, 0x6D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6D)
-        }
-    }
-    DECIMAL {    ; Decimal key
-        Get => NumGet(this, 0x6E, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6E)
-        }
-    }
-    DIVIDE {    ; Divide key
-        Get => NumGet(this, 0x6F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x6F)
-        }
-    }
-    F1 {    ; F1 key
-        Get => NumGet(this, 0x70, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x70)
-        }
-    }
-    F2 {    ; F2 key
-        Get => NumGet(this, 0x71, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x71)
-        }
-    }
-    F3 {    ; F3 key
-        Get => NumGet(this, 0x72, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x72)
-        }
-    }
-    F4 {    ; F4 key
-        Get => NumGet(this, 0x73, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x73)
-        }
-    }
-    F5 {    ; F5 key
-        Get => NumGet(this, 0x74, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x74)
-        }
-    }
-    F6 {    ; F6 key
-        Get => NumGet(this, 0x75, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x75)
-        }
-    }
-    F7 {    ; F7 key
-        Get => NumGet(this, 0x76, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x76)
-        }
-    }
-    F8 {    ; F8 key
-        Get => NumGet(this, 0x77, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x77)
-        }
-    }
-    F9 {    ; F9 key
-        Get => NumGet(this, 0x78, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x78)
-        }
-    }
-    F10 {    ; F10 key
-        Get => NumGet(this, 0x79, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x79)
-        }
-    }
-    F11 {    ; F11 key
-        Get => NumGet(this, 0x7A, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7A)
-        }
-    }
-    F12 {    ; F12 key
-        Get => NumGet(this, 0x7B, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7B)
-        }
-    }
-    F13 {    ; F13 key
-        Get => NumGet(this, 0x7C, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7C)
-        }
-    }
-    F14 {    ; F14 key
-        Get => NumGet(this, 0x7D, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7D)
-        }
-    }
-    F15 {    ; F15 key
-        Get => NumGet(this, 0x7E, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7E)
-        }
-    }
-    F16 {    ; F16 key
-        Get => NumGet(this, 0x7F, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x7F)
-        }
-    }
-    F17 {    ; F17 key
-        Get => NumGet(this, 0x80, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x80)
-        }
-    }
-    F18 {    ; F18 key
-        Get => NumGet(this, 0x81, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x81)
-        }
-    }
-    F19 {    ; F19 key
-        Get => NumGet(this, 0x82, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x82)
-        }
-    }
-    F20 {    ; F20 key
-        Get => NumGet(this, 0x83, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x83)
-        }
-    }
-    F21 {    ; F21 key
-        Get => NumGet(this, 0x84, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x84)
-        }
-    }
-    F22 {    ; F22 key
-        Get => NumGet(this, 0x85, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x85)
-        }
-    }
-    F23 {    ; F23 key
-        Get => NumGet(this, 0x86, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x86)
-        }
-    }
-    F24 {    ; F24 key
-        Get => NumGet(this, 0x87, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x87)
-        }
-    }
-    NUMLOCK {    ; Num lock key
-        Get => NumGet(this, 0x90, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x90)
-        }
+        get => this.Toggle[0x14]
+        set => this.Toggle[0x14] := Value
+    }
+
+    KANA {
+        get => this[0x15]
+        set => this[0x15] := Value
+    }
+    HANGUL {
+        get => this[0x15]
+        set => this[0x15] := Value
+    }
+
+    IME_ON {
+        get => this[0x16]
+        set => this[0x16] := Value
+    }
+    JUNJA {
+        get => this[0x17]
+        set => this[0x17] := Value
+    }
+    FINAL {
+        get => this[0x18]
+        set => this[0x18] := Value
+    }
+    HANJA {
+        get => this[0x19]
+        set => this[0x19] := Value
+    }
+    KANJI {
+        get => this[0x19]
+        set => this[0x19] := Value
+    }
+    IME_OFF {
+        get => this[0x1A]
+        set => this[0x1A] := Value
+    }
+
+    ESCAPE {
+        get => this[0x1B]
+        set => this[0x1B] := Value
+    }
+    CONVERT {
+        get => this[0x1C]
+        set => this[0x1C] := Value
+    }
+    NONCONVERT {
+        get => this[0x1D]
+        set => this[0x1D] := Value
+    }
+    ACCEPT {
+        get => this[0x1E]
+        set => this[0x1E] := Value
+    }
+    MODECHANGE {
+        get => this[0x1F]
+        set => this[0x1F] := Value
+    }
+
+    SPACE {
+        get => this[0x20]
+        set => this[0x20] := Value
+    }
+    PRIOR {
+        get => this[0x21]
+        set => this[0x21] := Value
+    } ; PgUp
+    NEXT {
+        get => this[0x22]
+        set => this[0x22] := Value
+    } ; PgDn
+    END {
+        get => this[0x23]
+        set => this[0x23] := Value
+    }
+    HOME {
+        get => this[0x24]
+        set => this[0x24] := Value
+    }
+    LEFT {
+        get => this[0x25]
+        set => this[0x25] := Value
+    }
+    UP {
+        get => this[0x26]
+        set => this[0x26] := Value
+    }
+    RIGHT {
+        get => this[0x27]
+        set => this[0x27] := Value
+    }
+    DOWN {
+        get => this[0x28]
+        set => this[0x28] := Value
+    }
+    SELECT {
+        get => this[0x29]
+        set => this[0x29] := Value
+    }
+    PRINT {
+        get => this[0x2A]
+        set => this[0x2A] := Value
+    }
+    EXECUTE {
+        get => this[0x2B]
+        set => this[0x2B] := Value
+    }
+    SNAPSHOT {
+        get => this[0x2C]
+        set => this[0x2C] := Value
+    } ; PrintScreen
+    INSERT {
+        get => this[0x2D]
+        set => this[0x2D] := Value
+    }
+    DELETE {
+        get => this[0x2E]
+        set => this[0x2E] := Value
+    }
+    HELP {
+        get => this[0x2F]
+        set => this[0x2F] := Value
+    }
+
+    ; Digits (top row)
+    0 {
+        get => this[0x30]
+        set => this[0x30] := Value
+    }
+    1 {
+        get => this[0x31]
+        set => this[0x31] := Value
+    }
+    2 {
+        get => this[0x32]
+        set => this[0x32] := Value
+    }
+    3 {
+        get => this[0x33]
+        set => this[0x33] := Value
+    }
+    4 {
+        get => this[0x34]
+        set => this[0x34] := Value
+    }
+    5 {
+        get => this[0x35]
+        set => this[0x35] := Value
+    }
+    6 {
+        get => this[0x36]
+        set => this[0x36] := Value
+    }
+    7 {
+        get => this[0x37]
+        set => this[0x37] := Value
+    }
+    8 {
+        get => this[0x38]
+        set => this[0x38] := Value
+    }
+    9 {
+        get => this[0x39]
+        set => this[0x39] := Value
+    }
+
+    ; Letters
+    A {
+        get => this[0x41]
+        set => this[0x41] := Value
+    }
+    B {
+        get => this[0x42]
+        set => this[0x42] := Value
+    }
+    C {
+        get => this[0x43]
+        set => this[0x43] := Value
+    }
+    D {
+        get => this[0x44]
+        set => this[0x44] := Value
+    }
+    E {
+        get => this[0x45]
+        set => this[0x45] := Value
+    }
+    F {
+        get => this[0x46]
+        set => this[0x46] := Value
+    }
+    G {
+        get => this[0x47]
+        set => this[0x47] := Value
+    }
+    H {
+        get => this[0x48]
+        set => this[0x48] := Value
+    }
+    I {
+        get => this[0x49]
+        set => this[0x49] := Value
+    }
+    J {
+        get => this[0x4A]
+        set => this[0x4A] := Value
+    }
+    K {
+        get => this[0x4B]
+        set => this[0x4B] := Value
+    }
+    L {
+        get => this[0x4C]
+        set => this[0x4C] := Value
+    }
+    M {
+        get => this[0x4D]
+        set => this[0x4D] := Value
+    }
+    N {
+        get => this[0x4E]
+        set => this[0x4E] := Value
+    }
+    O {
+        get => this[0x4F]
+        set => this[0x4F] := Value
+    }
+    P {
+        get => this[0x50]
+        set => this[0x50] := Value
+    }
+    Q {
+        get => this[0x51]
+        set => this[0x51] := Value
+    }
+    R {
+        get => this[0x52]
+        set => this[0x52] := Value
+    }
+    S {
+        get => this[0x53]
+        set => this[0x53] := Value
+    }
+    T {
+        get => this[0x54]
+        set => this[0x54] := Value
+    }
+    U {
+        get => this[0x55]
+        set => this[0x55] := Value
+    }
+    V {
+        get => this[0x56]
+        set => this[0x56] := Value
+    }
+    W {
+        get => this[0x57]
+        set => this[0x57] := Value
+    }
+    X {
+        get => this[0x58]
+        set => this[0x58] := Value
+    }
+    Y {
+        get => this[0x59]
+        set => this[0x59] := Value
+    }
+    Z {
+        get => this[0x5A]
+        set => this[0x5A] := Value
+    }
+
+    LWIN {
+        get => this[0x5B]
+        set => this[0x5B] := Value
+    }
+    RWIN {
+        get => this[0x5C]
+        set => this[0x5C] := Value
+    }
+    APPS {
+        get => this[0x5D]
+        set => this[0x5D] := Value
+    }
+    SLEEP {
+        get => this[0x5F]
+        set => this[0x5F] := Value
+    }
+
+    ; Numpad digits
+    NUMPAD0 {
+        get => this[0x60]
+        set => this[0x60] := Value
+    }
+    NUMPAD1 {
+        get => this[0x61]
+        set => this[0x61] := Value
+    }
+    NUMPAD2 {
+        get => this[0x62]
+        set => this[0x62] := Value
+    }
+    NUMPAD3 {
+        get => this[0x63]
+        set => this[0x63] := Value
+    }
+    NUMPAD4 {
+        get => this[0x64]
+        set => this[0x64] := Value
+    }
+    NUMPAD5 {
+        get => this[0x65]
+        set => this[0x65] := Value
+    }
+    NUMPAD6 {
+        get => this[0x66]
+        set => this[0x66] := Value
+    }
+    NUMPAD7 {
+        get => this[0x67]
+        set => this[0x67] := Value
+    }
+    NUMPAD8 {
+        get => this[0x68]
+        set => this[0x68] := Value
+    }
+    NUMPAD9 {
+        get => this[0x69]
+        set => this[0x69] := Value
+    }
+
+    MULTIPLY {
+        get => this[0x6A]
+        set => this[0x6A] := Value
+    }
+    ADD {
+        get => this[0x6B]
+        set => this[0x6B] := Value
+    }
+    SEPARATOR {
+        get => this[0x6C]
+        set => this[0x6C] := Value
+    }
+    SUBTRACT {
+        get => this[0x6D]
+        set => this[0x6D] := Value
+    }
+    DECIMAL {
+        get => this[0x6E]
+        set => this[0x6E] := Value
+    }
+    DIVIDE {
+        get => this[0x6F]
+        set => this[0x6F] := Value
+    }
+
+    ; Function keys
+    F1 {
+        get => this[0x70]
+        set => this[0x70] := Value
+    }
+    F2 {
+        get => this[0x71]
+        set => this[0x71] := Value
+    }
+    F3 {
+        get => this[0x72]
+        set => this[0x72] := Value
+    }
+    F4 {
+        get => this[0x73]
+        set => this[0x73] := Value
+    }
+    F5 {
+        get => this[0x74]
+        set => this[0x74] := Value
+    }
+    F6 {
+        get => this[0x75]
+        set => this[0x75] := Value
+    }
+    F7 {
+        get => this[0x76]
+        set => this[0x76] := Value
+    }
+    F8 {
+        get => this[0x77]
+        set => this[0x77] := Value
+    }
+    F9 {
+        get => this[0x78]
+        set => this[0x78] := Value
+    }
+    F10 {
+        get => this[0x79]
+        set => this[0x79] := Value
+    }
+    F11 {
+        get => this[0x7A]
+        set => this[0x7A] := Value
+    }
+    F12 {
+        get => this[0x7B]
+        set => this[0x7B] := Value
+    }
+    F13 {
+        get => this[0x7C]
+        set => this[0x7C] := Value
+    }
+    F14 {
+        get => this[0x7D]
+        set => this[0x7D] := Value
+    }
+    F15 {
+        get => this[0x7E]
+        set => this[0x7E] := Value
+    }
+    F16 {
+        get => this[0x7F]
+        set => this[0x7F] := Value
+    }
+    F17 {
+        get => this[0x80]
+        set => this[0x80] := Value
+    }
+    F18 {
+        get => this[0x81]
+        set => this[0x81] := Value
+    }
+    F19 {
+        get => this[0x82]
+        set => this[0x82] := Value
+    }
+    F20 {
+        get => this[0x83]
+        set => this[0x83] := Value
+    }
+    F21 {
+        get => this[0x84]
+        set => this[0x84] := Value
+    }
+    F22 {
+        get => this[0x85]
+        set => this[0x85] := Value
+    }
+    F23 {
+        get => this[0x86]
+        set => this[0x86] := Value
+    }
+    F24 {
+        get => this[0x87]
+        set => this[0x87] := Value
+    }
+
+    NUMLOCK {
+        get => this[0x90]
+        set => this[0x90] := Value
     }
     NUMLOCK_TOGGLE {
-        Get => NumGet(this, 0x90, 'uchar') & 0x01
-        Set {
-            SetNumLockState(Value)
-        }
-    }
-    SCROLL {    ; Scroll lock key
-        Get => NumGet(this, 0x91, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0x91)
-        }
-    }
-    SCROLL_TOGGLE {
-        Get => NumGet(this, 0x91, 'uchar') & 0x01
-        Set {
-            SetScrollLockState(Value)
-        }
-    }
-    LSHIFT {    ; Left Shift key
-        Get => NumGet(this, 0xA0, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA0)
-        }
-    }
-    RSHIFT {    ; Right Shift key
-        Get => NumGet(this, 0xA1, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA1)
-        }
-    }
-    LCONTROL {    ; Left Ctrl key
-        Get => NumGet(this, 0xA2, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA2)
-        }
-    }
-    RCONTROL {    ; Right Ctrl key
-        Get => NumGet(this, 0xA3, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA3)
-        }
-    }
-    LMENU {    ; Left Alt key
-        Get => NumGet(this, 0xA4, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA4)
-        }
-    }
-    RMENU {    ; Right Alt key
-        Get => NumGet(this, 0xA5, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA5)
-        }
-    }
-    BROWSER_BACK {    ; Browser Back key
-        Get => NumGet(this, 0xA6, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA6)
-        }
-    }
-    BROWSER_FORWARD {    ; Browser Forward key
-        Get => NumGet(this, 0xA7, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA7)
-        }
-    }
-    BROWSER_REFRESH {    ; Browser Refresh key
-        Get => NumGet(this, 0xA8, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA8)
-        }
-    }
-    BROWSER_STOP {    ; Browser Stop key
-        Get => NumGet(this, 0xA9, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xA9)
-        }
-    }
-    BROWSER_SEARCH {    ; Browser Search key
-        Get => NumGet(this, 0xAA, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAA)
-        }
-    }
-    BROWSER_FAVORITES {    ; Browser Favorites key
-        Get => NumGet(this, 0xAB, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAB)
-        }
-    }
-    BROWSER_HOME {    ; Browser Start and Home key
-        Get => NumGet(this, 0xAC, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAC)
-        }
-    }
-    VOLUME_MUTE {    ; Volume Mute key
-        Get => NumGet(this, 0xAD, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAD)
-        }
-    }
-    VOLUME_DOWN {    ; Volume Down key
-        Get => NumGet(this, 0xAE, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAE)
-        }
-    }
-    VOLUME_UP {    ; Volume Up key
-        Get => NumGet(this, 0xAF, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xAF)
-        }
-    }
-    MEDIA_NEXT_TRACK {    ; Next Track key
-        Get => NumGet(this, 0xB0, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB0)
-        }
-    }
-    MEDIA_PREV_TRACK {    ; Previous Track key
-        Get => NumGet(this, 0xB1, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB1)
-        }
-    }
-    MEDIA_STOP {    ; Stop Media key
-        Get => NumGet(this, 0xB2, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB2)
-        }
-    }
-    MEDIA_PLAY_PAUSE {    ; Play/Pause Media key
-        Get => NumGet(this, 0xB3, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB3)
-        }
-    }
-    LAUNCH_MAIL {    ; Start Mail key
-        Get => NumGet(this, 0xB4, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB4)
-        }
-    }
-    LAUNCH_MEDIA_SELECT {    ; Select Media key
-        Get => NumGet(this, 0xB5, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB5)
-        }
-    }
-    LAUNCH_APP1 {    ; Start Application 1 key
-        Get => NumGet(this, 0xB6, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB6)
-        }
-    }
-    LAUNCH_APP2 {    ; Start Application 2 key
-        Get => NumGet(this, 0xB7, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xB7)
-        }
-    }
-    OEM_1 {    ; It can vary by keyboard. For the US ANSI keyboard, the Semiсolon and Colon key
-        Get => NumGet(this, 0xBA, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBA)
-        }
-    }
-    OEM_PLUS {    ; For any country/region, the Equals and Plus key
-        Get => NumGet(this, 0xBB, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBB)
-        }
-    }
-    OEM_COMMA {    ; For any country/region, the Comma and Less Than key
-        Get => NumGet(this, 0xBC, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBC)
-        }
-    }
-    OEM_MINUS {    ; For any country/region, the Dash and Underscore key
-        Get => NumGet(this, 0xBD, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBD)
-        }
-    }
-    OEM_PERIOD {    ; For any country/region, the Period and Greater Than key
-        Get => NumGet(this, 0xBE, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBE)
-        }
-    }
-    OEM_2 {    ; It can vary by keyboard. For the US ANSI keyboard, the Forward Slash and Question Mark key
-        Get => NumGet(this, 0xBF, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xBF)
-        }
-    }
-    OEM_3 {    ; It can vary by keyboard. For the US ANSI keyboard, the Grave Accent and Tilde key
-        Get => NumGet(this, 0xC0, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xC0)
-        }
-    }
-    OEM_4 {    ; It can vary by keyboard. For the US ANSI keyboard, the Left Brace key
-        Get => NumGet(this, 0xDB, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xDB)
-        }
-    }
-    OEM_5 {    ; It can vary by keyboard. For the US ANSI keyboard, the Backslash and Pipe key
-        Get => NumGet(this, 0xDC, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xDC)
-        }
-    }
-    OEM_6 {    ; It can vary by keyboard. For the US ANSI keyboard, the Right Brace key
-        Get => NumGet(this, 0xDD, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xDD)
-        }
-    }
-    OEM_7 {    ; It can vary by keyboard. For the US ANSI keyboard, the Apostrophe and Double Quotation Mark key
-        Get => NumGet(this, 0xDE, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xDE)
-        }
-    }
-    OEM_8 {    ; It can vary by keyboard. For the Canadian CSA keyboard, the Right Ctrl key
-        Get => NumGet(this, 0xDF, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xDF)
-        }
-    }
-    OEM_102 {    ; It can vary by keyboard. For the European ISO keyboard, the Backslash and Pipe key
-        Get => NumGet(this, 0xE2, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xE2)
-        }
-    }
-    PROCESSKEY {    ; IME PROCESS key
-        Get => NumGet(this, 0xE5, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xE5)
-        }
-    }
-    PACKET {    ; Used to pass Unicode characters as if they were keystrokes. *Note1
-        Get => NumGet(this, 0xE7, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xE7)
-        }
-    }
-    ATTN {    ; Attn key
-        Get => NumGet(this, 0xF6, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xF6)
-        }
-    }
-    CRSEL {    ; CrSel key
-        Get => NumGet(this, 0xF7, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xF7)
-        }
-    }
-    EXSEL {    ; ExSel key
-        Get => NumGet(this, 0xF8, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xF8)
-        }
-    }
-    EREOF {    ; Erase EOF key
-        Get => NumGet(this, 0xF9, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xF9)
-        }
-    }
-    PLAY {    ; Play key
-        Get => NumGet(this, 0xFA, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xFA)
-        }
-    }
-    ZOOM {    ; Zoom key
-        Get => NumGet(this, 0xFB, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xFB)
-        }
-    }
-    NONAME {    ; Reserved
-        Get => NumGet(this, 0xFC, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xFC)
-        }
-    }
-    PA1 {    ; PA1 key
-        Get => NumGet(this, 0xFD, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xFD)
-        }
-    }
-    OEM_CLEAR {    ; Clear key
-        Get => NumGet(this, 0xFE, 'uchar') & 0x80
-        Set {
-            NumPut('uchar', Value ? 0x80 : 0, this, 0xFE)
-        }
+        get => this.Toggle[0x90]
+        set => this.Toggle[0x90] := Value
     }
 
-    Ptr => this.Buffer.Ptr
+    SCROLL {
+        get => this[0x91]
+        set => this[0x91] := Value
+    }
+    SCROLL_TOGGLE {
+        get => this.Toggle[0x91]
+        set => this.Toggle[0x91] := Value
+    }
+
+    LSHIFT {
+        get => this[0xA0]
+        set => this[0xA0] := Value
+    }
+    RSHIFT {
+        get => this[0xA1]
+        set => this[0xA1] := Value
+    }
+    LCONTROL {
+        get => this[0xA2]
+        set => this[0xA2] := Value
+    }
+    RCONTROL {
+        get => this[0xA3]
+        set => this[0xA3] := Value
+    }
+    LMENU {
+        get => this[0xA4]
+        set => this[0xA4] := Value
+    }
+    RMENU {
+        get => this[0xA5]
+        set => this[0xA5] := Value
+    }
+
+    BROWSER_BACK {
+        get => this[0xA6]
+        set => this[0xA6] := Value
+    }
+    BROWSER_FORWARD {
+        get => this[0xA7]
+        set => this[0xA7] := Value
+    }
+    BROWSER_REFRESH {
+        get => this[0xA8]
+        set => this[0xA8] := Value
+    }
+    BROWSER_STOP {
+        get => this[0xA9]
+        set => this[0xA9] := Value
+    }
+    BROWSER_SEARCH {
+        get => this[0xAA]
+        set => this[0xAA] := Value
+    }
+    BROWSER_FAVORITES {
+        get => this[0xAB]
+        set => this[0xAB] := Value
+    }
+    BROWSER_HOME {
+        get => this[0xAC]
+        set => this[0xAC] := Value
+    }
+
+    VOLUME_MUTE {
+        get => this[0xAD]
+        set => this[0xAD] := Value
+    }
+    VOLUME_DOWN {
+        get => this[0xAE]
+        set => this[0xAE] := Value
+    }
+    VOLUME_UP {
+        get => this[0xAF]
+        set => this[0xAF] := Value
+    }
+
+    MEDIA_NEXT_TRACK {
+        get => this[0xB0]
+        set => this[0xB0] := Value
+    }
+    MEDIA_PREV_TRACK {
+        get => this[0xB1]
+        set => this[0xB1] := Value
+    }
+    MEDIA_STOP {
+        get => this[0xB2]
+        set => this[0xB2] := Value
+    }
+    MEDIA_PLAY_PAUSE {
+        get => this[0xB3]
+        set => this[0xB3] := Value
+    }
+
+    LAUNCH_MAIL {
+        get => this[0xB4]
+        set => this[0xB4] := Value
+    }
+    LAUNCH_MEDIA_SELECT {
+        get => this[0xB5]
+        set => this[0xB5] := Value
+    }
+    LAUNCH_APP1 {
+        get => this[0xB6]
+        set => this[0xB6] := Value
+    }
+    LAUNCH_APP2 {
+        get => this[0xB7]
+        set => this[0xB7] := Value
+    }
+
+    OEM_1 {
+        get => this[0xBA]
+        set => this[0xBA] := Value
+    }
+    OEM_PLUS {
+        get => this[0xBB]
+        set => this[0xBB] := Value
+    }
+    OEM_COMMA {
+        get => this[0xBC]
+        set => this[0xBC] := Value
+    }
+    OEM_MINUS {
+        get => this[0xBD]
+        set => this[0xBD] := Value
+    }
+    OEM_PERIOD {
+        get => this[0xBE]
+        set => this[0xBE] := Value
+    }
+    OEM_2 {
+        get => this[0xBF]
+        set => this[0xBF] := Value
+    }
+    OEM_3 {
+        get => this[0xC0]
+        set => this[0xC0] := Value
+    }
+
+    OEM_4 {
+        get => this[0xDB]
+        set => this[0xDB] := Value
+    }
+    OEM_5 {
+        get => this[0xDC]
+        set => this[0xDC] := Value
+    }
+    OEM_6 {
+        get => this[0xDD]
+        set => this[0xDD] := Value
+    }
+    OEM_7 {
+        get => this[0xDE]
+        set => this[0xDE] := Value
+    }
+    OEM_8 {
+        get => this[0xDF]
+        set => this[0xDF] := Value
+    }
+
+    OEM_102 {
+        get => this[0xE2]
+        set => this[0xE2] := Value
+    }
+
+    PROCESSKEY {
+        get => this[0xE5]
+        set => this[0xE5] := Value
+    }
+    PACKET {
+        get => this[0xE7]
+        set => this[0xE7] := Value
+    }
+
+    ATTN {
+        get => this[0xF6]
+        set => this[0xF6] := Value
+    }
+    CRSEL {
+        get => this[0xF7]
+        set => this[0xF7] := Value
+    }
+    EXSEL {
+        get => this[0xF8]
+        set => this[0xF8] := Value
+    }
+    EREOF {
+        get => this[0xF9]
+        set => this[0xF9] := Value
+    }
+    PLAY {
+        get => this[0xFA]
+        set => this[0xFA] := Value
+    }
+    ZOOM {
+        get => this[0xFB]
+        set => this[0xFB] := Value
+    }
+    NONAME {
+        get => this[0xFC]
+        set => this[0xFC] := Value
+    }
+    PA1 {
+        get => this[0xFD]
+        set => this[0xFD] := Value
+    }
+    OEM_CLEAR {
+        get => this[0xFE]
+        set => this[0xFE] := Value
+    }
+
+    Ptr  => this.Buffer.Ptr
     Size => this.Buffer.Size
 }
