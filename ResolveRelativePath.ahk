@@ -28,9 +28,9 @@ ResolveRelativePath(Path, RelativeTo?) {
     }
     if InStr(Path, '.\') {
         _Process(&Path, &RelativeTo)
-        return Path
+        return RTrim(Path, '\')
     } else {
-        return RelativeTo '\' Path
+        return RTrim(RelativeTo '\' Path, '\')
     }
 
     _Process(&path, &relative) {
@@ -97,6 +97,7 @@ ResolveRelativePathRef(&Path, RelativeTo?) {
     } else {
         Path := RelativeTo '\' Path
     }
+    Path := RTrim(Path, '\')
 
     _Process(&path, &relative) {
         split := StrSplit(path, '\')
