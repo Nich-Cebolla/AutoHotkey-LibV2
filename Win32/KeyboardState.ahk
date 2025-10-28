@@ -37,7 +37,7 @@ class KeyboardState {
             throw OSError()
         }
     }
-    CallAsync() {
+    Async() {
         ; Update 'down' (bit 7) from live async state
         loop 256 {
             vk := A_Index - 1
