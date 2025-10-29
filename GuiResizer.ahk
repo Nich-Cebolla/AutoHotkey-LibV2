@@ -17,6 +17,7 @@ class GuiResizer {
         , g_user32_GetWindowRect := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetWindowRect', 'ptr')
         , g_user32_ScreenToClient := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'ScreenToClient', 'ptr')
         , g_user32_SetThreadDpiAwarenessContext := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'SetThreadDpiAwarenessContext', 'ptr')
+        , g_user32_PeekMessageW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'PeekMessageW', 'ptr')
         , GuiResizer_Swp_Move := 0x0001 | 0x0010 | 0x0200 | 0x0004 ; SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
         , GuiResizer_Swp_MoveAndSize := 0x0010 | 0x0200 | 0x0004 ; SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
         , GuiResizer_Swp_Size := 0x0002 | 0x0010 | 0x0200 | 0x0004 ; SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
@@ -349,6 +350,9 @@ class GuiResizer {
                     }
                 } else {
                     h := this.MinH
+        while this.wMsg.Peek() {
+            Sleep(-1)
+        }
                 }
             } else if IsNumber(this.MaxH) {
                 h := Min(this.MaxH, h)
@@ -416,6 +420,9 @@ class GuiResizer {
                 } else {
                     throw OSError()
                 }
+            }
+            while this.wMsg.Peek() {
+                Sleep(-1)
             }
             if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
                 throw OSError()
@@ -511,6 +518,120 @@ class GuiResizer {
                 }
             }
         }
+    }
+
+    class wMsg {
+        static __New() {
+            this.DeleteProp('__New')
+            proto := this.Prototype
+            proto.cbSizeInstance :=
+            ; Size      Type        Symbol      Offset                Padding
+            A_PtrSize + ; HWND      hwnd        0
+            A_PtrSize + ; UINT      message     0 + A_PtrSize * 1     +4 on x64 only
+            A_PtrSize + ; WPARAM    wParam      0 + A_PtrSize * 2
+            A_PtrSize + ; LPARAM    lParam      0 + A_PtrSize * 3
+            A_PtrSize + ; DWORD     time        0 + A_PtrSize * 4     +4 on x64 only
+            4 +         ; INT       x           0 + A_PtrSize * 5
+            4 +         ; INT       y           4 + A_PtrSize * 5
+            4           ; DWORD     lPrivate    8 + A_PtrSize * 5
+            proto.offset_hwnd      := 0
+            proto.offset_message   := 0 + A_PtrSize * 1
+            proto.offset_wParam    := 0 + A_PtrSize * 2
+            proto.offset_lParam    := 0 + A_PtrSize * 3
+            proto.offset_time      := 0 + A_PtrSize * 4
+            proto.offset_x         := 0 + A_PtrSize * 5
+            proto.offset_y         := 4 + A_PtrSize * 5
+            proto.offset_lPrivate  := 8 + A_PtrSize * 5
+
+        }
+        __New(hwnd?, message?, wParam?, lParam?, time?, x?, y?, lPrivate?) {
+            this.Buffer := Buffer(this.cbSizeInstance)
+            if IsSet(hwnd) {
+                this.hwnd := hwnd
+            }
+            if IsSet(message) {
+                this.message := message
+            }
+            if IsSet(wParam) {
+                this.wParam := wParam
+            }
+            if IsSet(lParam) {
+                this.lParam := lParam
+            }
+            if IsSet(time) {
+                this.time := time
+            }
+            if IsSet(x) {
+                this.x := x
+            }
+            if IsSet(y) {
+                this.y := y
+            }
+            if IsSet(lPrivate) {
+                this.lPrivate := lPrivate
+            }
+        }
+        Peek(Hwnd := 0, MsgFilterMin := 0, MsgFilterMax := 0, RemoveMsg := 0) {
+            return DllCall(
+                g_user32_PeekMessageW
+              , 'ptr', this
+              , 'ptr', Hwnd
+              , 'uint', MsgFilterMin
+              , 'uint', MsgFilterMax
+              , 'uint', RemoveMsg
+              , 'int'
+            )
+        }
+        hwnd {
+            Get => NumGet(this.Buffer, this.offset_hwnd, 'ptr')
+            Set {
+                NumPut('ptr', Value, this.Buffer, this.offset_hwnd)
+            }
+        }
+        message {
+            Get => NumGet(this.Buffer, this.offset_message, 'uint')
+            Set {
+                NumPut('uint', Value, this.Buffer, this.offset_message)
+            }
+        }
+        wParam {
+            Get => NumGet(this.Buffer, this.offset_wParam, 'ptr')
+            Set {
+                NumPut('ptr', Value, this.Buffer, this.offset_wParam)
+            }
+        }
+        lParam {
+            Get => NumGet(this.Buffer, this.offset_lParam, 'ptr')
+            Set {
+                NumPut('ptr', Value, this.Buffer, this.offset_lParam)
+            }
+        }
+        time {
+            Get => NumGet(this.Buffer, this.offset_time, 'uint')
+            Set {
+                NumPut('uint', Value, this.Buffer, this.offset_time)
+            }
+        }
+        x {
+            Get => NumGet(this.Buffer, this.offset_x, 'int')
+            Set {
+                NumPut('int', Value, this.Buffer, this.offset_x)
+            }
+        }
+        y {
+            Get => NumGet(this.Buffer, this.offset_y, 'int')
+            Set {
+                NumPut('int', Value, this.Buffer, this.offset_y)
+            }
+        }
+        lPrivate {
+            Get => NumGet(this.Buffer, this.offset_lPrivate, 'uint')
+            Set {
+                NumPut('uint', Value, this.Buffer, this.offset_lPrivate)
+            }
+        }
+        Ptr => this.Buffer.Ptr
+        Size => this.Buffer.Size
     }
 
 }
