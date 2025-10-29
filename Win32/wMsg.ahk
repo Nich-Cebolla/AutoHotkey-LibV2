@@ -9,18 +9,18 @@ class wMsg {
         A_PtrSize + ; UINT      message     0 + A_PtrSize * 1     +4 on x64 only
         A_PtrSize + ; WPARAM    wParam      0 + A_PtrSize * 2
         A_PtrSize + ; LPARAM    lParam      0 + A_PtrSize * 3
-        4 +         ; DWORD     time        0 + A_PtrSize * 4
-        4 +         ; INT       x           4 + A_PtrSize * 4
-        4 +         ; INT       y           8 + A_PtrSize * 4
-        4           ; DWORD     lPrivate    12 + A_PtrSize * 4
+        A_PtrSize + ; DWORD     time        0 + A_PtrSize * 4     +4 on x64 only
+        4 +         ; INT       x           0 + A_PtrSize * 5
+        4 +         ; INT       y           4 + A_PtrSize * 5
+        4           ; DWORD     lPrivate    8 + A_PtrSize * 5
         proto.offset_hwnd      := 0
         proto.offset_message   := 0 + A_PtrSize * 1
         proto.offset_wParam    := 0 + A_PtrSize * 2
         proto.offset_lParam    := 0 + A_PtrSize * 3
         proto.offset_time      := 0 + A_PtrSize * 4
-        proto.offset_x         := 4 + A_PtrSize * 4
-        proto.offset_y         := 8 + A_PtrSize * 4
-        proto.offset_lPrivate  := 12 + A_PtrSize * 4
+        proto.offset_x         := 0 + A_PtrSize * 5
+        proto.offset_y         := 4 + A_PtrSize * 5
+        proto.offset_lPrivate  := 8 + A_PtrSize * 5
 
         wMsg_SetConstants()
     }
