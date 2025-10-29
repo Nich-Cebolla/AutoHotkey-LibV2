@@ -134,6 +134,13 @@ class GuiResizer {
      * {@link GuiResizer.Prototype.Activate} is called, passing `Controls` as an argument if
      * `Controls` is set.
      *
+     * @param {Boolean} [ControlsOnly = false] - If true, the gui object's internal collection is
+     * not iterated and only the objects in `Controls` are used. if false, the gui object's internal
+     * collection is iterated and the objects with a "Resizer" property are processed in addition
+     * to the objects in `Controls`.
+     *
+     * If `Controls` is unset, `ControlsOnly` is ignored.
+     *
      *
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
@@ -191,7 +198,7 @@ class GuiResizer {
      * {@link https://www.autohotkey.com/docs/v2/lib/SetWinDelay.htm SetWinDelay} is called with
      * this value.
      */
-    __New(GuiObj, Options?, Controls?, DeferActivation := false) {
+    __New(GuiObj, Options?, Controls?, DeferActivation := false, ControlsOnly := false) {
         GuiResizer.Options(this, Options ?? unset)
         this.HwndGui := GuiObj.Hwnd
         /**
@@ -214,8 +221,9 @@ class GuiResizer {
         constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
         ObjRelease(ObjPtr(this))
         ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
+        this.wMsg := GuiResizer.wMsg()
         if !DeferActivation {
-            this.Activate(Controls ?? unset)
+            this.Activate(Controls ?? unset, ControlsOnly)
         }
     }
 
@@ -231,15 +239,22 @@ class GuiResizer {
      * that are adjusted when the Size event is raised, and/or change individual controls' resizer
      * options.
      *
-     * @param {Gui.Control[]} [Controls] - If `Controls` is set, it is an array of `Gui.Control`
-     * objects with property "Resizer" with the resize options for that control. See the description
-     * above {@link GuiResizer.Prototype.__New} for more information.
+     * @param {Gui.Control[]|Gui.Control} [Controls] - If `Controls` is not set, all of the controls
+     * in the gui object's internal collection are iterated, and any with a "Resizer" property are
+     * processed to create a {@link GuiResizer_Item} object.
      *
-     * If `Controls` is not set, all of the controls in the gui object's internal collection are
-     * iterated, and any with a "Resizer" property are processed to create a {@link GuiResizer_Item}
-     * object.
+     * If `Controls` is set, it is a `Gui.Control` object or an array of `Gui.Control` objects with
+     * property "Resizer" with the resize options for that control. See the description above
+     * {@link GuiResizer.Prototype.__New} for more information.
+     *
+     * @param {Boolean} [ControlsOnly = false] - If true, the gui object's internal collection is
+     * not iterated and only the objects in `Controls` are used. if false, the gui object's internal
+     * collection is iterated and the objects with a "Resizer" property are processed in addition
+     * to the objects in `Controls`.
+     *
+     * If `Controls` is unset, `ControlsOnly` is ignored.
      */
-    Activate(Controls?) {
+    Activate(Controls?, ControlsOnly := false) {
         flag_status := this.Status
         this.Status := 1
         if this.DpiAwarenessContext {
@@ -256,27 +271,46 @@ class GuiResizer {
         move := this.Move := []
         moveAndSize := this.MoveAndSize := []
         constructor := this.Constructor
-        for ctrl in (Controls ?? this.Gui) {
-            if !HasProp(ctrl, 'Resizer') {
-                continue
-            }
-            item := constructor(ctrl.Resizer, ctrl.Hwnd)
-            if item.Move {
-                if item.Size {
-                    moveAndSize.Push(item)
-                } else {
-                    move.Push(item)
-                }
-            } else if item.Size {
-                size.Push(item)
+        ; To keep track of hwnds so none are duplicated.
+        list := Map()
+        list.CaseSense := false
+        if IsSet(Controls) {
+            if Controls is Array {
+                _Proc(Controls)
             } else {
-                throw Error('The control`'s resizer parameters are invalid.', , HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
+                _Proc([ Controls ])
             }
+            if !ControlsOnly {
+                _Proc(this.Gui)
+            }
+        } else {
+            _Proc(this.Gui)
         }
         if !flag_status {
             this.Gui.OnEvent('Size', this, this.AddRemove)
         }
         this.Status := 3
+
+        _Proc(obj) {
+            for ctrl in obj {
+                if !HasProp(ctrl, 'Resizer') || list.Has(ctrl.Hwnd) {
+                    continue
+                }
+                list.Set(ctrl.Hwnd, 1)
+                item := constructor(ctrl.Resizer, ctrl.Hwnd)
+                if item.Move {
+                    if item.Size {
+                        moveAndSize.Push(item)
+                    } else {
+                        move.Push(item)
+                    }
+                } else if item.Size {
+                    size.Push(item)
+                } else {
+                    throw Error('The control`'s resizer parameters are invalid.', , HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
+                }
+            }
+        }
     }
     /**
      * Called when the Size event is raised. This disables the Size event handler, overrides the
@@ -312,7 +346,27 @@ class GuiResizer {
      * Called from {@link GuiResizer.Prototype.Call}. This is the core resize loop.
      */
     Resize() {
-        originalCritical := Critical(-1)
+        this.Rect.Client(this.HwndGui)
+        w := this.Rect.W
+        h := this.Rect.H
+        if w != this.LastW {
+            this.LastW := w
+            this.LastH := h
+            this.Count := 0
+        } else if h != this.LastH {
+            this.LastH := h
+            this.Count := 0
+        } else {
+            if ++this.Count >= this.StopCount {
+                this.DeleteProp('Call')
+                this.Status := 3
+                this.Gui.OnEvent('Size', this, this.AddRemove)
+                return
+            }
+            this.Status := 6
+            SetTimer(this, this.Delay, this.Priority)
+            return
+        }
         this.Status := 5
         if this.DpiAwarenessContext {
             DllCall(g_user32_SetThreadDpiAwarenessContext, 'ptr', this.DpiAwarenessContext, 'ptr')
@@ -320,56 +374,35 @@ class GuiResizer {
         if this.WinDelay {
             SetWinDelay(this.WinDelay)
         }
-        if hDwp := DllCall(g_user32_BeginDeferWindowPos, 'int', this.Move.Length + this.Size.Length + this.MoveAndSize.Length, 'ptr') {
-            this.Rect.Client(this.HwndGui)
-            w := this.Rect.W
-            h := this.Rect.H
-            if w != this.LastW {
-                this.LastW := w
-                this.LastH := h
-                this.Count := 0
-            } else if h != this.LastH {
-                this.LastH := h
-                this.Count := 0
-            } else {
-                if ++this.Count >= this.StopCount {
-                    this.DeleteProp('Call')
-                    this.Status := 3
-                    Critical(originalCritical)
-                    this.Gui.OnEvent('Size', this, this.AddRemove)
-                    return
-                }
-                this.Status := 6
-                Critical(originalCritical)
-                SetTimer(this, this.Delay, this.Priority)
-            }
-            if IsNumber(this.MinH) {
-                if h >= this.MinH {
-                    if IsNumber(this.MaxH) {
-                        h := Min(this.MaxH, h)
-                    }
-                } else {
-                    h := this.MinH
         while this.wMsg.Peek() {
             Sleep(-1)
         }
+        if IsNumber(this.MinH) {
+            if h >= this.MinH {
+                if IsNumber(this.MaxH) {
+                    h := Min(this.MaxH, h)
                 }
-            } else if IsNumber(this.MaxH) {
-                h := Min(this.MaxH, h)
+            } else {
+                h := this.MinH
             }
-            if IsNumber(this.MinW) {
-                if w >= this.MinW {
-                    if IsNumber(this.MaxW) {
-                        w := Min(this.MaxW, w)
-                    }
-                } else {
-                    w := this.MinW
+        } else if IsNumber(this.MaxH) {
+            h := Min(this.MaxH, h)
+        }
+        if IsNumber(this.MinW) {
+            if w >= this.MinW {
+                if IsNumber(this.MaxW) {
+                    w := Min(this.MaxW, w)
                 }
-            } else if IsNumber(this.MaxW) {
-                w := Min(this.MaxW, w)
+            } else {
+                w := this.MinW
             }
-            diffH := h - this.BaseH
-            diffW := w - this.BaseW
+        } else if IsNumber(this.MaxW) {
+            w := Min(this.MaxW, w)
+        }
+        diffH := h - this.BaseH
+        diffW := w - this.BaseW
+        originalCritical := Critical(-1)
+        if hDwp := DllCall(g_user32_BeginDeferWindowPos, 'int', this.Move.Length + this.Size.Length + this.MoveAndSize.Length, 'ptr') {
             for item in this.Move {
                 if hDwp := DllCall(g_user32_DeferWindowPos
                     , 'ptr', hDwp
@@ -379,7 +412,7 @@ class GuiResizer {
                     , 'int', item.GetY(diffH)               ; Y
                     , 'int', 0                              ; W
                     , 'int', 0                              ; H
-                    , 'uint', item.Flags_Move                     ; flags
+                    , 'uint', item.Flags_Move               ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -396,7 +429,7 @@ class GuiResizer {
                     , 'int', 0                              ; Y
                     , 'int', item.GetW(diffW)               ; W
                     , 'int', item.GetH(diffH)               ; H
-                    , 'uint', item.Flags_Size                     ; flags
+                    , 'uint', item.Flags_Size               ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -413,7 +446,7 @@ class GuiResizer {
                     , 'int', item.GetY(diffH)               ; Y
                     , 'int', item.GetW(diffW)               ; W
                     , 'int', item.GetH(diffH)               ; H
-                    , 'uint', item.Flags_MoveAndSize              ; flags
+                    , 'uint', item.Flags_MoveAndSize        ; flags
                     , 'ptr'
                 ) {
                     continue
@@ -421,18 +454,20 @@ class GuiResizer {
                     throw OSError()
                 }
             }
+            ; Sleep(this.Delay)
+            Critical(originalCritical)
             while this.wMsg.Peek() {
                 Sleep(-1)
             }
             if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
                 throw OSError()
             }
-            if IsObject(this.Callback) {
+            if this.Callback {
                 this.Callback.Call(this)
             }
             this.Status := 6
-            Critical(originalCritical)
             SetTimer(this, this.Delay, this.Priority)
+            WinRedraw(this.HwndGui)
         } else {
             throw OSError()
         }
@@ -490,14 +525,14 @@ class GuiResizer {
         static Default := {
             AddRemove: -1
           , Callback: ''
-          , Delay: -5
+          , Delay: -30
           , DpiAwarenessContext: ''
           , MaxH: ''
           , MaxW: ''
           , MinH: ''
           , MinW: ''
           , Priority: 0
-          , StopCount: 20
+          , StopCount: 5
           , WinDelay: 10
         }
         static Call(GuiResizerObj, Options?) {
