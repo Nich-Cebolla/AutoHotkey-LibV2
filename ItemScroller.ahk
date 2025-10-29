@@ -370,6 +370,12 @@ class ItemScroller {
                 List[Obj.Index].OnEvent('Click', HClickButton%Name%)
             }
         }
+        i := 0
+        loop List.Length {
+            if !List.Has(++i) {
+                list.RemoveAt(i--)
+            }
+        }
         this.UpdatePages(Pages)
         this.CtrlIndex.Move(, , Options.EditWidth)
         if Options.NormalizeButtonWidths {
