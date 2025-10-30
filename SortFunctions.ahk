@@ -285,7 +285,14 @@ class SortFunctions {
      */
     static Copy() {
         G := this.G
-        A_Clipboard := RegExReplace(G['Display'].Text, '\R', (G['CR'].Value ? '`r' : '') (G['LF'].Value ? '`n' : ''))
+        le := ''
+        if G['CR'].Value {
+            le .= '`r'
+        }
+        if G['LF'].Value {
+            le .= '`n'
+        }
+        A_Clipboard := SubStr(RegExReplace(G['Display'].Text, '\R', le), 1, -StrLen(le))
     }
 
     /**
@@ -352,20 +359,20 @@ class SortFunctions {
      * Also included is a `Mark` which you can use to determine if a property was matched or if a
      * class method / function was matched. Example: `if Match.Mark == 'func'`.
      * @example
-       PatternStatement := (
-            'iJm)'
-            '^(?<indent>[ \t]*)'
-            '(?<static>static\s+)?'
-            '(?<name>[a-zA-Z0-9_]+)'
-            '(?:'
-                '(?<params>\(([^()]++|(?&params))*\))(*MARK:func)'
-                '|'
-                '(?<params>\[(?:[^\][]++|(?&params))*\])?'
-            ')'
-            '\s*'
-            '(?<arrow>=>)'
-            '(?<body>.+)'
-        )
+     * PatternStatement := (
+     *      'iJm)'
+     *      '^(?<indent>[ \t]*)'
+     *      '(?<static>static\s+)?'
+     *      '(?<name>[a-zA-Z0-9_]+)'
+     *      '(?:'
+     *          '(?<params>\(([^()]++|(?&params))*\))(*MARK:func)'
+     *          '|'
+     *          '(?<params>\[(?:[^\][]++|(?&params))*\])?'
+     *      ')'
+     *      '\s*'
+     *      '(?<arrow>=>)'
+     *      '(?<body>.+)'
+     *  )
      * @
      * @param {String} [Operator] - The initial operator used, i.e. an assignment operator or an arrow
      * function operator (=>). When provided, this allows the function to combine the body text with
@@ -665,7 +672,7 @@ class SortFunctions {
     static ReplaceStrings(&Text, Removed) {
         for Prop, Arr in Removed.OwnProps() {
             for Item in Arr {
-                Text := StrReplace(Text, Item.Replacement, Item.Match['removed'], , &Count)
+                Text := StrReplace(Text, Item.Replacement, Item.Match['removed'])
             }
         }
     }
@@ -836,7 +843,6 @@ class SortFunctions {
         }
         return SortedText
 
-        _Make() => { Primary: Match, Body: cb() }
         _MatchBrackets() {
             if !RegExMatch(Text, pBracket, &MatchBody, Match.Pos + Match.Len - 1)
             || MatchBody.Pos !== Match.Pos + Match.Len - 1
