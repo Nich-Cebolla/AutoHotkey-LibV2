@@ -1,7 +1,5 @@
 #Include ..\Inheritance\Inheritance.ahk
-; https://github.com/Nich-Cebolla/Stringify-ahk/blob/main/Stringify.ahk
-#Include <Stringify>
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RemoveStringsAndComments.a
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/RemoveStringsAndComments.ahk
 #include ..\RemoveStringsAndComments.ahk
 
 
@@ -69,11 +67,7 @@ class test_Inheritance {
                 Results.Push(Obj)
             }
         }
-        this.WriteOut(Results.Length ? Results : 'No problems')
-        OutputDebug('`n' (Results.Length || 'No problems'))
-        if OpenEditor {
-            this.OpenEditor()
-        }
+        OutputDebug((Results.Length || 'No problems') '`n')
         return Results.Length
     }
 
@@ -99,7 +93,7 @@ class test_Inheritance {
         ; has `M2.Prototype` as its base. It is then considered an `M` object, so there are two
         ; `M` objects in the inheritance chain, not including `M.Prototype`.
         _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_I, 'M:I-'), A_LineNumber, 'I'), 0, List.Length, A_LineNumber)
-        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_I, 'M:I'), A_LineNumber, 'I'), 1, List.Length, A_LineNumber)
+        _CheckCount(_CheckList(List := GetBaseObjects(this.Obj_M2_I, 'M:I'), A_LineNumber, 'I'), 0, List.Length, A_LineNumber)
 
         return Result.Length ? Result : ''
 
@@ -535,12 +529,6 @@ class test_Inheritance {
 
     static OpenEditor() {
         Run(A_ComSpec ' /C ' this.PathEditor ' ' this.Pathout)
-    }
-
-    static WriteOut(Results) {
-        f := FileOpen(this.PathOut, 'w')
-        f.Write(Results is String ? Results : Stringify(Results))
-        f.Close()
     }
 }
 

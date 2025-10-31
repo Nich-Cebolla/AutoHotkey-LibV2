@@ -38,6 +38,11 @@
  * it to a `PropsInfoItem` object and exposing additional properties. See the parameter hints above
  * each property for details.
  *
+ * For more information about property accessors, see:
+ * - {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#DefineProp}
+ * - {@link https://www.autohotkey.com/docs/v2/lib/Object.htm#GetOwnPropDesc}
+ * - {@link https://www.autohotkey.com/docs/v2/Objects.htm#Meta_Functions}
+ *
  * @param {*} Obj - The object from which to get the properties.
  * @param {Integer|String} [StopAt=GPI_STOP_AT_DEFAULT ?? '-Object'] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the name of the class to stop at.
@@ -61,7 +66,7 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
     Container.Default := Container.CaseSense := false
     Excluded := ','
     for s in StrSplit(Exclude, ',', '`s`t') {
-        if (s) {
+        if s {
             Container.Set(s, -1)
         }
     }
@@ -90,7 +95,8 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
                  */
                   , Count: 1
                 }
-              , PropsInfoItemBase)
+              , PropsInfoItemBase
+            )
             ObjSetBase(Item := ObjGetOwnPropDesc(Obj, Prop), ItemBase)
             Item.Index := 0
             Container.Set(Prop, Item)
@@ -214,23 +220,509 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
 }
 
 /**
+ * @description - {@link GetPropsInfoEx} exposes different options than {@link GetPropsInfo}.
+ *
+ * @param {*} Obj - The object from which to get the properties.
+ *
+ * @param {Object} [Options] - An object with options as property : value pairs. Note that if
+ * `Options.Props` is set, the function ignores all other options except `Options.StopAt`.
+ *
+ * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
+ * base objects that is generated during the function call.
+ *
+ * @param {Boolean} [Options.BaseProp = false] - If true, the property "Base" will be included.
+ * @param {Boolean} [Options.Call = false] - If true, properties with a call accessor will be included.
+ * @param {String} [Options.Exclude] - A comma-separated list of property names to exclude, e.g.
+ * "__Class,Count,Capacity".
+ * @param {Boolean} [Options.Get = true] - If true, properties with a get accessor will be included.
+ * @param {String} [Options.Props] - A comma-separated list of property names to include, e.g.
+ * "__Class,Count,Capacity".
+ * @param {Boolean} [Options.Set = false] - If true, properties with a set accessor will be included.
+ * @param {String|Integer} [Options.StopAt] - If set, either of the following kinds of values:
+ *
+ * If an integer, the number of base objects to traverse up the inheritance chain. `Obj.Base` is 1,
+ * `Obj.Base.Base` is 2, etc. The number must be greater than zero.
+ *
+ * If a string, the case-insensitive name of the class to stop at. There are two ways to modify the
+ * function's interpretation of this value. These are only relevant for string values.
+ * - Stop before or after the class: The default is to stop after the class, such that the base object
+ *   associated with the class is included in the result array. To change this, include a hyphen "-"
+ *   anywhere in the value and `GetBaseObjects` will not include the last iterated object in the
+ *   result array.
+ * - The type of object which will be stopped at. In the code snippets below, `b` represents the base
+ *   object being evaluated.
+ *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
+ *     with a `__Class` property equal to `StopAt`. This is the literal condition used:
+ *     `ObjHasOwnProp(b, "__Class") && (b.__Class = StopAt || b.__Class = "Any")`.
+ *   - Stop at a class object: Include ":C" at the end of the value to direct the function to stop at
+ *     a class object by he name `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
+ *     condition used: `ObjHasOwnProp(b, "Prototype") && b.Prototype.__Class = StopAt`.
+ *   - Stop at an instance object: Include ":I" at the end of the value to direct the function to
+ *     stop at an instance object of type `StopAt`, e.g. `StopAt := "MyClass:I"`. This is the literal
+ *     condition used: `!ObjHasOwnProp(b, "__Class") && b.__Class = StopAt`.
+ *
+ * If unset, the function applies this logic:
+ * - If the object does not inherit from `Object`, stop before `Any.Prototype`.
+ * - If the object inherits from `Array`, stop before `Array.Prototype`.
+ * - If the object inherits from `Buffer`, stop before `Buffer.Prototype`.
+ * - If the object inherits from `Class`, stop before `Class.Prototype`.
+ * - If the object inherits from `Map`, stop before `Map.Prototype`.
+ * - For all other objects, stop before `Object.Prototype`.
+ * @param {Boolean} [Options.Value = true] - If true, value properties will be included.
+ *
+ * @returns {PropsInfo}
+ */
+GetPropsInfoEx(Obj, Options?, &OutBaseObjList?) {
+    options := PropsInfo.Options(Options ?? unset)
+    OutBaseObjList := []
+    if stopAt := options.StopAt {
+        if IsNumber(stopAt) {
+            if stopAt > 0 {
+                OutBaseObjList.Push(Obj.Base)
+                loop stopAt - 1 {
+                    OutBaseObjList.Push(OutBaseObjList[-1].Base)
+                }
+            } else {
+                throw ValueError('``Options.StopAt`` must be an integer greater than zero.', , options.StopAt)
+            }
+        } else {
+            if flag_stopBefore := InStr(stopAt, '-') {
+                stopAt := StrReplace(stopAt, '-', '')
+            }
+            if InStr(stopAt, ':C') {
+                check := _CheckClass
+                stopAt := StrReplace(stopAt, ':C', '')
+            } else if InStr(stopAt, ':I') {
+                check := _CheckInstance
+                stopAt := StrReplace(stopAt, ':I', '')
+            } else {
+                check := _CheckPrototype
+            }
+            b := Obj
+            if !check() {
+                if flag_stopBefore {
+                    Loop {
+                        if b := b.Base {
+                            if check() {
+                                break
+                            }
+                            OutBaseObjList.Push(b)
+                            b := b.Base
+                        } else {
+                            break
+                        }
+                    }
+                } else {
+                    Loop {
+                        if b := b.Base {
+                            OutBaseObjList.Push(b)
+                            if check() {
+                                break
+                            }
+                            b := b.Base
+                        } else {
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        stopAt := options.__StopAtDefaultList
+        if !ObjHasOwnProp(Obj, '__Class') || !InStr(stopAt, ',' Obj.__Class ',') {
+            b := Obj.Base
+            Loop {
+                if ObjHasOwnProp(b, '__Class') && InStr(stopAt, ',' b.__Class ',') {
+                    break
+                }
+                OutBaseObjList.Push(b)
+                b := b.Base
+            }
+        }
+    }
+    container := Map()
+    excluded := Map()
+    excluded.CaseSense := container.CaseSense := false
+    container.Default := ''
+    propsInfoItemBase := PropsInfoItem(Obj, OutBaseObjList.Length)
+    propsInfoItemBase.__Class := propsInfoItemBase.__Class
+    if options.Props {
+        include := ',' options.Props ','
+        for prop in ObjOwnProps(Obj) {
+            if InStr(include, ',' prop ',') {
+                ObjSetBase(itemBase := {
+                    /**
+                     * The property name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                        Name: prop
+                    /**
+                     * `Count` gets incremented by one for each object which owns a property by the same name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                      , Count: 1
+                    }
+                  , propsInfoItemBase
+                )
+                ObjSetBase(item := ObjGetOwnPropDesc(Obj, Prop), itemBase)
+                item.Index := 0
+                container.Set(prop, item)
+            } else {
+                excluded.Set(prop, 1)
+                continue
+            }
+        }
+        if InStr(include, ',Base,') {
+            ObjSetBase(itemBase := { Name: 'Base', Count: 1 }, propsInfoItemBase)
+            ObjSetBase(infoItem_Base := { Value: Obj.Base, Index: 0 }, itemBase)
+            container.Set('Base', infoItem_Base)
+        }
+        i := 0
+        for b in OutBaseObjList {
+            i++
+            for prop in ObjOwnProps(b) {
+                if o := container.Get(prop) {
+                    ObjSetBase(item := ObjGetOwnPropDesc(b, Prop), o.Base)
+                    item.Index := i
+                    o.__SetAlt(item)
+                    o.Base.Count++
+                } else if InStr(include, ',' prop ',') {
+                    ObjSetBase(itemBase := { Name: prop, Count: 1 }, propsInfoItemBase)
+                    ObjSetBase(item := ObjGetOwnPropDesc(b, prop), itemBase)
+                    item.Index := i
+                    container.Set(prop, item)
+                } else {
+                    excluded.Set(prop, 1)
+                    continue
+                }
+            }
+            if InStr(include, ',Base,') {
+                ObjSetBase(item := { Value: b.Base, Index: i }, infoItem_Base.Base)
+                infoItem_Base.__SetAlt(item)
+                infoItem_Base.Base.Count++
+            }
+        }
+        if !InStr(include, ',Base,') {
+            excluded.Set('Base', 1)
+        }
+    } else {
+        baseProp := options.BaseProp
+        kind := ''
+        if options.Call {
+            kind .= ',Call'
+        }
+        if options.Get {
+            kind .= ',Get'
+        }
+        if options.Set {
+            kind .= ',Set'
+        }
+        if options.Value {
+            kind .= ',Value'
+        }
+        kind .= ','
+        if StrLen(kind) = 20 {
+            if options.Exclude {
+                exclude := ',' options.Exclude ','
+                for prop in ObjOwnProps(Obj) {
+                    if InStr(exclude, ',' prop ',') {
+                        excluded.Set(prop, 1)
+                        continue
+                    }
+                    ObjSetBase(itemBase := {
+                        /**
+                         * The property name.
+                         * @memberof PropsInfoItem
+                         * @instance
+                         */
+                            Name: prop
+                        /**
+                         * `Count` gets incremented by one for each object which owns a property by the same name.
+                         * @memberof PropsInfoItem
+                         * @instance
+                         */
+                          , Count: 1
+                        }
+                      , propsInfoItemBase
+                    )
+                    ObjSetBase(item := ObjGetOwnPropDesc(Obj, Prop), itemBase)
+                    item.Index := 0
+                    container.Set(prop, item)
+                }
+                if baseProp {
+                    ObjSetBase(itemBase := { Name: 'Base', Count: 1 }, propsInfoItemBase)
+                    ObjSetBase(infoItem_Base := { Value: Obj.Base, Index: 0 }, itemBase)
+                    container.Set('Base', infoItem_Base)
+                }
+                i := 0
+                for b in OutBaseObjList {
+                    i++
+                    for prop in ObjOwnProps(b) {
+                        if o := container.Get(prop) {
+                            ObjSetBase(item := ObjGetOwnPropDesc(b, Prop), o.Base)
+                            item.Index := i
+                            o.__SetAlt(item)
+                            o.Base.Count++
+                        } else {
+                            if InStr(exclude, ',' prop ',') {
+                                excluded.Set(prop, 1)
+                                continue
+                            }
+                            ObjSetBase(itemBase := { Name: prop, Count: 1 }, propsInfoItemBase)
+                            ObjSetBase(item := ObjGetOwnPropDesc(b, prop), itemBase)
+                            item.Index := i
+                            container.Set(prop, item)
+                        }
+                    }
+                    if baseProp {
+                        ObjSetBase(item := { Value: b.Base, Index: i }, infoItem_Base.Base)
+                        infoItem_Base.__SetAlt(item)
+                        infoItem_Base.Base.Count++
+                    }
+                }
+            } else {
+                for prop in ObjOwnProps(Obj) {
+                    ObjSetBase(itemBase := {
+                        /**
+                         * The property name.
+                         * @memberof PropsInfoItem
+                         * @instance
+                         */
+                            Name: prop
+                        /**
+                         * `Count` gets incremented by one for each object which owns a property by the same name.
+                         * @memberof PropsInfoItem
+                         * @instance
+                         */
+                          , Count: 1
+                        }
+                      , propsInfoItemBase
+                    )
+                    ObjSetBase(item := ObjGetOwnPropDesc(Obj, Prop), itemBase)
+                    item.Index := 0
+                    container.Set(prop, item)
+                }
+                if baseProp {
+                    ObjSetBase(itemBase := { Name: 'Base', Count: 1 }, propsInfoItemBase)
+                    ObjSetBase(infoItem_Base := { Value: Obj.Base, Index: 0 }, itemBase)
+                    container.Set('Base', infoItem_Base)
+                }
+                i := 0
+                for b in OutBaseObjList {
+                    i++
+                    for prop in ObjOwnProps(b) {
+                        if o := container.Get(prop) {
+                            ObjSetBase(item := ObjGetOwnPropDesc(b, Prop), o.Base)
+                            item.Index := i
+                            o.__SetAlt(item)
+                            o.Base.Count++
+                        } else {
+                            ObjSetBase(itemBase := { Name: prop, Count: 1 }, propsInfoItemBase)
+                            ObjSetBase(item := ObjGetOwnPropDesc(b, prop), itemBase)
+                            item.Index := i
+                            container.Set(prop, item)
+                        }
+                    }
+                    if baseProp {
+                        ObjSetBase(item := { Value: b.Base, Index: i }, infoItem_Base.Base)
+                        infoItem_Base.__SetAlt(item)
+                        infoItem_Base.Base.Count++
+                    }
+                }
+            }
+        } else if options.Exclude {
+            exclude := ',' options.Exclude ','
+            for prop in ObjOwnProps(Obj) {
+                if InStr(exclude, ',' prop ',') {
+                    excluded.Set(prop, 1)
+                    continue
+                }
+                item := ObjGetOwnPropDesc(Obj, prop)
+                flag := true
+                for _prop in ObjOwnProps(item) {
+                    if InStr(kind, ',' _prop ',') {
+                        flag := false
+                    }
+                }
+                if flag {
+                    excluded.Set(prop, 1)
+                    continue
+                }
+                ObjSetBase(itemBase := {
+                    /**
+                     * The property name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                        Name: prop
+                    /**
+                     * `Count` gets incremented by one for each object which owns a property by the same name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                      , Count: 1
+                    }
+                  , propsInfoItemBase
+                )
+                ObjSetBase(item, itemBase)
+                item.Index := 0
+                container.Set(prop, item)
+            }
+            if baseProp {
+                ObjSetBase(itemBase := { Name: 'Base', Count: 1 }, propsInfoItemBase)
+                ObjSetBase(infoItem_Base := { Value: Obj.Base, Index: 0 }, itemBase)
+                container.Set('Base', infoItem_Base)
+            }
+            i := 0
+            for b in OutBaseObjList {
+                i++
+                for prop in ObjOwnProps(b) {
+                    if o := container.Get(prop) {
+                        ObjSetBase(item := ObjGetOwnPropDesc(b, Prop), o.Base)
+                        item.Index := i
+                        o.__SetAlt(item)
+                        o.Base.Count++
+                    } else {
+                        if InStr(exclude, ',' prop ',') {
+                            excluded.Set(prop, 1)
+                            continue
+                        }
+                        item := ObjGetOwnPropDesc(b, prop)
+                        flag := true
+                        for _prop in ObjOwnProps(item) {
+                            if InStr(kind, ',' _prop ',') {
+                                flag := false
+                            }
+                        }
+                        if flag {
+                            excluded.Set(prop, 1)
+                            continue
+                        }
+                        ObjSetBase(itemBase := { Name: prop, Count: 1 }, propsInfoItemBase)
+                        ObjSetBase(item, itemBase)
+                        item.Index := i
+                        container.Set(prop, item)
+                    }
+                }
+                if baseProp {
+                    ObjSetBase(item := { Value: b.Base, Index: i }, infoItem_Base.Base)
+                    infoItem_Base.__SetAlt(item)
+                    infoItem_Base.Base.Count++
+                }
+            }
+        } else {
+            for prop in ObjOwnProps(Obj) {
+                item := ObjGetOwnPropDesc(Obj, prop)
+                flag := true
+                for _prop in ObjOwnProps(item) {
+                    if InStr(kind, ',' _prop ',') {
+                        flag := false
+                    }
+                }
+                if flag {
+                    excluded.Set(prop, 1)
+                    continue
+                }
+                ObjSetBase(itemBase := {
+                    /**
+                     * The property name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                        Name: prop
+                    /**
+                     * `Count` gets incremented by one for each object which owns a property by the same name.
+                     * @memberof PropsInfoItem
+                     * @instance
+                     */
+                      , Count: 1
+                    }
+                  , propsInfoItemBase
+                )
+                ObjSetBase(item, itemBase)
+                item.Index := 0
+                container.Set(prop, item)
+            }
+            if baseProp {
+                ObjSetBase(itemBase := { Name: 'Base', Count: 1 }, propsInfoItemBase)
+                ObjSetBase(infoItem_Base := { Value: Obj.Base, Index: 0 }, itemBase)
+                container.Set('Base', infoItem_Base)
+            }
+            i := 0
+            for b in OutBaseObjList {
+                i++
+                for prop in ObjOwnProps(b) {
+                    if o := container.Get(prop) {
+                        ObjSetBase(item := ObjGetOwnPropDesc(b, Prop), o.Base)
+                        item.Index := i
+                        o.__SetAlt(item)
+                        o.Base.Count++
+                    } else {
+                        item := ObjGetOwnPropDesc(b, prop)
+                        flag := true
+                        for _prop in ObjOwnProps(item) {
+                            if InStr(kind, ',' _prop ',') {
+                                flag := false
+                            }
+                        }
+                        if flag {
+                            excluded.Set(prop, 1)
+                            continue
+                        }
+                        ObjSetBase(itemBase := { Name: prop, Count: 1 }, propsInfoItemBase)
+                        ObjSetBase(item, itemBase)
+                        item.Index := i
+                        container.Set(prop, item)
+                    }
+                }
+                if baseProp {
+                    ObjSetBase(item := { Value: b.Base, Index: i }, infoItem_Base.Base)
+                    infoItem_Base.__SetAlt(item)
+                    infoItem_Base.Base.Count++
+                }
+            }
+        }
+        if !baseProp {
+            excluded.Set('Base', 1)
+        }
+    }
+    _excluded := ''
+    for s in excluded {
+        _excluded .= s ','
+    }
+
+    return PropsInfo(container, propsInfoItemBase, SubStr(_excluded, 1, -1))
+
+    _CheckClass() {
+        return ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt
+    }
+    _CheckInstance() {
+        return !ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
+    }
+    _CheckPrototype() {
+        return ObjHasOwnProp(b, '__Class') && (b.__Class = StopAt)
+    }
+}
+
+/**
  * @classdesc - The return value for `GetPropsInfo`. See the parameter hint above `GetPropsInfo`
  * for information.
  */
 class PropsInfo {
     static __New() {
-        if this.Prototype.__Class == 'PropsInfo' {
-            Proto := this.Prototype
-            Proto.DefineProp('Filter', { Value: '' })
-            Proto.DefineProp('__FilterActive', { Value: 0 })
-            Proto.DefineProp('__StringMode', { Value: 0 })
-            Proto.DefineProp('Get', Proto.GetOwnPropDesc('__ItemGet_Bitypic'))
-            Proto.DefineProp('__OnFilterProperties', { Value: ['Has', 'ToArray', 'ToMap'
-            , 'Capacity', 'Count', 'Length'] })
-            Proto.DefineProp('__FilteredItems', { Value: '' })
-            Proto.DefineProp('__FilteredIndex', { Value: '' })
-            Proto.DefineProp('__FilterCache', { Value: '' })
-        }
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.DefineProp('Filter', { Value: '' })
+        proto.DefineProp('__FilterActive', { Value: 0 })
+        proto.DefineProp('__StringMode', { Value: 0 })
+        proto.DefineProp('Get', proto.GetOwnPropDesc('__ItemGet_Bitypic'))
+        proto.DefineProp('__OnFilterProperties', { Value: ['Has', 'ToArray', 'ToMap'
+        , 'Capacity', 'Count', 'Length'] })
+        proto.DefineProp('__FilteredItems', { Value: '' })
+        proto.DefineProp('__FilteredIndex', { Value: '' })
+        proto.DefineProp('__FilterCache', { Value: '' })
     }
 
     /**
@@ -1571,6 +2063,32 @@ class PropsInfo {
         static __New() {
             this.DeleteProp('__New')
             this.Prototype.DefineProp('__MapDelete', Map.Prototype.GetOwnPropDesc('Delete'))
+        }
+    }
+
+    class Options {
+        static __New() {
+            this.DeleteProp('__New')
+            proto := this.Prototype
+            proto.BaseProp := false
+            proto.Call := false
+            proto.Exclude := ''
+            proto.Get := true
+            proto.Props := ''
+            proto.Set := false
+            proto.StopAt := ''
+            proto.Value := true
+            proto.List := [ 'Exclude', 'BaseProp', 'Call', 'Get', 'Props', 'Set', 'Value', 'StopAt' ]
+            proto.__StopAtDefaultList := ',Object,Array,Buffer,Class,Map,Any,'
+        }
+        __New(Options?) {
+            if IsSet(Options) {
+                for prop in this.List {
+                    if HasProp(Options, prop) {
+                        this.%prop% := Options.%prop%
+                    }
+                }
+            }
         }
     }
 

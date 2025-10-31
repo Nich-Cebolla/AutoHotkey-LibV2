@@ -3,13 +3,13 @@
     Author: Nich-Cebolla
     License: MIT
 */
-; Dependency:
-; #Include Inheritance_Shared.ahk
 
 /**
  * @description - Traverses an object's inheritance chain and returns the base objects.
+ *
  * @param {Object} Obj - The object from which to get the base objects.
- * @param {Integer|String} [StopAt=GBO_STOP_AT_DEFAULT ?? '-Any'] - If an integer, the number of
+ *
+ * @param {Integer|String} [StopAt = GBO_STOP_AT_DEFAULT ?? "-Any"] - If an integer, the number of
  * base objects to traverse up the inheritance chain. If a string, the case-insensitive name of the
  * class to stop at. If falsy, the function will traverse the entire inheritance chain up to
  * but not including `Any`.
@@ -17,97 +17,100 @@
  * If you define global variable `GBO_STOP_AT_DEFAULT` with a value somewhere in your code, that
  * value will be used as the default for the function call. Otherwise, '-Any' is used.
  *
- * There are two ways to modify the function's interpretation of this value:
+ * There are two ways to modify the function's interpretation of this value. These are only relevant
+ * for string values.
  *
  * - Stop before or after the class: The default is to stop after the class, such that the base object
  * associated with the class is included in the result array. To change this, include a hyphen "-"
  * anywhere in the value and `GetBaseObjects` will not include the last iterated object in the
  * result array.
  *
- * - The type of object which will be stopped at: This only applies to `StopAt` values which are
- * strings. In the code snippets below, `b` is the object being evaluated.
+ * In the code snippets below, `b` represents the base object being evaluated.
  *
+ * - The type of object which will be stopped at:
  *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
- * with a `__Class` property equal to `StopAt`. This is the literal condition used:
- * `Type(b) == 'Prototype' && (b.__Class = 'Any' || b.__Class = StopAt)`.
- *
+ *     with a `__Class` property equal to `StopAt`. This is the literal condition used:
+ *     `ObjHasOwnProp(b, "__Class") && (b.__Class = StopAt)`.
  *   - Stop at a class object: To direct `GetBaseObjects` to stop at a class object tby he name
- * `StopAt`, include ":C" at the end of `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
- * condition used:
- * `Type(b) == 'Class' && ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt`.
+ *     `StopAt`, include ":C" at the end of `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
+ *     condition used:
+ *     `ObjHasOwnProp(b, "Prototype") && b.Prototype.__Class = StopAt`.
+ *   - Stop at an instance object: To direct `GetBaseObjects` to stop at an instance object of type
+ *     `StopAt`, incluide ":I" at the end of `StopAt`, e.g. `StopAt := "MyClass:I"`. This is the literal
+ *     condition used: `!ObjHasOwnProp(b, "__Class") && b.__Class = StopAt`.
  *
- *  - Stop at an instance object: To direct `GetBaseObjects` to stop at an instance object of type
- * `StopAt`, incluide ":I" at the end of `StopAt`, e.g. `StopAt := "MyClass:I"`. This is the literal
- * condition used: `Type(b) = StopAt`.
  * @returns {Array} - The array of base objects.
  */
 GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
     Result := []
-    b := Obj
-    if StopAt {
-        if InStr(StopAt, '-') {
-            StopAt := StrReplace(StopAt, '-', '')
-            FlagStopBefore := true
+    if IsNumber(StopAt) {
+        if stopAt > 0 {
+            Result.Push(Obj.Base)
+            loop stopAt - 1 {
+                Result.Push(Result[-1].Base)
+            }
+        } else {
+            throw ValueError('``Options.StopAt`` must be an integer greater than zero.', , StopAt)
         }
     } else {
-        FlagStopBefore := true
-        StopAt := 'Any'
-    }
-    if InStr(StopAt, ':C') {
-        StopAt := StrReplace(StopAt, ':C', '')
-        CheckStopAt := _CheckStopAtClass
-    } else if InStr(StopAt, ':I') {
-        StopAt := StrReplace(StopAt, ':I', '')
-        CheckStopAt := _CheckStopAtInstance
-    } else {
-        CheckStopAt := _CheckStopAt
+        if StopAt {
+            if InStr(StopAt, '-') {
+                StopAt := StrReplace(StopAt, '-', '')
+                flag_stopBefore := 1
+            } else {
+                flag_stopBefore := 0
+            }
+        } else {
+            flag_stopBefore := 1
+            StopAt := 'Any'
+        }
+        if InStr(StopAt, ':C') {
+            StopAt := StrReplace(StopAt, ':C', '')
+            check := _CheckClass
+        } else if InStr(StopAt, ':I') {
+            StopAt := StrReplace(StopAt, ':I', '')
+            check := _CheckInstance
+        } else {
+            check := _CheckPrototype
+        }
+        b := Obj
+        if !check() {
+            if flag_stopBefore {
+                Loop {
+                    if b := b.Base {
+                        if check() {
+                            break
+                        }
+                        Result.Push(b)
+                    } else {
+                        _Throw()
+                    }
+                }
+            } else {
+                Loop {
+                    if b := b.Base {
+                        Result.Push(b)
+                        if check() {
+                            break
+                        }
+                    } else {
+                        _Throw()
+                    }
+                }
+            }
+        }
     }
 
-    if IsNumber(StopAt) {
-        Loop Number(StopAt) - (IsSet(FlagStopBefore) ? 2 : 1) {
-            if b := b.Base {
-                Result.Push(b)
-            } else {
-                break
-            }
-        }
-    } else {
-        if !CheckStopAt() {
-            if IsSet(FlagStopBefore) {
-                Loop {
-                    if !(b := b.Base) {
-                        _Throw()
-                        break
-                    }
-                    if CheckStopAt() {
-                        break
-                    }
-                    Result.Push(b)
-                }
-            } else {
-                Loop {
-                    if !(b := b.Base) {
-                        _Throw()
-                        break
-                    }
-                    Result.Push(b)
-                    if CheckStopAt() {
-                        break
-                    }
-                }
-            }
-        }
-    }
     return Result
 
-    _CheckStopAt() {
-        return  Type(b) == 'Prototype' && (b.__Class = 'Any' || b.__Class = StopAt)
+    _CheckClass() {
+        return ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt
     }
-    _CheckStopAtClass() {
-        return Type(b) == 'Class' && ObjHasOwnProp(b, 'Prototype') && b.Prototype.__Class = StopAt
+    _CheckInstance() {
+        return !ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
     }
-    _CheckStopAtInstance() {
-        return Type(b) = StopAt
+    _CheckPrototype() {
+        return ObjHasOwnProp(b, '__Class') && (b.__Class = StopAt)
     }
     _Throw() {
         ; If `GetBaseObjects` encounters a non-object base, that means it traversed the inheritance
