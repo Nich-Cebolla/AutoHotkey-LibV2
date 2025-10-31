@@ -17,6 +17,15 @@ f.Close()
 Exit()
 */
 
+; To work through the walkthrough, load it up in a debugger and step through it.
+; If you don't want to use a debugger, use your editor's text replacement to swap these:
+;    OutputDebug('`n'
+; to
+;    MsgBox(
+; --------------------------------------------------------------------------------------------------
+
+; This is our exampe object.
+
 #Include Inheritance.ahk
 
 class Alpha extends Alpha.base {
@@ -42,13 +51,6 @@ class Alpha extends Alpha.base {
         }
     }
 }
-
-; To work through the walkthrough, load it up in a debugger and step through it.
-; If you don't want to use a debugger, use your editor's text replacement to swap these:
-;    OutputDebug('`n'
-; to
-;    MsgBox(
-; --------------------------------------------------------------------------------------------------
 
 ; === I. Accessing the objects =====================================================================
 
