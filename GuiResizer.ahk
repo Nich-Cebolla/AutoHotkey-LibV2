@@ -10,11 +10,13 @@ class GuiResizer {
         this.DeleteProp('__New')
         hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
         global g_user32_BeginDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'BeginDeferWindowPos', 'ptr')
+        , g_user32_ClientToScreen := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'ClientToScreen', 'ptr')
         , g_user32_DeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'DeferWindowPos', 'ptr')
         , g_user32_EndDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'EndDeferWindowPos', 'ptr')
         , g_user32_GetClientRect := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetClientRect', 'ptr')
         , g_user32_GetDpiForWindow := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetDpiForWindow', 'ptr')
         , g_user32_GetWindowRect := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetWindowRect', 'ptr')
+        , g_user32_RedrawWindow := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'RedrawWindow', 'ptr')
         , g_user32_ScreenToClient := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'ScreenToClient', 'ptr')
         , g_user32_SetThreadDpiAwarenessContext := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'SetThreadDpiAwarenessContext', 'ptr')
         , g_user32_PeekMessageW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'PeekMessageW', 'ptr')
@@ -155,13 +157,24 @@ class GuiResizer {
      * Parameters:
      * 1. The {@link GuiResizer} object
      *
+     * If the function returns a nonzero value, the resize loop ends.
+     *
+     * @param {*} [Options.CallbackOnEnd] - A `Func` or callable object that is called when the resize
+     * loop ends.
+     *
+     * Parameters:
+     * 1. The {@link GuiResizer} object
+     *
      * The return value is ignored.
      *
-     * If your callback must act on the control objects in some way, they are collected among
-     * three arrays:
-     * - {@link GuiResizer#Move}
-     * - {@link GuiResizer#Size}
-     * - {@link GuiResizer#MoveAndSize}.
+     * @param {*} [Options.CallbackOnStart] - A `Func` or callable object that is called when the resize
+     * loop is about to begin.
+     *
+     * Parameters:
+     * 1. The {@link GuiResizer} object
+     *
+     * If the function returns a nonzero value, the resize loop is suppressed and the {@link GuiResizer}
+     * object returns to an idle state.
      *
      * @param {Integer} [Options.Delay = -5] - A negative integer specifying the value passed to
      * the `Period` parameter of {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer}.
@@ -225,6 +238,7 @@ class GuiResizer {
         if !DeferActivation {
             this.Activate(Controls ?? unset, ControlsOnly)
         }
+        this.flag_clipChildren := 0
     }
 
     /**
@@ -330,6 +344,9 @@ class GuiResizer {
             this.Status := 3
             return
         }
+        if this.CallbackOnStart && this.CallbackOnStart.Call(this) {
+            return
+        }
         GuiObj.OnEvent('Size', this, 0)
         this.Count := 0
         this.DefineProp('Call', GuiResizer.Prototype.GetOwnPropDesc('Resize'))
@@ -361,6 +378,9 @@ class GuiResizer {
                 this.DeleteProp('Call')
                 this.Status := 3
                 this.Gui.OnEvent('Size', this, this.AddRemove)
+                if this.CallbackOnEnd {
+                    this.CallbackOnEnd.Call(this)
+                }
                 return
             }
             this.Status := 6
@@ -462,12 +482,17 @@ class GuiResizer {
             if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
                 throw OSError()
             }
-            if this.Callback {
-                this.Callback.Call(this)
+            if this.Callback && this.Callback.Call(this) {
+                this.DeleteProp('Call')
+                this.Status := 3
+                this.Gui.OnEvent('Size', this, this.AddRemove)
+                if this.CallbackOnEnd {
+                    this.CallbackOnEnd.Call(this)
+                }
+                return
             }
             this.Status := 6
             SetTimer(this, this.Delay, this.Priority)
-            WinRedraw(this.HwndGui)
         } else {
             throw OSError()
         }
@@ -525,6 +550,8 @@ class GuiResizer {
         static Default := {
             AddRemove: -1
           , Callback: ''
+          , CallbackOnEnd: ''
+          , CallbackOnStart: ''
           , Delay: -30
           , DpiAwarenessContext: ''
           , MaxH: ''
@@ -940,6 +967,14 @@ class GuiResizer_Item {
 }
 
 class GuiResizer_Rect extends Buffer {
+    static __New() {
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.offset_left    := 0
+        proto.offset_top     := 4
+        proto.offset_right   := 8
+        proto.offset_bottom  := 12
+    }
     __New() {
         this.Size := 16
     }
@@ -961,12 +996,50 @@ class GuiResizer_Rect extends Buffer {
             throw OSError()
         }
     }
-    B => NumGet(this, 12, 'int')
+    ToScreen(hwndParent) {
+        if !DllCall(g_user32_ClientToScreen, 'ptr', hwndParent, 'ptr', this, 'int') {
+            throw OSError()
+        }
+        if !DllCall(g_user32_ClientToScreen, 'ptr', hwndParent, 'ptr', this.Ptr + 8, 'int') {
+            throw OSError()
+        }
+    }
+    L {
+        Get => NumGet(this, this.offset_left, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_left)
+        }
+    }
+    T {
+        Get => NumGet(this, this.offset_top, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_top)
+        }
+    }
+    R {
+        Get => NumGet(this, this.offset_right, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_right)
+        }
+    }
+    B {
+        Get => NumGet(this, this.offset_bottom, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_bottom)
+        }
+    }
+    X {
+        Get => NumGet(this, this.offset_left, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_left)
+        }
+    }
+    Y {
+        Get => NumGet(this, this.offset_top, 'uint')
+        Set {
+            NumPut('uint', Value, this, this.offset_top)
+        }
+    }
     H => NumGet(this, 12, 'int') - NumGet(this, 4, 'int')
-    L => NumGet(this, 0, 'int')
-    R => NumGet(this, 8, 'int')
-    T => NumGet(this, 4, 'int')
     W => NumGet(this, 8, 'int') - NumGet(this, 0, 'int')
-    X => NumGet(this, 0, 'int')
-    Y => NumGet(this, 4, 'int')
 }
