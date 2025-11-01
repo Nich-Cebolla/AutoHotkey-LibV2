@@ -227,6 +227,11 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
  * @param {Object} [Options] - An object with options as property : value pairs. Note that if
  * `Options.Props` is set, the function ignores all other options except `Options.StopAt`.
  *
+ * @param {Boolean} [SkipOptions = false] - Set this to true to save processing time if you have if
+ * the value passed to `Options` is a {@link PropsInfo.Options} object, and does not need to be passed
+ * to {@link PropsInfo.Options.Prototype.__New}. If false, `Options` is passed to
+ * {@link PropsInfo.Options.Prototype.__New}.
+ *
  * @param {VarRef} [OutBaseObjList] - A variable that will receive a reference to the array of
  * base objects that is generated during the function call.
  *
@@ -236,9 +241,10 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
  * "__Class,Count,Capacity".
  * @param {Boolean} [Options.Get = true] - If true, properties with a get accessor will be included.
  * @param {String} [Options.Props] - A comma-separated list of property names to include, e.g.
- * "__Class,Count,Capacity".
+ * "__Class,Count,Capacity". If `Options.Props` is set, the function ignores all other options except
+ * `Options.StopAt`.
  * @param {Boolean} [Options.Set = false] - If true, properties with a set accessor will be included.
- * @param {String|Integer} [Options.StopAt] - If set, either of the following kinds of values:
+ * @param {Integer|String} [Options.StopAt] - If set, either of the following kinds of values:
  *
  * If an integer, the number of base objects to traverse up the inheritance chain. `Obj.Base` is 1,
  * `Obj.Base.Base` is 2, etc. The number must be greater than zero.
@@ -246,14 +252,14 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
  * If a string, the case-insensitive name of the class to stop at. There are two ways to modify the
  * function's interpretation of this value. These are only relevant for string values.
  * - Stop before or after the class: The default is to stop after the class, such that the base object
- *   associated with the class is included in the result array. To change this, include a hyphen "-"
+ *   associated with the class is included in the result array. To change this, include a hyphen ( - )
  *   anywhere in the value and `GetBaseObjects` will not include the last iterated object in the
  *   result array.
  * - The type of object which will be stopped at. In the code snippets below, `b` represents the base
  *   object being evaluated.
  *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
  *     with a `__Class` property equal to `StopAt`. This is the literal condition used:
- *     `ObjHasOwnProp(b, "__Class") && (b.__Class = StopAt || b.__Class = "Any")`.
+ *     `ObjHasOwnProp(b, "__Class") && b.__Class = StopAt`.
  *   - Stop at a class object: Include ":C" at the end of the value to direct the function to stop at
  *     a class object by he name `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
  *     condition used: `ObjHasOwnProp(b, "Prototype") && b.Prototype.__Class = StopAt`.
@@ -272,8 +278,10 @@ GetPropsInfo(Obj, StopAt := GPI_STOP_AT_DEFAULT ?? '-Object', Exclude := '', Inc
  *
  * @returns {PropsInfo}
  */
-GetPropsInfoEx(Obj, Options?, &OutBaseObjList?) {
-    options := PropsInfo.Options(Options ?? unset)
+GetPropsInfoEx(Obj, Options?, SkipOptions := false, &OutBaseObjList?) {
+    if !SkipOptions {
+        options := PropsInfo.Options(Options ?? unset)
+    }
     OutBaseObjList := []
     if stopAt := options.StopAt {
         if IsNumber(stopAt) {
@@ -702,7 +710,7 @@ GetPropsInfoEx(Obj, Options?, &OutBaseObjList?) {
         return !ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
     }
     _CheckPrototype() {
-        return ObjHasOwnProp(b, '__Class') && (b.__Class = StopAt)
+        return ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
     }
 }
 
