@@ -30,7 +30,7 @@
  * - The type of object which will be stopped at:
  *   - Stop at a prototype object (default): `GetBaseObjects` will stop at the first prototype object
  *     with a `__Class` property equal to `StopAt`. This is the literal condition used:
- *     `ObjHasOwnProp(b, "__Class") && (b.__Class = StopAt)`.
+ *     `ObjHasOwnProp(b, "__Class") && b.__Class = StopAt`.
  *   - Stop at a class object: To direct `GetBaseObjects` to stop at a class object tby he name
  *     `StopAt`, include ":C" at the end of `StopAt`, e.g. `StopAt := "MyClass:C"`. This is the literal
  *     condition used:
@@ -110,7 +110,7 @@ GetBaseObjects(Obj, StopAt := GBO_STOP_AT_DEFAULT ?? '-Any') {
         return !ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
     }
     _CheckPrototype() {
-        return ObjHasOwnProp(b, '__Class') && (b.__Class = StopAt)
+        return ObjHasOwnProp(b, '__Class') && b.__Class = StopAt
     }
     _Throw() {
         ; If `GetBaseObjects` encounters a non-object base, that means it traversed the inheritance
