@@ -129,8 +129,6 @@ class GuiResizer {
      * @property {Boolean} [CtrlObj.Resizer.NoDefer] - If set and if nonzero, the control is resized
      * using {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos SetWindowPos}
      * instead of {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos DeferWindowPos}.
-     * I found this to be necessary when using {@link GuiResizer} in a specific context. Generally,
-     * this option should be left unset.
      *
      *
      *
@@ -161,14 +159,6 @@ class GuiResizer {
      * of {@link https://www.autohotkey.com/docs/v2/lib/GuiOnEvent.htm Gui.Prototype.OnEvent} when
      * setting the Size event handler.
      *
-     * @param {*} [Options.Callback] - A `Func` or callable object that is called once per resize
-     * cycle.
-     *
-     * Parameters:
-     * 1. The {@link GuiResizer} object
-     *
-     * If the function returns a nonzero value, the resize loop ends.
-     *
      * @param {*} [Options.CallbackOnEnd] - A `Func` or callable object that is called when the resize
      * loop ends.
      *
@@ -183,12 +173,7 @@ class GuiResizer {
      * Parameters:
      * 1. The {@link GuiResizer} object
      *
-     * If the function returns a nonzero value, the resize loop is suppressed and the {@link GuiResizer}
-     * object returns to an idle state.
-     *
-     * @param {Integer} [Options.Delay = -5] - A negative integer specifying the value passed to
-     * the `Period` parameter of {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer}.
-     * This occurs once per resize cycle.
+     * The return value is ignored.
      *
      * @param {Integer} [Options.DpiAwarenessContext] - If set, this must be a valid dpi awareness
      * context. Immediately before each resize cycle, SetThreadDpiAwarenessContext is called with
@@ -213,17 +198,6 @@ class GuiResizer {
      * resize / reposition the controls using
      * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos SetWindowPos}
      * instead of {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos DeferWindowPos}.
-     * I found this to be necessary when using {@link GuiResizer} in a specific context. Generally,
-     * this option should be left false.
-     *
-     * @param {Integer} [Options.Priority = 1] - The value to pass to the `Priority` parameter of
-     * {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer}. This occurs once per
-     * resize cycle.
-     *
-     * @param {Number} [Options.StopCount = 20] - Sets the threshold that determines when the
-     * resize cycle breaks from is core loop and re-enables the Size event handler. The resize cycle
-     * must loop with no changes in the width or height of the gui's client area for `Options.StopCount`
-     * cycles to end the loop. This must be a number greater than 1.
      *
      * @param {Number} [Options.WinDelay = 10] - If nonzero, immediately before each resize cycle,
      * {@link https://www.autohotkey.com/docs/v2/lib/SetWinDelay.htm SetWinDelay} is called with
@@ -240,7 +214,6 @@ class GuiResizer {
          * - 3 : The {@link GuiResizer} is set as a callback for the Size event and is idle.
          * - 4 : The {@link GuiResizer} has been called in response to the Size event.
          * - 5 : The {@link GuiResizer} is active in the core resize loop and is adjusting the controls.
-         * - 6 : The {@link GuiResizer} is active in the core resize loop and is awaiting the timer.
          * @memberof GuiResizer
          * @instance
          * @type {Integer}
@@ -252,11 +225,9 @@ class GuiResizer {
         constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
         ObjRelease(ObjPtr(this))
         ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
-        this.wMsg := GuiResizer.wMsg()
         if !DeferActivation {
             this.Activate(Controls ?? unset, ControlsOnly)
         }
-        this.flag_clipChildren := 0
     }
 
     /**
@@ -396,11 +367,11 @@ class GuiResizer {
      * "Call" property with the "Resize" method, then calls {@link GuiResizer.Prototype.Resize} to
      * start the core resize loop.
      */
-    Call(GuiObj, MinMax, Width, Height) {
+    Call(GuiObj, MinMax, w, h) {
         this.Status := 4
         if MinMax = 1 {
             this.MinMax := 1
-            if Width = this.LastW && Height = this.LastH {
+            if w = this.LastW && h = this.LastH {
                 this.Status := 3
                 return
             }
@@ -409,48 +380,8 @@ class GuiResizer {
             this.Status := 3
             return
         }
-        if this.CallbackOnStart && this.CallbackOnStart.Call(this) {
-            return
-        }
-        GuiObj.OnEvent('Size', this, 0)
-        this.Count := 0
-        this.DefineProp('Call', GuiResizer.Prototype.GetOwnPropDesc('Resize'))
-        this.Resize()
-    }
-    /**
-     * Disables the Size event callback.
-     */
-    Deactivate() {
-        this.Gui.OnEvent('Size', this, 0)
-        this.Status := 0
-    }
-    /**
-     * Called from {@link GuiResizer.Prototype.Call}. This is the core resize loop.
-     */
-    Resize() {
-        this.Rect.Client(this.HwndGui)
-        w := this.Rect.W
-        h := this.Rect.H
-        if w != this.LastW {
-            this.LastW := w
-            this.LastH := h
-            this.Count := 0
-        } else if h != this.LastH {
-            this.LastH := h
-            this.Count := 0
-        } else {
-            if ++this.Count >= this.StopCount {
-                this.DeleteProp('Call')
-                this.Status := 3
-                this.Gui.OnEvent('Size', this, this.AddRemove)
-                if this.CallbackOnEnd {
-                    this.CallbackOnEnd.Call(this)
-                }
-                return
-            }
-            this.Status := 6
-            SetTimer(this, this.Delay, this.Priority)
-            return
+        if this.CallbackOnStart {
+            this.CallbackOnStart.Call(this)
         }
         this.Status := 5
         if this.DpiAwarenessContext {
@@ -458,9 +389,6 @@ class GuiResizer {
         }
         if this.WinDelay {
             SetWinDelay(this.WinDelay)
-        }
-        while this.wMsg.Peek() {
-            Sleep(-1)
         }
         if IsNumber(this.MinH) {
             if h >= this.MinH {
@@ -486,7 +414,6 @@ class GuiResizer {
         }
         diffH := h - this.BaseH
         diffW := w - this.BaseW
-        originalCritical := Critical(-1)
         if this.flag_defer {
             if hDwp := DllCall(g_user32_BeginDeferWindowPos, 'int', this.Move.Length + this.Size.Length + this.MoveAndSize.Length, 'ptr') {
                 for item in this.Move {
@@ -550,7 +477,7 @@ class GuiResizer {
         if this.flag_noDefer {
             noDefer := this.NoDefer
             for item in noDefer.Move {
-                if hDwp := DllCall(g_user32_SetWindowPos
+                if DllCall(g_user32_SetWindowPos
                     , 'ptr', item.Hwnd
                     , 'ptr', 0                              ; hWndInsertAfter
                     , 'int', item.GetX(diffW)               ; X
@@ -566,7 +493,7 @@ class GuiResizer {
                 }
             }
             for item in noDefer.Size {
-                if hDwp := DllCall(g_user32_SetWindowPos
+                if DllCall(g_user32_SetWindowPos
                     , 'ptr', item.Hwnd
                     , 'ptr', 0                              ; hWndInsertAfter
                     , 'int', 0                              ; X
@@ -582,7 +509,7 @@ class GuiResizer {
                 }
             }
             for item in noDefer.MoveAndSize {
-                if hDwp := DllCall(g_user32_SetWindowPos
+                if DllCall(g_user32_SetWindowPos
                     , 'ptr', item.Hwnd
                     , 'ptr', 0                              ; hWndInsertAfter
                     , 'int', item.GetX(diffW)               ; X
@@ -598,21 +525,17 @@ class GuiResizer {
                 }
             }
         }
-        Critical(originalCritical)
-        while this.wMsg.Peek() {
-            Sleep(-1)
+        if this.CallbackOnEnd {
+            this.CallbackOnEnd.Call(this)
         }
-        if this.Callback && this.Callback.Call(this) {
-            this.DeleteProp('Call')
-            this.Status := 3
-            this.Gui.OnEvent('Size', this, this.AddRemove)
-            if this.CallbackOnEnd {
-                this.CallbackOnEnd.Call(this)
-            }
-            return
-        }
-        this.Status := 6
-        SetTimer(this, this.Delay, this.Priority)
+        this.Status := 3
+    }
+    /**
+     * Disables the Size event callback.
+     */
+    Deactivate() {
+        this.Gui.OnEvent('Size', this, 0)
+        this.Status := 0
     }
     /**
      * Updates the cached size and dimension values for the gui window and the controls to their
@@ -666,18 +589,14 @@ class GuiResizer {
     class Options {
         static Default := {
             AddRemove: -1
-          , Callback: ''
           , CallbackOnEnd: ''
           , CallbackOnStart: ''
-          , Delay: -30
           , DpiAwarenessContext: ''
           , MaxH: ''
           , MaxW: ''
           , MinH: ''
           , MinW: ''
           , NoDeferAll: false
-          , Priority: 0
-          , StopCount: 5
           , WinDelay: 10
         }
         static Call(GuiResizerObj, Options?) {
@@ -699,121 +618,6 @@ class GuiResizer {
             }
         }
     }
-
-    class wMsg {
-        static __New() {
-            this.DeleteProp('__New')
-            proto := this.Prototype
-            proto.cbSizeInstance :=
-            ; Size      Type        Symbol      Offset                Padding
-            A_PtrSize + ; HWND      hwnd        0
-            A_PtrSize + ; UINT      message     0 + A_PtrSize * 1     +4 on x64 only
-            A_PtrSize + ; WPARAM    wParam      0 + A_PtrSize * 2
-            A_PtrSize + ; LPARAM    lParam      0 + A_PtrSize * 3
-            A_PtrSize + ; DWORD     time        0 + A_PtrSize * 4     +4 on x64 only
-            4 +         ; INT       x           0 + A_PtrSize * 5
-            4 +         ; INT       y           4 + A_PtrSize * 5
-            4           ; DWORD     lPrivate    8 + A_PtrSize * 5
-            proto.offset_hwnd      := 0
-            proto.offset_message   := 0 + A_PtrSize * 1
-            proto.offset_wParam    := 0 + A_PtrSize * 2
-            proto.offset_lParam    := 0 + A_PtrSize * 3
-            proto.offset_time      := 0 + A_PtrSize * 4
-            proto.offset_x         := 0 + A_PtrSize * 5
-            proto.offset_y         := 4 + A_PtrSize * 5
-            proto.offset_lPrivate  := 8 + A_PtrSize * 5
-
-        }
-        __New(hwnd?, message?, wParam?, lParam?, time?, x?, y?, lPrivate?) {
-            this.Buffer := Buffer(this.cbSizeInstance)
-            if IsSet(hwnd) {
-                this.hwnd := hwnd
-            }
-            if IsSet(message) {
-                this.message := message
-            }
-            if IsSet(wParam) {
-                this.wParam := wParam
-            }
-            if IsSet(lParam) {
-                this.lParam := lParam
-            }
-            if IsSet(time) {
-                this.time := time
-            }
-            if IsSet(x) {
-                this.x := x
-            }
-            if IsSet(y) {
-                this.y := y
-            }
-            if IsSet(lPrivate) {
-                this.lPrivate := lPrivate
-            }
-        }
-        Peek(Hwnd := 0, MsgFilterMin := 0, MsgFilterMax := 0, RemoveMsg := 0) {
-            return DllCall(
-                g_user32_PeekMessageW
-              , 'ptr', this
-              , 'ptr', Hwnd
-              , 'uint', MsgFilterMin
-              , 'uint', MsgFilterMax
-              , 'uint', RemoveMsg
-              , 'int'
-            )
-        }
-        hwnd {
-            Get => NumGet(this.Buffer, this.offset_hwnd, 'ptr')
-            Set {
-                NumPut('ptr', Value, this.Buffer, this.offset_hwnd)
-            }
-        }
-        message {
-            Get => NumGet(this.Buffer, this.offset_message, 'uint')
-            Set {
-                NumPut('uint', Value, this.Buffer, this.offset_message)
-            }
-        }
-        wParam {
-            Get => NumGet(this.Buffer, this.offset_wParam, 'ptr')
-            Set {
-                NumPut('ptr', Value, this.Buffer, this.offset_wParam)
-            }
-        }
-        lParam {
-            Get => NumGet(this.Buffer, this.offset_lParam, 'ptr')
-            Set {
-                NumPut('ptr', Value, this.Buffer, this.offset_lParam)
-            }
-        }
-        time {
-            Get => NumGet(this.Buffer, this.offset_time, 'uint')
-            Set {
-                NumPut('uint', Value, this.Buffer, this.offset_time)
-            }
-        }
-        x {
-            Get => NumGet(this.Buffer, this.offset_x, 'int')
-            Set {
-                NumPut('int', Value, this.Buffer, this.offset_x)
-            }
-        }
-        y {
-            Get => NumGet(this.Buffer, this.offset_y, 'int')
-            Set {
-                NumPut('int', Value, this.Buffer, this.offset_y)
-            }
-        }
-        lPrivate {
-            Get => NumGet(this.Buffer, this.offset_lPrivate, 'uint')
-            Set {
-                NumPut('uint', Value, this.Buffer, this.offset_lPrivate)
-            }
-        }
-        Ptr => this.Buffer.Ptr
-        Size => this.Buffer.Size
-    }
-
 }
 
 

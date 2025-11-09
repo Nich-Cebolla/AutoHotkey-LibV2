@@ -77,12 +77,8 @@ class test {
         this.GuiMinH := g.Add('Edit', 'ys 75 vEdtGuiMinH')
         g.Add('Text', 'ys vTxtGuiMaxH', 'Gui MaxH:')
         this.GuiMaxH := g.Add('Edit', 'ys 75 vEdtGuiMaxH')
-        g.Add('Text', 'xs Section vTxtDelay', 'Delay:')
-        this.Delay := g.Add('Edit', 'ys 75 vEdtDelay')
         g.Add('Text', 'ys vTxtDpiAwareness', 'Dpi awareness:')
         this.DpiAwareness := g.Add('Edit', 'ys 50 vEdtDpiAwareness')
-        g.Add('Text', 'ys vTxtStopCount', 'Stop count:')
-        this.StopCount := g.Add('Edit', 'ys 75 vEdtStopCount')
         g.Add('Text', 'ys vTxtWinDelay', 'Win delay:')
         this.WinDelay := g.Add('Edit', 'ys 75 vEdtWinDelay')
         this.reposition := g.Add('Checkbox', 'xs Section vChkReposition', 'Reposition')
@@ -209,14 +205,12 @@ class EventHandler {
             }
         }
         options := {
-            Callback: Callback
-          , Delay: test.Delay.Text || unset
+            CallbackOnStart: Callback
           , DpiAwarenessContext: test.DpiAwareness.Text || unset
           , MaxH: test.GuiMaxH.Text || unset
           , MinH: test.GuiMinH.Text || unset
           , MaxW: test.GuiMaxW.Text || unset
           , MinW: test.GuiMinW.Text || unset
-          , StopCount: test.StopCount.Text || unset
           , WinDelay: test.WinDelay.Text || unset
         }
         if test.resizer {
