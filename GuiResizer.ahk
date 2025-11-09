@@ -16,13 +16,17 @@ class GuiResizer {
         , g_user32_GetClientRect := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetClientRect', 'ptr')
         , g_user32_GetDpiForWindow := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetDpiForWindow', 'ptr')
         , g_user32_GetWindowRect := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetWindowRect', 'ptr')
+        , g_user32_PeekMessageW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'PeekMessageW', 'ptr')
         , g_user32_RedrawWindow := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'RedrawWindow', 'ptr')
         , g_user32_ScreenToClient := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'ScreenToClient', 'ptr')
+        , g_user32_SetWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'SetWindowPos', 'ptr')
         , g_user32_SetThreadDpiAwarenessContext := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'SetThreadDpiAwarenessContext', 'ptr')
-        , g_user32_PeekMessageW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'PeekMessageW', 'ptr')
         , GuiResizer_Swp_Move := 0x0001 | 0x0010 | 0x0200 | 0x0004 ; SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
         , GuiResizer_Swp_MoveAndSize := 0x0010 | 0x0200 | 0x0004 ; SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
         , GuiResizer_Swp_Size := 0x0002 | 0x0010 | 0x0200 | 0x0004 ; SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER
+
+        proto := this.Prototype
+        proto.flag_noDefer := proto.flag_defer := false
     }
 
     /**
@@ -122,6 +126,12 @@ class GuiResizer {
      * for that control. If unset, the relevant default is used ({@link GuiResizer_Swp_Move},
      * {@link GuiResizer_Swp_Size}, or {@link GuiResizer_Swp_MoveAndSize}).
      *
+     * @property {Boolean} [CtrlObj.Resizer.NoDefer] - If set and if nonzero, the control is resized
+     * using {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos SetWindowPos}
+     * instead of {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos DeferWindowPos}.
+     * I found this to be necessary when using {@link GuiResizer} in a specific context. Generally,
+     * this option should be left unset.
+     *
      *
      *
      * @param {Gui} GuiObj - The Gui object.
@@ -197,6 +207,14 @@ class GuiResizer {
      * @param {Number} [Options.MinW] - If a number, directs the resize function to stop adjusting
      * the controls' width and horizontal position when the gui's client area has dropped below this
      * width.
+     *
+     * @param {Boolean} [Options.NoDeferAll = false] - If true, all controls are considered to have
+     * the `CtrlObj.Resizer.NoDefer` flag set, which directs {@link GuiResizer.Prototype.Resize} to
+     * resize / reposition the controls using
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos SetWindowPos}
+     * instead of {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-deferwindowpos DeferWindowPos}.
+     * I found this to be necessary when using {@link GuiResizer} in a specific context. Generally,
+     * this option should be left false.
      *
      * @param {Integer} [Options.Priority = 1] - The value to pass to the `Priority` parameter of
      * {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer}. This occurs once per
@@ -281,13 +299,15 @@ class GuiResizer {
         this.Rect.Client(this.HwndGui)
         this.BaseW := this.LastW := this.Rect.W
         this.BaseH := this.LastH := this.Rect.H
-        size := this.Size := []
         move := this.Move := []
+        size := this.Size := []
         moveAndSize := this.MoveAndSize := []
+        noDefer := this.NoDefer := { Move: [], Size: [], MoveAndSize: [] }
         constructor := this.Constructor
         ; To keep track of hwnds so none are duplicated.
         list := Map()
         list.CaseSense := false
+        proc := this.NoDeferAll ? _ProcNoDefer : _Proc
         if IsSet(Controls) {
             if Controls is Array {
                 _Proc(Controls)
@@ -304,6 +324,16 @@ class GuiResizer {
             this.Gui.OnEvent('Size', this, this.AddRemove)
         }
         this.Status := 3
+        if noDefer.Move.Length || noDefer.Size.Length || noDefer.MoveAndSize.Length {
+            this.flag_noDefer := true
+        } else if this.HasOwnProp('flag_noDefer') {
+            this.DeleteProp('flag_noDefer')
+        }
+        if move.Length || size.Length || moveAndSize.Length {
+            this.flag_defer := true
+        } else if this.HasOwnProp('flag_defer') {
+            this.DeleteProp('flag_defer')
+        }
 
         _Proc(obj) {
             for ctrl in obj {
@@ -312,7 +342,19 @@ class GuiResizer {
                 }
                 list.Set(ctrl.Hwnd, 1)
                 item := constructor(ctrl.Resizer, ctrl.Hwnd)
-                if item.Move {
+                if item.NoDefer {
+                    if item.Move {
+                        if item.Size {
+                            noDefer.MoveAndSize.Push(item)
+                        } else {
+                            noDefer.Move.Push(item)
+                        }
+                    } else if item.Size {
+                        noDefer.Size.Push(item)
+                    } else {
+                        _Throw(ctrl)
+                    }
+                } else if item.Move {
                     if item.Size {
                         moveAndSize.Push(item)
                     } else {
@@ -321,9 +363,32 @@ class GuiResizer {
                 } else if item.Size {
                     size.Push(item)
                 } else {
-                    throw Error('The control`'s resizer parameters are invalid.', , HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
+                    _Throw(ctrl)
                 }
             }
+        }
+        _ProcNoDefer(obj) {
+            for ctrl in obj {
+                if !HasProp(ctrl, 'Resizer') || list.Has(ctrl.Hwnd) {
+                    continue
+                }
+                list.Set(ctrl.Hwnd, 1)
+                item := constructor(ctrl.Resizer, ctrl.Hwnd)
+                if item.Move {
+                    if item.Size {
+                        noDefer.MoveAndSize.Push(item)
+                    } else {
+                        noDefer.Move.Push(item)
+                    }
+                } else if item.Size {
+                    noDefer.Size.Push(item)
+                } else {
+                    _Throw(ctrl)
+                }
+            }
+        }
+        _Throw(ctrl) {
+            throw Error('The control`'s resizer parameters are invalid.', -1, HasProp(ctrl, 'Name') ? 'Control`'s name: ' ctrl.Name : unset)
         }
     }
     /**
@@ -422,65 +487,117 @@ class GuiResizer {
         diffH := h - this.BaseH
         diffW := w - this.BaseW
         originalCritical := Critical(-1)
-        if hDwp := DllCall(g_user32_BeginDeferWindowPos, 'int', this.Move.Length + this.Size.Length + this.MoveAndSize.Length, 'ptr') {
-            for item in this.Move {
-                if hDwp := DllCall(g_user32_DeferWindowPos
-                    , 'ptr', hDwp
-                    , 'ptr', item.Hwnd
-                    , 'ptr', 0                              ; hWndInsertAfter
-                    , 'int', item.GetX(diffW)               ; X
-                    , 'int', item.GetY(diffH)               ; Y
-                    , 'int', 0                              ; W
-                    , 'int', 0                              ; H
-                    , 'uint', item.Flags_Move               ; flags
-                    , 'ptr'
-                ) {
-                    continue
-                } else {
+        if this.flag_defer {
+            if hDwp := DllCall(g_user32_BeginDeferWindowPos, 'int', this.Move.Length + this.Size.Length + this.MoveAndSize.Length, 'ptr') {
+                for item in this.Move {
+                    if hDwp := DllCall(g_user32_DeferWindowPos
+                        , 'ptr', hDwp
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', item.GetX(diffW)               ; X
+                        , 'int', item.GetY(diffH)               ; Y
+                        , 'int', 0                              ; W
+                        , 'int', 0                              ; H
+                        , 'uint', item.Flags_Move               ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
+                }
+                for item in this.Size {
+                    if hDwp := DllCall(g_user32_DeferWindowPos
+                        , 'ptr', hDwp
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', 0                              ; X
+                        , 'int', 0                              ; Y
+                        , 'int', item.GetW(diffW)               ; W
+                        , 'int', item.GetH(diffH)               ; H
+                        , 'uint', item.Flags_Size               ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
+                }
+                for item in this.MoveAndSize {
+                    if hDwp := DllCall(g_user32_DeferWindowPos
+                        , 'ptr', hDwp
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', item.GetX(diffW)               ; X
+                        , 'int', item.GetY(diffH)               ; Y
+                        , 'int', item.GetW(diffW)               ; W
+                        , 'int', item.GetH(diffH)               ; H
+                        , 'uint', item.Flags_MoveAndSize        ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
+                }
+                if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
                     throw OSError()
                 }
             }
-            for item in this.Size {
-                if hDwp := DllCall(g_user32_DeferWindowPos
-                    , 'ptr', hDwp
-                    , 'ptr', item.Hwnd
-                    , 'ptr', 0                              ; hWndInsertAfter
-                    , 'int', 0                              ; X
-                    , 'int', 0                              ; Y
-                    , 'int', item.GetW(diffW)               ; W
-                    , 'int', item.GetH(diffH)               ; H
-                    , 'uint', item.Flags_Size               ; flags
-                    , 'ptr'
-                ) {
-                    continue
-                } else {
-                    throw OSError()
+            if this.flag_noDefer {
+                noDefer := this.NoDefer
+                for item in noDefer.Move {
+                    if hDwp := DllCall(g_user32_SetWindowPos
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', item.GetX(diffW)               ; X
+                        , 'int', item.GetY(diffH)               ; Y
+                        , 'int', 0                              ; W
+                        , 'int', 0                              ; H
+                        , 'uint', item.Flags_Move               ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
+                }
+                for item in noDefer.Size {
+                    if hDwp := DllCall(g_user32_SetWindowPos
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', 0                              ; X
+                        , 'int', 0                              ; Y
+                        , 'int', item.GetW(diffW)               ; W
+                        , 'int', item.GetH(diffH)               ; H
+                        , 'uint', item.Flags_Size               ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
+                }
+                for item in noDefer.MoveAndSize {
+                    if hDwp := DllCall(g_user32_SetWindowPos
+                        , 'ptr', item.Hwnd
+                        , 'ptr', 0                              ; hWndInsertAfter
+                        , 'int', item.GetX(diffW)               ; X
+                        , 'int', item.GetY(diffH)               ; Y
+                        , 'int', item.GetW(diffW)               ; W
+                        , 'int', item.GetH(diffH)               ; H
+                        , 'uint', item.Flags_MoveAndSize        ; flags
+                        , 'ptr'
+                    ) {
+                        continue
+                    } else {
+                        throw OSError()
+                    }
                 }
             }
-            for item in this.MoveAndSize {
-                if hDwp := DllCall(g_user32_DeferWindowPos
-                    , 'ptr', hDwp
-                    , 'ptr', item.Hwnd
-                    , 'ptr', 0                              ; hWndInsertAfter
-                    , 'int', item.GetX(diffW)               ; X
-                    , 'int', item.GetY(diffH)               ; Y
-                    , 'int', item.GetW(diffW)               ; W
-                    , 'int', item.GetH(diffH)               ; H
-                    , 'uint', item.Flags_MoveAndSize        ; flags
-                    , 'ptr'
-                ) {
-                    continue
-                } else {
-                    throw OSError()
-                }
-            }
-            ; Sleep(this.Delay)
             Critical(originalCritical)
             while this.wMsg.Peek() {
                 Sleep(-1)
-            }
-            if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
-                throw OSError()
             }
             if this.Callback && this.Callback.Call(this) {
                 this.DeleteProp('Call')
@@ -558,6 +675,7 @@ class GuiResizer {
           , MaxW: ''
           , MinH: ''
           , MinW: ''
+          , NoDeferAll: false
           , Priority: 0
           , StopCount: 5
           , WinDelay: 10
@@ -708,7 +826,7 @@ class GuiResizer_Item {
         proto.W := proto.MaxW := proto.MinW :=
         proto.H := proto.MaxH := proto.MinH :=
         proto.MinMaxX := proto.MinMaxY := proto.MinMaxW := proto.MinMaxH :=
-        proto.Scale := proto.Move := proto.Size := proto.Group := 0
+        proto.Scale := proto.Move := proto.Size := proto.Group := proto.NoDefer := 0
         proto.SharedRect := GuiResizer_Rect()
     }
     __New(obj, hwnd) {
@@ -877,6 +995,9 @@ class GuiResizer_Item {
                 case 2: this.DefineProp('Flags_Size', { Value: obj.Flags })
                 case 3: this.DefineProp('Flags_MoveAndSize', { Value: obj.Flags })
             }
+        }
+        if HasProp(obj, 'NoDefer') && obj.NoDefer {
+            this.NoDefer := true
         }
     }
     Update() {
