@@ -136,6 +136,16 @@ class PathObj {
         }
         return Segment
     }
+    /**
+     * Creates a {@link PathObj} with type PATHOBJ_TYPE_ROOT from the current object. The name
+     * of the new object will be the same as the return value from {@link PathObj.Prototype.Call},
+     * i.e. the path string. But, as a root object, its type will be PATHOBJ_TYPE_ROOT and its
+     * base will be PathObj.Prototype. Use this if you need a PATHOBJ_TYPE_ROOT object and want
+     * to retain the current path string as the name.
+     */
+    ToRoot(EscapePropNames := false) {
+        return PathObj(this(), EscapePropNames, this.QuoteChar)
+    }
     Unescaped(*) {
         if !this.HasOwnProp('__Path_U') {
             o := this
