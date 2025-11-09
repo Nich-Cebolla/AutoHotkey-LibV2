@@ -2,9 +2,11 @@
 
 Welcome to my collection of classes and functions written by me.
 
+# Introduction
+
 While I typically upload classes that have been tested and I know work, occasionally I make changes and don't always test the changes as thoroughly as I should. If something doesn't work as expected, if you submit an issue I will fix it. And for the bigger classes, I may not test every method before uploading.
 
-Almost all classes and functions are fully documented in the file. I learned early on that if I don't document something, the chance of me remembering why I coded something in some particular way is 0.
+Almost all classes and functions are fully documented in the file.
 
 I often update files, and I do not keep a changelog nor report what changes were made other than the Github action description. With this in mind, this is how I recommend using this repo:
 
