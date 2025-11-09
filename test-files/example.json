@@ -221,5 +221,5 @@
     "Array2": [{}],
     "Array3": [[]],
     "Array4": [[],{}],
-    "Array5": [[[]],{ "arr": [] }]
+    "Array5": [[[]],{ "arr": [[ { "nestedProp": "nestedVal" } ]] }]
 }
