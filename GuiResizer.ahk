@@ -310,15 +310,15 @@ class GuiResizer {
         proc := this.NoDeferAll ? _ProcNoDefer : _Proc
         if IsSet(Controls) {
             if Controls is Array {
-                _Proc(Controls)
+                proc(Controls)
             } else {
-                _Proc([ Controls ])
+                proc([ Controls ])
             }
             if !ControlsOnly {
-                _Proc(this.Gui)
+                proc(this.Gui)
             }
         } else {
-            _Proc(this.Gui)
+            proc(this.Gui)
         }
         if !flag_status {
             this.Gui.OnEvent('Size', this, this.AddRemove)
@@ -543,76 +543,76 @@ class GuiResizer {
                 if !DllCall(g_user32_EndDeferWindowPos, 'ptr', hDwp, 'ptr') {
                     throw OSError()
                 }
+            } else {
+                throw OSError()
             }
-            if this.flag_noDefer {
-                noDefer := this.NoDefer
-                for item in noDefer.Move {
-                    if hDwp := DllCall(g_user32_SetWindowPos
-                        , 'ptr', item.Hwnd
-                        , 'ptr', 0                              ; hWndInsertAfter
-                        , 'int', item.GetX(diffW)               ; X
-                        , 'int', item.GetY(diffH)               ; Y
-                        , 'int', 0                              ; W
-                        , 'int', 0                              ; H
-                        , 'uint', item.Flags_Move               ; flags
-                        , 'ptr'
-                    ) {
-                        continue
-                    } else {
-                        throw OSError()
-                    }
-                }
-                for item in noDefer.Size {
-                    if hDwp := DllCall(g_user32_SetWindowPos
-                        , 'ptr', item.Hwnd
-                        , 'ptr', 0                              ; hWndInsertAfter
-                        , 'int', 0                              ; X
-                        , 'int', 0                              ; Y
-                        , 'int', item.GetW(diffW)               ; W
-                        , 'int', item.GetH(diffH)               ; H
-                        , 'uint', item.Flags_Size               ; flags
-                        , 'ptr'
-                    ) {
-                        continue
-                    } else {
-                        throw OSError()
-                    }
-                }
-                for item in noDefer.MoveAndSize {
-                    if hDwp := DllCall(g_user32_SetWindowPos
-                        , 'ptr', item.Hwnd
-                        , 'ptr', 0                              ; hWndInsertAfter
-                        , 'int', item.GetX(diffW)               ; X
-                        , 'int', item.GetY(diffH)               ; Y
-                        , 'int', item.GetW(diffW)               ; W
-                        , 'int', item.GetH(diffH)               ; H
-                        , 'uint', item.Flags_MoveAndSize        ; flags
-                        , 'ptr'
-                    ) {
-                        continue
-                    } else {
-                        throw OSError()
-                    }
-                }
-            }
-            Critical(originalCritical)
-            while this.wMsg.Peek() {
-                Sleep(-1)
-            }
-            if this.Callback && this.Callback.Call(this) {
-                this.DeleteProp('Call')
-                this.Status := 3
-                this.Gui.OnEvent('Size', this, this.AddRemove)
-                if this.CallbackOnEnd {
-                    this.CallbackOnEnd.Call(this)
-                }
-                return
-            }
-            this.Status := 6
-            SetTimer(this, this.Delay, this.Priority)
-        } else {
-            throw OSError()
         }
+        if this.flag_noDefer {
+            noDefer := this.NoDefer
+            for item in noDefer.Move {
+                if hDwp := DllCall(g_user32_SetWindowPos
+                    , 'ptr', item.Hwnd
+                    , 'ptr', 0                              ; hWndInsertAfter
+                    , 'int', item.GetX(diffW)               ; X
+                    , 'int', item.GetY(diffH)               ; Y
+                    , 'int', 0                              ; W
+                    , 'int', 0                              ; H
+                    , 'uint', item.Flags_Move               ; flags
+                    , 'ptr'
+                ) {
+                    continue
+                } else {
+                    throw OSError()
+                }
+            }
+            for item in noDefer.Size {
+                if hDwp := DllCall(g_user32_SetWindowPos
+                    , 'ptr', item.Hwnd
+                    , 'ptr', 0                              ; hWndInsertAfter
+                    , 'int', 0                              ; X
+                    , 'int', 0                              ; Y
+                    , 'int', item.GetW(diffW)               ; W
+                    , 'int', item.GetH(diffH)               ; H
+                    , 'uint', item.Flags_Size               ; flags
+                    , 'ptr'
+                ) {
+                    continue
+                } else {
+                    throw OSError()
+                }
+            }
+            for item in noDefer.MoveAndSize {
+                if hDwp := DllCall(g_user32_SetWindowPos
+                    , 'ptr', item.Hwnd
+                    , 'ptr', 0                              ; hWndInsertAfter
+                    , 'int', item.GetX(diffW)               ; X
+                    , 'int', item.GetY(diffH)               ; Y
+                    , 'int', item.GetW(diffW)               ; W
+                    , 'int', item.GetH(diffH)               ; H
+                    , 'uint', item.Flags_MoveAndSize        ; flags
+                    , 'ptr'
+                ) {
+                    continue
+                } else {
+                    throw OSError()
+                }
+            }
+        }
+        Critical(originalCritical)
+        while this.wMsg.Peek() {
+            Sleep(-1)
+        }
+        if this.Callback && this.Callback.Call(this) {
+            this.DeleteProp('Call')
+            this.Status := 3
+            this.Gui.OnEvent('Size', this, this.AddRemove)
+            if this.CallbackOnEnd {
+                this.CallbackOnEnd.Call(this)
+            }
+            return
+        }
+        this.Status := 6
+        SetTimer(this, this.Delay, this.Priority)
     }
     /**
      * Updates the cached size and dimension values for the gui window and the controls to their
