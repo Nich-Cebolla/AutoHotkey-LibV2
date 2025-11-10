@@ -1531,6 +1531,178 @@ class PropsInfo {
     }
 
     /**
+     * @description - Iterates the `PropsInfo` object, adding the property names and optionally
+     * the property values to a string. Object values are represented using this function:
+     * @example
+     * _GetDisplayType(value) {
+     *     if ObjHasOwnProp(value, "__Class") {
+     *         return "{ Prototype : " value.__Class " }"
+     *     } else if value is Class {
+     *         return "{ Class : " value.Prototype.__Class " }"
+     *     } else {
+     *         return "{ " value.__Class " }"
+     *     }
+     * }
+     * @
+     *
+     * @param {Boolean} [NamesOnly = false] - If true, only the property names are added to the string.
+     * If false, the property names are followed by the property values separated by a colon and
+     * space.
+     * @param {String} [Separator = "`n"] - The substring that separaters each item.
+     * @param {Boolean} [Call = true] - If true, properties with a Call accessor are grouped beneath
+     * the Get / value properties underneath a section header "Methods".
+     * @param {Boolean} [Get = true] - If true, properties with a Get accessor will be represented
+     * in the list.
+     * @param {Boolean} [Set = true] - If true, properties with a Set accessor are grouped beneath
+     * the Get / value properties underneath a section header "Setters".
+     * @param {Boolean} [Value = true] - If true, value properties will be represented in the list.
+     * @param {Boolean} [IncludeErrors = false] - If true, and if `NamesOnly` is false, properties
+     * that result in an error when calling {@link PropsInfoItem.Prototype.GetValue} are represented
+     * in the list. If `NamesOnly` is true, {@link PropsInfoItem.Prototype.GetValue} is not called,
+     * so all properties are represented in the list.
+     * @param {String} [headerSeparator = "`n`n"] - The substring that separates the primary property
+     * list (Get properties and value properties) from methods (properties with a Call accessor) and
+     * from setters (properties with a Set accessor).
+     *
+     * @returns {String} - The list of property names and/or values.
+     */
+    ToList(NamesOnly := false, separator := '`n', Call := true, Get := true, Set := true, Value := true, IncludeErrors := false, headerSeparator := '`n`n') {
+        s := ''
+        VarSetStrCapacity(&s, 2048)
+        if Call {
+            methods := ''
+            VarSetStrCapacity(&methods, 2048)
+        }
+        if Set {
+            setters := ''
+            VarSetStrCapacity(&setters, 2048)
+        }
+        if NamesOnly {
+            for item in this.__InfoItems {
+                switch item.KindIndex {
+                    case 1:
+                        if Call {
+                            methods .= item.Name separator
+                        }
+                    case 2:
+                        if Get {
+                            s .= item.Name separator
+                        }
+                    case 3:
+                        if Get {
+                            s .= item.Name separator
+                        }
+                        if Set {
+                            setters .= item.Name separator
+                        }
+                    case 4:
+                        if Set {
+                            setters .= item.Name separator
+                        }
+                    case 5:
+                        if Value {
+                            s .= item.Name separator
+                        }
+                }
+            }
+        } else {
+            for item in this.__InfoItems {
+                switch item.KindIndex {
+                    case 1:
+                        if Call {
+                            methods .= item.Name separator
+                        }
+                    case 2:
+                        if Get {
+                            if item.GetValue(&value) {
+                                if IncludeErrors {
+                                    s .= item.Name ': ' Type(value) ' - ' value.Message separator
+                                }
+                            } else {
+                                if IsObject(value) {
+                                    s .= item.Name ': ' _GetDisplayType(value) separator
+                                } else {
+                                    s .= item.Name ': ' _Escape(value) separator
+                                }
+                            }
+                        }
+                    case 3:
+                        if Get {
+                            if item.GetValue(&value) {
+                                if IncludeErrors {
+                                    s .= item.Name ': ' Type(value) ' - ' value.Message separator
+                                }
+                            } else {
+                                if IsObject(value) {
+                                    s .= item.Name ': ' _GetDisplayType(value) separator
+                                } else {
+                                    s .= item.Name ': ' _Escape(value) separator
+                                }
+                            }
+                        }
+                        if Set {
+                            setters .= item.Name separator
+                        }
+                    case 4:
+                        if Set {
+                            setters .= item.Name separator
+                        }
+                    case 5:
+                        if Value {
+                            if !item.GetValue(&value) {
+                                if IsObject(value) {
+                                    s .= item.Name ': ' _GetDisplayType(value) separator
+                                } else {
+                                    s .= item.Name ': ' _Escape(value) separator
+                                }
+                            }
+                        }
+                }
+            }
+        }
+        lenSeparator := -StrLen(separator)
+        if s {
+            s := SubStr(s, 1, lenSeparator)
+        }
+        if methods {
+            methods := SubStr(methods, 1, lenSeparator)
+        }
+        if setters {
+            setters := SubStr(setters, 1, lenSeparator)
+        }
+        if s {
+            if methods {
+                s .= headerSeparator 'Methods' separator methods
+            }
+            if setters {
+                s .= headerSeparator 'Setters' separator setters
+            }
+        } else if methods {
+            s := 'Methods' separator methods
+            if setters {
+                s .= headerSeparator 'Setters' separator setters
+            }
+        } else if setters {
+            s := 'Setters' separator setters
+        }
+
+        return s
+
+        _GetDisplayType(value) {
+            if ObjHasOwnProp(value, '__Class') {
+                return '{ Prototype : ' value.__Class ' }'
+            } else if value is Class {
+                return '{ Class : ' value.Prototype.__Class ' }'
+            } else {
+                return '{ ' value.__Class ' }'
+            }
+        }
+        _Escape(value) {
+            return StrReplace(StrReplace(value, '`n', '``n'), '`r', '``r')
+        }
+    }
+
+    /**
      * @description - Iterates the `PropsInfo` object, adding the `PropsInfoItem` objects to a map.
      * The keys are the property names.
      * @returns {Map} - The map of property names and `PropsInfoItem` objects.
