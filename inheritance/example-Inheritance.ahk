@@ -178,7 +178,7 @@ OutputDebug('`n' A_LineNumber ': ' InfoItem_Method_Alt_Func.Name) ;
 
 ; Our hypothetical application has a function that copies the values from one object to another object.
 
-; Side note: If you need a real deep clone method: https://github.com/Nich-Cebolla/AutoHotkey-Object.Prototype.DeepClone/
+; Side note: If you need a real deep clone method: https://github.com/Nich-Cebolla/AutoHotkey-ObjDeepClone/
 
 Transplantinator(Subject, Target, PropsList?) {
     ; If `PropsList` is set
@@ -430,4 +430,3 @@ OutputDebug('`n' A_LineNumber ': ' PropsInfoObj.FilterActive) ; 1
 ; it's a good idea to call `Dispose` to avoid any possible reference cycles preventing resources
 ; from being freed.
 PropsInfoObj.Dispose()
-
