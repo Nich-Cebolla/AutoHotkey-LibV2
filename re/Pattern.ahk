@@ -442,4 +442,3 @@ class Pattern {
 ;     A_Clipboard := Pattern.GetEscapedStr('[rn"]', '\')
 ;     MsgBox('done')
 ; }
-
