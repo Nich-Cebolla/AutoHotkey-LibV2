@@ -15,10 +15,10 @@ class test {
         str := '
         (
 calldate,src,dst,dcontext,channel
-07/14/2025 02:43:44,5555557485,17,play-system-recording,PJSIP/Cox_Trunk-0000d212
-07/14/2025 05:58:22,5555557984,s,ivr-6,PJSIP/Cox_Trunk-0000d213
-07/14/2025 06:36:41,5555559989,s,ivr-6,PJSIP/Cox_Trunk-0000d214
-07/14/2025 06:47:11,5555552202,91017,ext-queues,PJSIP/Cox_Trunk-0000d215
+07/14/2025 02:43:44,5555557485,17,play-system-recording,PJSIP/Cox_Trunk-0000d-212-1080-@from-internal
+07/14/2025 05:58:22,5555557984,s,ivr-6,PJSIP/Cox_Trunk-0000d-213-1080-@from-internal
+07/14/2025 06:36:41,5555559989,s,ivr-6,PJSIP/Cox_Trunk-0000d-214-1080-@from-internal
+07/14/2025 06:47:11,5555552202,91017,ext-queues,PJSIP/Cox_Trunk-0000d-215-1080-@from-internal
 )'
         tbl := MakeTable(
             str
@@ -29,14 +29,13 @@ calldate,src,dst,dcontext,channel
               , InputRowSeparator: '\R'
               , LinePrefix: '|  '
               , LineSuffix: '  |'
-              , MaxWidths: 20
+              , MaxWidths: ''
               , OutputColumnSeparator: '|'
               , OutputLineBetweenRows: 0
               , OutputRowSeparator: '`n'
               , TrimCharacters: '`s'
             }
         )
-        OutputDebug(tbl.Value '`n')
         txt := tbl[2][4]('')
         md1 := tbl.GetMarkdown()
         md2 := tbl.GetMarkdown(, '<br>')
@@ -142,6 +141,58 @@ calldate,src,dst,dcontext,channel
           , ThAttribute: [ 'class="th1"', 'class="th2"', 'class="th3"', 'class="th4"', 'class="th5"' ]
           , InnerLineSeparator: '<br>'
         })
-        return md1 '`n`n<br><br>`n' md2 '`n`n<br><br>`n' html1 '`n`n<br><br>`n' html2 '`n`n<br><br>`n' html3 '`n`n<br><br>`n' html4 '`n`n<br><br>`n' html5 '`n`n<br><br>`n' html6 '`n`n<br><br>`n' html7
+
+        tbl2 := MakeTable(
+            str
+            , {
+                AddHeaderSeparator: true
+              , ColumnPadding: '`s`s'
+              , InputColumnSeparator: ','
+              , InputRowSeparator: '\R'
+              , LinePrefix: '|  '
+              , LineSuffix: '  |'
+              , MaxWidths: 20
+              , OutputColumnSeparator: '|'
+              , OutputLineBetweenRows: 0
+              , OutputRowSeparator: '`n'
+              , TrimCharacters: '`s'
+            }
+        )
+
+        tbl3 := MakeTable(
+            str
+            , {
+                AddHeaderSeparator: true
+              , ColumnPadding: '`s`s'
+              , InputColumnSeparator: ','
+              , InputRowSeparator: '\R'
+              , LinePrefix: ''
+              , LineSuffix: ''
+              , MaxWidths: ''
+              , OutputColumnSeparator: ''
+              , OutputLineBetweenRows: true
+              , OutputRowSeparator: '`n'
+              , TrimCharacters: '`s'
+            }
+        )
+
+        tbl4 := MakeTable(
+            str
+            , {
+                AddHeaderSeparator: true
+              , ColumnPadding: '`s`s'
+              , InputColumnSeparator: ','
+              , InputRowSeparator: '\R'
+              , LinePrefix: '|  '
+              , LineSuffix: '  |'
+              , MaxWidths: 20
+              , OutputColumnSeparator: '|'
+              , OutputLineBetweenRows: false
+              , OutputRowSeparator: '`n'
+              , TrimCharacters: '`s'
+            }
+        )
+
+        return tbl.Value '`n`n<br><br>`n' tbl2.GetMarkdown(, '<br>') '`n`n<br><br>`n' tbl3.Value '`n`n<br><br>`n' tbl4.Value '`n`n<br><br>`n' md1 '`n`n<br><br>`n' md2 '`n`n<br><br>`n' html1 '`n`n<br><br>`n' html2 '`n`n<br><br>`n' html3 '`n`n<br><br>`n' html4 '`n`n<br><br>`n' html5 '`n`n<br><br>`n' html6 '`n`n<br><br>`n' html7
     }
 }
