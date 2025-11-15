@@ -1,8 +1,8 @@
 ﻿
 ; https://github.com/Nich-Cebolla/ParseCsv-AutoHotkey/blob/main/ParseWin32HeaderFile.ahk
 #include ..\ParseWin32HeaderFile.ahk
-; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MakeTable.ahk
-#include ..\MakeTable.ahk
+; https://github.com/Nich-Cebolla/AutoHotkey-MakeTable
+#include <MakeTable>
 
 ; Copy a structure to the clipboard then run this file and the clipboard will be replaced
 ; with the class (assuming the function succeeds).
@@ -167,8 +167,8 @@ class StructToClass {
                 ind(2) 'this.DeleteProp(' q '__New' q ')' le
                 ind(2) 'proto := this.Prototype' le
                 ind(2) 'proto.cbSizeInstance := ' le
-                MakeTable(SubStr(membersStr, 1, -1), makeTableOptMembers) le
-                MakeTable(SubStr(offsets, 1, -1), makeTableOptOffsets) le
+                MakeTable(SubStr(membersStr, 1, -1), makeTableOptMembers).Value le
+                MakeTable(SubStr(offsets, 1, -1), makeTableOptOffsets).Value le
                 ind(1) '}' le
                 ind(1) '__New(' params ') {' le
                 ind(2) 'this.Buffer := Buffer(this.cbSizeInstance)' le
@@ -243,7 +243,7 @@ class StructToClass {
             }
         }
         ind(n) {
-            return FillStr[(initialIndent + n) * indent]
+            return MakeTable_FillStr[(initialIndent + n) * indent]
         }
     }
     static CodeHelper(Str) {
