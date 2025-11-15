@@ -185,25 +185,26 @@ class RectHighlight extends Gui {
         }
     }
 
-    ConstructPositionDisplay() {
-        Options := this.Options
-        G := this.PositionDisplay := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +Owner' this.Hwnd, Options.Title)
-        WinSetTransparent(0, G.Hwnd)
-        if Options.PositionFontOpt && RegExMatch(Options.PositionFontOpt, '\b[cC]') {
-            G.SetFont(Options.PositionFontOpt, Options.PositionFontName || unset)
-        } else {
-            G.SetFont('c' Options.Color ' ' (Options.PositionFontOpt ? Options.PositionFontOpt : 'q5'), Options.PositionFontName || unset)
-        }
-        this.TopLeft := G.Add('Text', 'BackgroundTrans vTxtTL', '-00000, -00000')
-        this.TopRight := G.Add('Text', 'BackgroundTrans Right vTxtTR', '-00000, -00000')
-        this.BottomRight := G.Add('Text', 'BackgroundTrans Right vTxtBR', '-00000, -00000')
-        this.BottomLeft := G.Add('Text', 'BackgroundTrans vTxtBL', '-00000, -00000')
-        this.TopLeft.Text := this.TopRight.Text := this.BottomRight.Text := this.BottomLeft.Text := ''
-        this.TopLeft.GetPos(, , &txtw, &txth)
-        this.TopLeft.W := txtw
-        this.TopLeft.H := txth
-        G.Show()
-    }
+    ; Not finished
+    ; ConstructPositionDisplay() {
+    ;     Options := this.Options
+    ;     G := this.PositionDisplay := Gui('+AlwaysOnTop -Caption +ToolWindow -DPIScale +Owner' this.Hwnd, Options.Title)
+    ;     WinSetTransparent(0, G.Hwnd)
+    ;     if Options.PositionFontOpt && RegExMatch(Options.PositionFontOpt, '\b[cC]') {
+    ;         G.SetFont(Options.PositionFontOpt, Options.PositionFontName || unset)
+    ;     } else {
+    ;         G.SetFont('c' Options.Color ' ' (Options.PositionFontOpt ? Options.PositionFontOpt : 'q5'), Options.PositionFontName || unset)
+    ;     }
+    ;     this.TopLeft := G.Add('Text', 'BackgroundTrans vTxtTL', '-00000, -00000')
+    ;     this.TopRight := G.Add('Text', 'BackgroundTrans Right vTxtTR', '-00000, -00000')
+    ;     this.BottomRight := G.Add('Text', 'BackgroundTrans Right vTxtBR', '-00000, -00000')
+    ;     this.BottomLeft := G.Add('Text', 'BackgroundTrans vTxtBL', '-00000, -00000')
+    ;     this.TopLeft.Text := this.TopRight.Text := this.BottomRight.Text := this.BottomLeft.Text := ''
+    ;     this.TopLeft.GetPos(, , &txtw, &txth)
+    ;     this.TopLeft.W := txtw
+    ;     this.TopLeft.H := txth
+    ;     G.Show()
+    ; }
 
     /**
      * @description - Deletes the input `Obj` from the `Options` object, and calls `this.Destroy()`.
