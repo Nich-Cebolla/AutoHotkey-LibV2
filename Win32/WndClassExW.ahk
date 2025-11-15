@@ -33,11 +33,12 @@
         hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
         global g_user32_GetClassInfoExW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetClassInfoExW', 'ptr')
         , g_user32_GetClassLongW := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetClassLongW', 'ptr')
+        , g_kernel32_GetModuleHandleW := DllCall('GetProcAddress', 'ptr', DllCall('GetModuleHandleW', 'wstr', 'kernel32', 'ptr'), 'astr', 'GetModuleHandleW', 'ptr')
     }
     __New() {
         this.Buffer := Buffer(this.cbSizeInstance)
     }
-    Call(ClassNameOrAtom, hInstance := 0) {
+    Call(ClassNameOrAtom, hInstance?) {
         if !IsNumber(ClassNameOrAtom) {
             this.__ClassName := Buffer(StrPut(ClassNameOrAtom, 'cp1200'))
             StrPut(ClassNameOrAtom, this.__ClassName, 'cp1200')
@@ -45,21 +46,23 @@
         }
         if !DllCall(
             g_user32_GetClassInfoExW
-          , 'ptr', hInstance
+          , 'ptr', hInstance ?? DllCall(g_kernel32_GetModuleHandleW, 'int', 0, 'ptr')
           , 'ptr', ClassNameOrAtom
-          , 'ptr', this13
+          , 'ptr', this
           , 'int'
         ) {
             throw OSError()
         }
     }
     GetClassLong(hwnd, value) {
-        if !DllCall(
+        if value := DllCall(
             g_user32_GetClassLongW
           , 'ptr', hwnd
           , 'int', value
           , 'uint'
         ) {
+            return value
+        } else {
             throw OSError()
         }
     }
