@@ -32,7 +32,7 @@ class test {
         ; A gui is not necessary to use the library; this is for the example.
         g := this.Gui := Gui()
         g.SetFont('s11 q5', 'Segoe Ui')
-        g.Add('Text', , 'Press start then move your mouse around.`r`n')
+        g.Add('Text', , 'Press start then scroll your mouse wheel.`r`n')
         g.Add('Edit', 'w300 r1 vEdt')
         g.Add('Button', 'Section vBtnStart', 'Start').OnEvent('Click', HClickButtonStart)
         g.Add('Button', 'ys vBtnStop', 'Stop').OnEvent('Click', HClickButtonStop)
