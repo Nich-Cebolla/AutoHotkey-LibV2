@@ -2,6 +2,7 @@
 #SingleInstance force
 #include ..\GuiResizer.ahk
 #include ..\GetRelativePosition.ahk
+#include ..\structs\Rect.ahk
 
 test()
 
@@ -21,12 +22,20 @@ class test {
         txtMaxH := ''
         txtScale := ''
 
+        txtSubject := '1'
+        txtTarget := '2'
+        txtDimension := 'Y'
+        txtPrefer := 'B'
+        txtPadding := '0'
+        txtInsufficientSpaceAction := '0'
+
         this.Id := 0
         this.controls := Map()
         this.hidden := Map()
         this.controls.CaseSense := this.hidden.CaseSense := false
         this.resizer := ''
-        g := this.guicontrol := Gui('+Resize', , EventHandler())
+        this.eventHandler := EventHandler()
+        g := this.guicontrol := Gui('+Resize', , this.eventHandler)
         g.SetFont('s11 q5')
         g.Add('Button', 'Section vBtnAdd', 'Add').OnEvent('Click', 'Add')
         g.Add('Button', 'ys vBtnSetOptions', 'Set options').OnEvent('Click', 'SetOptions')
@@ -91,6 +100,27 @@ class test {
         g.Add('Text', 'ys vTxtTarget', 'Target:')
         this.target := g.Add('Edit', 'ys w100 vEdtTarget')
         this.getRelativePositionResult := g.Add('Text', 'ys w100 vTxtGetRelativePositionResult')
+        lv.GetPos(&x, , &w)
+        x += w + g.MarginX
+        g.Add('Text', 'x' x ' y' g.MarginY ' Section vTxtLabelMoveAdjacent', 'Move adjactent function')
+        labels := []
+        edits := this.MoveAdjacentEdits := Map()
+        w := 0
+        names := [ 'Subject', 'Target', 'Dimension', 'Prefer', 'Padding', 'InsufficientSpaceAction' ]
+        for name in names {
+            labels.Push(g.Add('Text', 'xs Right Section vTxtLabel' name, name ':'))
+            labels[-1].GetPos(, , &_w)
+            w := Max(_w, w)
+            edits.Set(name, g.Add('Edit', 'ys w150 vEdtMoveAdjacent' name))
+        }
+        _x := x + w + g.MarginX
+        for label in labels {
+            label.Move(, , w)
+            edits.Get(names[A_Index]).Move(_x)
+        }
+        g.Add('Button', 'xs vBtnMoveAdjacent', 'MoveAdjacent').OnEvent('Click', 'MoveAdjacent')
+        g['TxtLabelMoveAdjacent'].GetPos(, , &_w)
+        g['TxtLabelMoveAdjacent'].Move(x * 0.5 + (_x + 150 - _w) / 2)
 
         this.X.Text := txtX
         this.Y.Text := txtY
@@ -105,16 +135,22 @@ class test {
         this.MinH.Text := txtMinH
         this.MaxH.Text := txtMaxH
         this.Scale.Text := txtScale
+        edits.Get('Subject').Text := txtSubject
+        edits.Get('Target').Text := txtTarget
+        edits.Get('Dimension').Text := txtDimension
+        edits.Get('Prefer').Text := txtPrefer
+        edits.Get('Padding').Text := txtPadding
+        edits.Get('InsufficientSpaceAction').Text := txtInsufficientSpaceAction
 
         g.Show('x10 y10')
         g.GetPos(&x, &y, &w, &h)
 
         g := this.guidisplay := Gui('+Resize -DPIScale')
         g.Show('x100 y' (y + h + 15) ' w500 h500')
-        g.SetFont('s10 q5 bold')
-        rc := this.rc := GuiResizer_Rect()
-        rc.Client(g.Hwnd)
-        this.ClientArea.Text := 'W: ' rc.W '; H: ' rc.H
+        g.SetFont('s9 q5 bold')
+        g.OnEvent('Size', OnSize)
+        this.rc := GuiResizer_Rect()
+        OnSize(g)
 
         this.colors := [ 0x000000, 0xC0C0C0, 0x808080, 0xFFFFFF, 0x800000, 0xFF0000, 0x800080, 0xFF00FF, 0x008000, 0x00FF00, 0x808000, 0xFFFF00, 0x000080, 0x0000FF, 0x008080, 0x00FFFF ]
         this.colorIndex := 0
@@ -140,7 +176,7 @@ class EventHandler {
                 txt.GetPos(&x, &y, &w, &h)
             }
             g := test.guidisplay
-            rc := test.rc
+            rc := GuiResizer_Rect()
             rc.Client(g.Hwnd)
             x += w + g.MarginX
             if x + w > rc.W - g.MarginX {
@@ -155,8 +191,8 @@ class EventHandler {
         }
         txt := test.guidisplay.Add('Text', 'x' x ' y' y ' w100 h100 Center Border Background' color ' vTest' id)
         txt.GetPos(&x, &y, &w, &h)
-        txt.Text := id '`r`nX: ' x '; y: ' y '; w: ' w '; h: ' h
         txt.id := id
+        UpdateText(txt)
         if IsNumber(color) {
             ParseColorRef(color, &r, &g, &b)
             if RGBToLuminosity(r, g, b) < 0.4 {
@@ -218,6 +254,41 @@ class EventHandler {
         }
         test.resizer := GuiResizer(test.guidisplay, options, _controls)
         test.activeControls := _controls
+    }
+    MoveAdjacent(*) {
+        edits := test.MoveAdjacentEdits
+        controls := test.controls
+        if test.subject.Text && test.target.Text {
+            subject := controls.Get(test.subject.Text)
+            target := controls.Get(test.target.Text)
+        } else {
+            for id, txt in controls {
+                if A_Index == 1 {
+                    subject := txt
+                } else if A_Index == 2 {
+                    target := txt
+                } else {
+                    break
+                }
+            }
+        }
+        hwndGui := test.guidisplay.Hwnd
+        rc1 := WinRect(subject.Hwnd)
+        rc2 := WinRect(target.Hwnd)
+        bounding := WinRect(hwndGui, 1)
+        bounding.ToScreen(hwndGui, true)
+        RectMoveAdjacent(
+            rc1
+          , rc2
+          , bounding
+          , StrLen(edits.Get('Dimension').Text) ? edits.Get('Dimension').Text : unset
+          , StrLen(edits.Get('Prefer').Text) ? edits.Get('Prefer').Text : unset
+          , StrLen(edits.Get('Padding').Text) ? edits.Get('Padding').Text : unset
+          , StrLen(edits.Get('InsufficientSpaceAction').Text) ? edits.Get('InsufficientSpaceAction').Text : unset
+        )
+        rc1.ToClient(hwndGui, true)
+        rc1.Apply(, 0x0004 | 0x0010) ; SWP_NOZORDER | SWP_NOACTIVATE
+        UpdateText(subject)
     }
     ResetPosition(*) {
         x := y := 10
@@ -282,20 +353,35 @@ class EventHandler {
     }
     GetRelativePosition(*) {
         controls := test.controls
-        if controls.Count == 2 {
+        if test.subject.Text && test.target.Text {
+            subject := controls.Get(test.subject.Text)
+            target := controls.Get(test.target.Text)
+        } else {
             for id, txt in controls {
                 if A_Index == 1 {
                     subject := txt
-                } else {
+                } else if A_Index == 2 {
                     target := txt
+                } else {
+                    break
                 }
             }
-        } else {
-            subject := controls.Get(test.subject.Text)
-            target := controls.Get(test.target.Text)
         }
         test.getRelativePositionResult.Text := GetRelativePosition(subject, target)
     }
+}
+
+OnSize(g, *) {
+    rc := WinRect(g.Hwnd, 1)
+    rc.ToScreen(g.Hwnd, true)
+    g.Title := 'L: ' rc.L '; T: ' rc.T '; R: ' rc.R '; B: ' rc.B
+    test.ClientArea.Text := 'W: ' rc.W '; H: ' rc.H
+}
+
+UpdateText(txt) {
+    txt.GetPos(&x, &y, &w, &h)
+    rc := WinRect(txt.Hwnd)
+    txt.Text := txt.id '`r`nClient:`r`nX: ' x '; y: ' y '; w: ' w '; h: ' h '`r`nScreen:`r`nX: ' rc.L '; y: ' rc.T
 }
 
 Callback(*) {
@@ -323,6 +409,7 @@ DynamicMoveControl(*) {
         }
         MouseGetPos(&x2, &y2)
         ControlMove(wx + x2 - x, wy + y2 - y, , , hwnd)
+        UpdateText(GuiCtrlFromHwnd(hwnd))
         sleep 10
     }
     CoordMode('Mouse', MouseMode)
@@ -358,6 +445,7 @@ DynamicResizeControl(*) {
         }
         MouseGetPos(&x2, &y2)
         ControlMove(GetX(), GetY(), ww + (x2 - x) * x_quotient, wh + (y2 - y) * y_quotient, hwnd)
+        UpdateText(GuiCtrlFromHwnd(hwnd))
         sleep 10
     }
 
