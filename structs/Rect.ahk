@@ -898,6 +898,14 @@ RectDispose(Obj) {
  * ensuring that the `Subject` rectangle stays within the monitor's work area. The properties
  * { L, T, R, B } of `Subject` are updated with the new values.
  *
+ * @example
+ * ; Assume I have Edge and VLC open
+ * rcSub := WinRect(WinGetId("ahk_exe msedge.exe"))
+ * rcTar := WinRect(WinGetId("ahk_exe vlc.exe"))
+ * rcSub.MoveAdjacent(rcTar)
+ * rcSub.Apply()
+ * @
+ *
  * @param {*} Subject - The object representing the rectangle that will be moved. This can be an
  * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
  * { L, T, R, B }. Those four property values will be updated with the result of this function call.
