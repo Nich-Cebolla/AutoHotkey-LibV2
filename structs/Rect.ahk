@@ -994,13 +994,13 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
             if tarL - subW - Padding >= monL {
                 X := tarL - subW - Padding
             } else if tarL - subW >= monL {
-                X := monL - subW + subW
+                X := monL
             }
         } else if Prefer = 'R' {
             if tarR + subW + Padding <= monR {
                 X := tarR + Padding
             } else if tarR + subW <= monR {
-                X := monR - tarR + subW
+                X := monR - subW
             }
         } else if Prefer {
             throw _ValueError('Prefer', Prefer)
@@ -1020,16 +1020,16 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
         }
     } else if Dimension = 'Y' {
         if Prefer = 'T' {
-            if tarT - subH - Padding >= monL {
+            if tarT - subH - Padding >= monT {
                 Y := tarT - subH - Padding
-            } else if tarT - subH >= monL {
-                Y := tarT - subH
+            } else if tarT - subH >= monT {
+                Y := monT
             }
         } else if Prefer = 'B' {
             if tarB + subH + Padding <= monB {
                 Y := tarB + Padding
             } else if tarB + subH <= monB {
-                Y := monB - tarB + subH
+                Y := monB - subH
             }
         } else if Prefer {
             throw _ValueError('Prefer', Prefer)
@@ -1131,9 +1131,9 @@ RectSubtract(rc1, rc2) {
     return rc
 }
 /**
- * Calls `ClientToScreen` for the the rectangle.
+ * Calls `ScreenToClient` for the the rectangle.
  * @param {Integer} Hwnd - The handle to the window to which the rectangle's dimensions
- * are currently relative.
+ * will be made relative.
  * @param {Boolean} [InPlace = false] - If true, the function modifies the object's properties.
  * If false, the function creates a new object.
  * @returns {Rect}
