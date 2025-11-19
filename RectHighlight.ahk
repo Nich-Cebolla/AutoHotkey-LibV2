@@ -231,16 +231,16 @@ class RectHighlight extends Gui {
      * @returns {BoundFunc} - A function that can be set as an object method.
      *
      * @example
-     *  EventHandler := {}
-     *  G := Gui('+Resize', , EventHandler)
-     *  loop 10 {
-     *      G.Add('Button', , 'Button ' A_Index).OnEvent('Click', 'HClickButtonHighlight')
-     *  }
-     *  ; Call the constructor without an initial object.
-     *  Highlighter := RectHighlight(, { Duration: -5000, OffsetR: 5, OffsetL: 5, OffsetT: 5, OffsetB: 5 })
-     *  EventHandler.DefineProp('HClickButtonHighlight', { Call: Highlighter.GetFunc(true) })
-     *  G.Show()
-     *  ; Clicking the buttons should display a highlighted rectangle around the button.
+     * EventHandler := {}
+     * G := Gui('+Resize', , EventHandler)
+     * loop 10 {
+     *     G.Add('Button', , 'Button ' A_Index).OnEvent('Click', 'HClickButtonHighlight')
+     * }
+     * ; Call the constructor without an initial object.
+     * Highlighter := RectHighlight(, { Duration: -5000, OffsetR: 5, OffsetL: 5, OffsetT: 5, OffsetB: 5 })
+     * EventHandler.DefineProp('HClickButtonHighlight', { Call: Highlighter.GetFunc(true) })
+     * G.Show()
+     * ; Clicking the buttons should display a highlighted rectangle around the button.
      * @
      */
     GetFunc(FirstParamOnly := false) {
