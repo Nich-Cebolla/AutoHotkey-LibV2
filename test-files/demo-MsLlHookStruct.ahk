@@ -80,8 +80,12 @@ LowLevelMouseProc(nCode, wParam, lParam) {
     ; CallNextHookEx function without further processing and should return the value returned by
     ; CallNextHookEx.", we only process the message when nCode == 0.
     if nCode == 0 {
+        ; Get an instance of `MsLlHookStruct`
         _mouseHookStruct := MsLlHookStruct(lParam, wParam)
-        test.Gui['Edt'].Text := ('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
+        ; Only respond to WM_MOUSEMOVE
+        if wParam == 0x0200 { ; WM_MOUSEMOVE
+            test.Gui['Edt'].Text := ('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
+        }
     }
     return DllCall(
         test.proc_CallNextHookEx
