@@ -11,6 +11,14 @@
  * ensuring that the `Subject` rectangle stays within the monitor's work area. The properties
  * { L, T, R, B } of `Subject` are updated with the new values.
  *
+ * @example
+ * ; Assume I have Edge and VLC open
+ * rcSub := WinRect(WinGetId("ahk_exe msedge.exe"))
+ * rcTar := WinRect(WinGetId("ahk_exe vlc.exe"))
+ * rcSub.MoveAdjacent(rcTar)
+ * rcSub.Apply()
+ * @
+ *
  * @param {*} Subject - The object representing the rectangle that will be moved. This can be an
  * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
  * { L, T, R, B }. Those four property values will be updated with the result of this function call.
@@ -57,7 +65,7 @@
  *
  * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
  */
-MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0) {
+RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0) {
     Result := 0
     if IsSet(Target) {
         tarL := Target.L
@@ -107,13 +115,13 @@ MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '', P
             if tarL - subW - Padding >= monL {
                 X := tarL - subW - Padding
             } else if tarL - subW >= monL {
-                X := monL - subW + subW
+                X := monL
             }
         } else if Prefer = 'R' {
             if tarR + subW + Padding <= monR {
                 X := tarR + Padding
             } else if tarR + subW <= monR {
-                X := monR - tarR + subW
+                X := monR - subW
             }
         } else if Prefer {
             throw _ValueError('Prefer', Prefer)
@@ -133,16 +141,16 @@ MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '', P
         }
     } else if Dimension = 'Y' {
         if Prefer = 'T' {
-            if tarT - subH - Padding >= monL {
+            if tarT - subH - Padding >= monT {
                 Y := tarT - subH - Padding
-            } else if tarT - subH >= monL {
-                Y := tarT - subH
+            } else if tarT - subH >= monT {
+                Y := monT
             }
         } else if Prefer = 'B' {
             if tarB + subH + Padding <= monB {
                 Y := tarB + Padding
             } else if tarB + subH <= monB {
-                Y := monB - tarB + subH
+                Y := monB - subH
             }
         } else if Prefer {
             throw _ValueError('Prefer', Prefer)
