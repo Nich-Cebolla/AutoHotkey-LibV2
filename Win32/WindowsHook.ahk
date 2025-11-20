@@ -43,23 +43,22 @@ class WindowsHook {
      * before proceeding. Below is an example that uses the helper class `MouseHookStruct`. You can
      * run this example in the file "test-files\demo-MouseHookStruct.ahk".
      * @example
-     *  #include <WindowsHook>
-     *  #include <MouseHookStruct>
-     *
-     *  MouseProc(nCode, wParam, lParam) {
-     *      if nCode == 0 {
-     *          _mouseHookStruct := MouseHookStruct(lParam)
-     *          OutputDebug('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
-     *      }
-     *      return DllCall(
-     *          'CallNextHookEx'
-     *        , 'ptr', 0
-     *        , 'int', nCode
-     *        , 'uptr', wParam
-     *        , 'ptr', lParam
-     *        , 'ptr'
-     *      )
-     *  }
+     * #include <WindowsHook>
+     * #include <MouseHookStruct>
+     *     *  MouseProc(nCode, wParam, lParam) {
+     *     if nCode == 0 {
+     *         _mouseHookStruct := MouseHookStruct(lParam)
+     *         OutputDebug('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
+     *     }
+     *     return DllCall(
+     *         'CallNextHookEx'
+     *       , 'ptr', 0
+     *       , 'int', nCode
+     *       , 'uptr', wParam
+     *       , 'ptr', lParam
+     *       , 'ptr'
+     *     )
+     * }
      *
      * @param {Integer} [Hmod = 0] - The handle to the module that contains the dll. Leave 0 unless
      * you are specifically using this with an external dll.
