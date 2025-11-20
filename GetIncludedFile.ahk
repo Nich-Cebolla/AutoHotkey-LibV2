@@ -13,6 +13,7 @@
  * - {@link GetIncludedFile.Prototype.Unique} - Call this to get a map where each key is a full file
  * path and each value is an array of {@link GetIncludedFile.File} objects, each representing an
  * #include or #IncludeAgain statement that resolved to the same file path.
+ * - {@link GetIncludedFile.Prototype.CountLines} - Returns the number of lines of code in a project.
  *
  * One {@link GetIncludedFile.File} is created for each #include or #IncludeAgain statement, but
  * each individual file is only read a maximum of one time.
@@ -32,6 +33,12 @@
  * because it will be an item created from the path passed to the `Path` parameter.
  */
 class GetIncludedFile {
+    static __New() {
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.Encoding := ''
+        proto.PatternCountLines := 'S)(?:[\r\n]+|^)(?:[ \t]*;.*|[ \t]*/\*[\w\W]*?\*/|[ \t]+)'
+    }
     /**
      * @description - Processes a relative path with any number of ".\" or "..\" segments.
      * @param {VarRef} Path - A variable containing the relative path to evaluate as string.
@@ -144,6 +151,9 @@ class GetIncludedFile {
          * @type {GetIncludedFile.File[]}
          */
         this.NotFound := []
+        If IsSet(Encoding) {
+            this.Encoding := Encoding
+        }
         result := this.Result
         notFound := this.NotFound
         read := Map()
@@ -287,6 +297,46 @@ class GetIncludedFile {
                 notFound.Push(item)
             }
         }
+    }
+
+    /**
+     * Counts the lines of code in the project. Consecutive line breaks are replaced with
+     * a single line break before counting. Each individual file is only processed once.
+     *
+     * @param {Boolean} [CodeLinesOnly = true] - If true, lines that only have a comment are not
+     * included in the count.
+     *
+     * @returns {Integer} - The number of lines.
+     */
+    CountLines(CodeLinesOnly := true) {
+        ct := 0
+        if CodeLinesOnly {
+            pattern := this.PatternCountLines
+            if encoding := this.Encoding {
+                for path in this.GetUnique() {
+                    StrReplace(RegExReplace(RegExReplace(FileRead(path, encoding), pattern, '`n'), '\R+', '`n'), '`n', , , &n)
+                    ct += n + 1
+                }
+            } else {
+                for path in this.GetUnique() {
+                    StrReplace(RegExReplace(RegExReplace(FileRead(path), pattern, '`n'), '\R+', '`n'), '`n', , , &n)
+                    ct += n + 1
+                }
+            }
+        } else {
+            if encoding := this.Encoding {
+                for path in this.GetUnique() {
+                    StrReplace(RegExReplace(FileRead(path, encoding), '\R+', '`n'), '`n', , , &n)
+                    ct += n + 1
+                }
+            } else {
+                for path in this.GetUnique() {
+                    StrReplace(RegExReplace(FileRead(path), '\R+', '`n'), '`n', , , &n)
+                    ct += n + 1
+                }
+            }
+        }
+        return ct
     }
 
     GetUnique() {
