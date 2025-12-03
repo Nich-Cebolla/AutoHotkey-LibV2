@@ -1,7 +1,6 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PathObj.ahk
     Author: Nich-Cebolla
-    Version: 1.1.2
     License: MIT
 */
 
@@ -65,7 +64,6 @@
  * @
  */
 class PathObj {
-    static InitialBufferSize := 256
     static __New() {
         this.DeleteProp('__New')
         PathObj_SetConstants()
@@ -87,23 +85,20 @@ class PathObj {
      * @param {String} [QuoteChar = "`""] - The quote character to use for item keys.
      */
     __New(Name := '$', EscapePropNames := false, QuoteChar := '"') {
-        static desc := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot1')
-        , desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot_U')
-        , propdesc := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp1')
         this.Name := Name
         this.QuoteChar := QuoteChar
-        this.DefineProp('GetPathSegment', desc)
-        this.DefineProp('GetPathSegment_U', desc_u)
+        this.DefineProp('GetPathSegment', PathObj_GetPathSegmentRoot1)
+        this.DefineProp('GetPathSegment_U', PathObj_GetPathSegmentRoot_U)
         if EscapePropNames {
-            this.DefineProp('propdesc', { Value: propdesc })
+            this.DefineProp('propdesc', { Value: PathObj_GetPathSegmentProp1 })
         }
         this.Index := 1
     }
     Call(*) {
         if !this.HasOwnProp('__Path') {
             o := this
-            buf := Buffer(PathObj.InitialBufferSize)
-            offset := PathObj.InitialBufferSize - 2
+            buf := Buffer(PATHOBJ_INITIAL_BUFFER_SIZE)
+            offset := PATHOBJ_INITIAL_BUFFER_SIZE - 2
             NumPut('ushort', 0, buf, offset) ; null terminator
             loop {
                 if o.GetPathSegment(buf, &offset) {
@@ -116,23 +111,19 @@ class PathObj {
         return this.__Path
     }
     MakeProp(Name) {
-        static desc_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp_U')
         ObjSetBase(Segment := { Name: Name, Index: this.Index + 1, Type: PATHOBJ_TYPE_PROP }, this)
         Segment.DefineProp('GetPathSegment', this.propdesc)
-        Segment.DefineProp('GetPathSegment_U', desc_u)
+        Segment.DefineProp('GetPathSegment_U', PathObj_GetPathSegmentProp_U)
         return Segment
     }
     MakeItem(Name) {
-        static descNumber := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_Number')
-        , descString := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String1')
-        , descString_u := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U1')
         ObjSetBase(Segment := { Name: Name, Index: this.Index + 1, Type: PATHOBJ_TYPE_ITEM }, this)
         if IsNumber(Name) {
-            Segment.DefineProp('GetPathSegment', descNumber)
-            Segment.DefineProp('GetPathSegment_U', descNumber)
+            Segment.DefineProp('GetPathSegment', PathObj_GetPathSegmentItem_Number)
+            Segment.DefineProp('GetPathSegment_U', PathObj_GetPathSegmentItem_Number)
         } else {
-            Segment.DefineProp('GetPathSegment', descString)
-            Segment.DefineProp('GetPathSegment_U', descString_u)
+            Segment.DefineProp('GetPathSegment', PathObj_GetPathSegmentItem_String1)
+            Segment.DefineProp('GetPathSegment_U', PathObj_GetPathSegmentItem_String_U1)
         }
         return Segment
     }
@@ -149,8 +140,8 @@ class PathObj {
     Unescaped(*) {
         if !this.HasOwnProp('__Path_U') {
             o := this
-            buf := Buffer(PathObj.InitialBufferSize)
-            offset := PathObj.InitialBufferSize - 2
+            buf := Buffer(PATHOBJ_INITIAL_BUFFER_SIZE)
+            offset := PATHOBJ_INITIAL_BUFFER_SIZE - 2
             NumPut('ushort', 0, buf, offset) ; null terminator
             loop {
                 if o.GetPathSegment_U(buf, &offset) {
@@ -167,7 +158,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -185,9 +176,8 @@ class PathObj {
 
     ;@region Escaped
     __GetPathSegmentItem_String1(buf, &offset) {
-        static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String2')
         this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
-        this.DefineProp('GetPathSegment', desc2)
+        this.DefineProp('GetPathSegment', PathObj_GetPathSegmentItem_String2)
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentItem_String2(buf, &offset) {
@@ -195,7 +185,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -211,9 +201,8 @@ class PathObj {
         StrPut('[' this.QuoteChar this.NameEscaped this.QuoteChar ']', buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentProp1(buf, &offset) {
-        static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentProp2')
         this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
-        this.DefineProp('GetPathSegment', desc2)
+        this.DefineProp('GetPathSegment', PathObj_GetPathSegmentProp2)
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentProp2(buf, &offset) {
@@ -221,7 +210,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -237,9 +226,8 @@ class PathObj {
         StrPut('.' this.NameEscaped, buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentRoot1(buf, &offset) {
-        static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentRoot2')
         this.DefineProp('NameEscaped', { Value: StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(this.Name, '``', '````'), '`n', '``n'), '`r', '``r'), this.QuoteChar, '``' this.QuoteChar), '`t', '``t') })
-        this.DefineProp('GetPathSegment', desc2)
+        this.DefineProp('GetPathSegment', PathObj_GetPathSegmentRoot2)
         return this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentRoot2(buf, &offset) {
@@ -247,7 +235,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -267,9 +255,8 @@ class PathObj {
 
     ;@region Unescaped
     __GetPathSegmentItem_String_U1(buf, &offset) {
-        static desc2 := PathObj.Prototype.GetOwnPropDesc('__GetPathSegmentItem_String_U2')
         this.DefineProp('__NamePartialEscaped', { Value: StrReplace(this.Name, this.QuoteChar, '``' this.QuoteChar) })
-        this.DefineProp('GetPathSegment', desc2)
+        this.DefineProp('GetPathSegment', PathObj_GetPathSegmentItem_String_U2)
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentItem_String_U2(buf, &offset) {
@@ -277,7 +264,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -297,7 +284,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -317,7 +304,7 @@ class PathObj {
         if bytes > offset {
             count := buf.Size - offset
             while bytes > offset {
-                PathObj.InitialBufferSize *= 2
+                PATHOBJ_INITIAL_BUFFER_SIZE *= 2
                 buf.Size *= 2
                 DllCall(
                     g_msvcrt_memmove
@@ -352,6 +339,21 @@ PathObj_SetConstants(force := false) {
     PATHOBJ_TYPE_PROP := ++i
     PATHOBJ_TYPE_ROOT := ++i
     PATHOBJ_TYPE_END := i
+
+    PATHOBJ_INITIAL_BUFFER_SIZE := 256
+
+    local proto := PathObj.Prototype
+    PathObj_GetPathSegmentRoot1 := proto.GetOwnPropDesc('__GetPathSegmentRoot1')
+    PathObj_GetPathSegmentRoot_U := proto.GetOwnPropDesc('__GetPathSegmentRoot_U')
+    PathObj_GetPathSegmentProp1 := proto.GetOwnPropDesc('__GetPathSegmentProp1')
+    PathObj_GetPathSegmentProp_U := proto.GetOwnPropDesc('__GetPathSegmentProp_U')
+    PathObj_GetPathSegmentItem_Number := proto.GetOwnPropDesc('__GetPathSegmentItem_Number')
+    PathObj_GetPathSegmentItem_String1 := proto.GetOwnPropDesc('__GetPathSegmentItem_String1')
+    PathObj_GetPathSegmentItem_String_U1 := proto.GetOwnPropDesc('__GetPathSegmentItem_String_U1')
+    PathObj_GetPathSegmentItem_String2 := proto.GetOwnPropDesc('__GetPathSegmentItem_String2')
+    PathObj_GetPathSegmentProp2 := proto.GetOwnPropDesc('__GetPathSegmentProp2')
+    PathObj_GetPathSegmentRoot2 := proto.GetOwnPropDesc('__GetPathSegmentRoot2')
+    PathObj_GetPathSegmentItem_String_U2 := proto.GetOwnPropDesc('__GetPathSegmentItem_String_U2')
 
     g_PathObj_constants_set := 1
 }
