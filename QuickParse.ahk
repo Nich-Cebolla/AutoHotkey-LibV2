@@ -119,7 +119,7 @@ class QuickParse {
         return Root
 
         ;@region Array Callbacks
-        OnQuoteArr(Match, *) {
+        OnQuoteArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -136,7 +136,7 @@ class QuickParse {
             }
             _PrepareNextArr(MatchValue)
         }
-        OnSquareOpenArr(Match, *) {
+        OnSquareOpenArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -152,7 +152,7 @@ class QuickParse {
                 Controller := { Obj: Obj }
             }
         }
-        OnCurlyOpenArr(Match, *) {
+        OnCurlyOpenArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -169,7 +169,7 @@ class QuickParse {
                 Pattern := ObjectPropName
             }
         }
-        OnFalseArr(Match, *) {
+        OnFalseArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -180,7 +180,7 @@ class QuickParse {
             Obj.Push(0)
             _PrepareNextArr(MatchValue)
         }
-        OnTrueArr(Match, *) {
+        OnTrueArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -191,7 +191,7 @@ class QuickParse {
             Obj.Push(1)
             _PrepareNextArr(MatchValue)
         }
-        OnNullArr(Match, *) {
+        OnNullArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -202,7 +202,7 @@ class QuickParse {
             Obj.Push(unset)
             _PrepareNextArr(MatchValue)
         }
-        OnNumberArr(Match, *) {
+        OnNumberArray(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -216,7 +216,7 @@ class QuickParse {
         ;@endregion
 
         ;@region Object Callbacks
-        OnQuoteObj(Match, *) {
+        OnQuoteObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -233,7 +233,7 @@ class QuickParse {
             }
             _PrepareNextObj(MatchValue)
         }
-        OnSquareOpenObj(Match, *) {
+        OnSquareOpenObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -250,7 +250,7 @@ class QuickParse {
                 Pattern := ArrayItem
             }
         }
-        OnCurlyOpenObj(Match, *) {
+        OnCurlyOpenObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -266,7 +266,7 @@ class QuickParse {
                 Controller := { Obj: Obj }
             }
         }
-        OnFalseObj(Match, *) {
+        OnFalseObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -277,7 +277,7 @@ class QuickParse {
             CallbackSetterObject(Match, 0)
             _PrepareNextObj(MatchValue)
         }
-        OnTrueObj(Match, *) {
+        OnTrueObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -288,7 +288,7 @@ class QuickParse {
             CallbackSetterObject(Match, 1)
             _PrepareNextObj(MatchValue)
         }
-        OnNullObj(Match, *) {
+        OnNullObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -299,7 +299,7 @@ class QuickParse {
             CallbackSetterObject(Match, '')
             _PrepareNextObj(MatchValue)
         }
-        OnNumberObj(Match, *) {
+        OnNumberObject(Match, *) {
             if Match.Pos !== Pos {
                 _Throw(1, Pos)
             }
@@ -403,14 +403,14 @@ class QuickParse {
             ')'
         )
         this.Patterns := {
-            ArrayItem: 'JS)\s*' Format(SignificantChars, 'Arr')
+            ArrayItem: 'JS)\s*' Format(SignificantChars, 'Array')
           , ArrayNumber: 'S)(?<value>(?<n>(?:-?\d++(?:\.\d++)?)(?:[eE][+-]?\d++)?))' ArrayNextChar
           , ArrayString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ArrayNextChar
           , ArrayFalse: 'S)(?<value>false)' ArrayNextChar
           , ArrayTrue: 'S)(?<value>true)' ArrayNextChar
           , ArrayNull: 'S)(?<value>null)' ArrayNextChar
           , ArrayNextChar: 'S)' ArrayNextChar
-          , ObjectPropName: 'JS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*' Format(SignificantChars, 'Obj')
+          , ObjectPropName: 'JS)\s*"(?<name>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT):\s*' Format(SignificantChars, 'Object')
           , ObjectNumber: 'S)(?<value>(?<n>-?\d++(?:\.\d++)?)(?<e>[eE][+-]?\d++)?)' ObjectNextChar
           , ObjectString: 'S)(?<=[,:[{\s])"(?<value>.*?(?<!\\)(?:\\\\)*+)"(*COMMIT)' ObjectNextChar
           , ObjectFalse: 'S)(?<value>false)' ObjectNextChar
