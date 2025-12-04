@@ -1,12 +1,13 @@
 ﻿/*
-    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/test-files/demo-MsLlHookStruct.ahk
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/test-files/demo-MsLlHookStruct-3.ahk
     Author: Nich-Cebolla
     License: MIT
 */
 
 /**
  * This is a demo for using
- * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MsLlHookStruct.ahk MsLlHookStruct}.
+ * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MsLlHookStruct.ahk MsLlHookStruct}
+ * to respond to the mouse wheel scrolling.
  */
 test()
 
@@ -31,8 +32,9 @@ class test {
         ; A gui is not necessary to use the library; this is for the example.
         g := this.Gui := Gui()
         g.SetFont('s11 q5', 'Segoe Ui')
-        g.Add('Text', , 'Press start then move your mouse around.')
-        g.Add('Edit', 'w300 r1 vEdt')
+        g.Add('Text', , 'Press start then scroll your mouse wheel.`r`n')
+        g.Add('Edit', 'w300 r1 vEdtMouseMove')
+        g.Add('Edit', 'w300 r10 vEdtGeneral')
         g.Add('Button', 'Section vBtnStart', 'Start').OnEvent('Click', HClickButtonStart)
         g.Add('Button', 'ys vBtnStop', 'Stop').OnEvent('Click', HClickButtonStop)
         g.Add('Button', 'ys vBtnExit', 'Exit').OnEvent('Click', (*) => ExitApp())
@@ -81,10 +83,38 @@ LowLevelMouseProc(nCode, wParam, lParam) {
     ; CallNextHookEx.", we only process the message when nCode == 0.
     if nCode == 0 {
         ; Get an instance of `MsLlHookStruct`
-        _mouseHookStruct := MsLlHookStruct(lParam, wParam)
-        ; Only respond to WM_MOUSEMOVE
-        if wParam == 0x0200 { ; WM_MOUSEMOVE
-            test.Gui['Edt'].Text := ('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
+        ms := MsLlHookStruct(lParam, wParam)
+        switch wParam {
+            case WM_MOUSEMOVE:
+                test.Gui['EdtMouseMove'].Text := ('The mouse moved to ( ' ms.X ', ' ms.Y ' )`n')
+            case WM_LBUTTONDOWN:
+                text := 'LBUTTON down'
+            case WM_LBUTTONUP:
+                text := 'LBUTTON up'
+            case WM_MOUSEWHEEL:
+                ; A positive value indicates that the wheel was rotated forward, away from the user; a
+                ; negative value indicates that the wheel was rotated backward, toward the user. One
+                ; wheel click is defined as WHEEL_DELTA, which is 120.
+                if ms.GetMouseData() > 0 {
+                    test.Gui['EdtGeneral'].Text := 'Mouse scrolled up`r`n' test.Gui['EdtGeneral'].Text
+                } else {
+                    test.Gui['EdtGeneral'].Text := 'Mouse scrolled down`r`n' test.Gui['EdtGeneral'].Text
+                }
+            case WM_RBUTTONDOWN:
+                text := 'RBUTTON down'
+            case WM_RBUTTONUP:
+                text := 'RBUTTON up'
+            case WM_MBUTTONDOWN:
+                text := 'MBUTTON down'
+            case WM_MBUTTONUP:
+                text := 'MBUTTON up'
+            case WM_XBUTTONDOWN:
+                text := 'XBUTTON down'
+            case WM_XBUTTONUP:
+                text := 'XBUTTON up'
+        }
+        if IsSet(text) {
+            test.Gui['EdtGeneral'].Text := text ' at ( ' ms.X ', ' ms.Y ')`r`n' test.Gui['EdtGeneral'].Text
         }
     }
     return DllCall(
@@ -97,28 +127,6 @@ LowLevelMouseProc(nCode, wParam, lParam) {
     )
 }
 
-/**
- * @classdesc -
- * For use with `SetWindowsHookExW`.
- *
- * To use:
- * 1. Define a LowLevelMouseProc function. See
- * {@link https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc} for information.
- * In the body of your function, get an `MsLlHookStruct` object
- * `_msLlHookStruct := MsLlHookStruct(lParam, wParam)`.
- * 2. Get a pointer to your function using `CallbackCreate`.
- * {@link https://www.autohotkey.com/docs/v2/lib/CallbackCreate.htm}.
- * 3. Call `SetWindowsHookExW`.
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowshookexw}.
- * 4. Set an `OnExit` callback to call StopHook `DllCall("path\to\MouseHook-LL.dll\StopHook", "int")`.
- * {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm}.
- * 5. When you need to uninstall the hook, call StopHook and also disable the `OnExit` callback.
- *
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msllhookstruct}
- *
- * There is one other library for setting a mouse hook in this repo:
- * {@link https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/MouseHookStruct.ahk}.
- */
 class MsLlHookStruct {
     static __New() {
         this.DeleteProp('__New')

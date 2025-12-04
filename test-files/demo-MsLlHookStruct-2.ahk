@@ -132,7 +132,17 @@ class MsLlHookStruct {
         4 +                 ; DWORD                                     flags           12
         A_PtrSize +         ; DWORD + 4 bytes for alignment on x64      time            16
         A_PtrSize           ; ULONG_PTR                                 dwExtraInfo     16 + A_PtrSize
+        MsLlHookStruct_SetConstants()
     }
+    /**
+     * @param {Integer} Ptr - A pointer to a MSLLHOOKSTRUCT structure. This is the `lParam` of
+     * {@link https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc LowLevelMouseProc}
+     *
+     * See {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msllhookstruct MSLLHOOKSTRUCT}.
+     *
+     * @param {Integer} uMsg - The window message. This is the `wParam` of
+     * {@link https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc LowLevelMouseProc}
+     */
     __New(Ptr, uMsg) {
         this.Ptr := Ptr
         this.Msg := uMsg
@@ -157,10 +167,7 @@ class MsLlHookStruct {
             case 0x020A:
                 value := this.MouseData >> 16
                 return (value & 0x8000) ? value - 0x10000 : value
-
-            ; WM_XBUTTONDOWN, WM_XBUTTONUP, WM_XBUTTONDBLCLK, WM_NCXBUTTONDOWN, WM_NCXBUTTONUP, WM_NCXBUTTONDBLCLK
-            case 0x020B, 0x020C, 0x020D, 0x00AB, 0x00AC, 0x00AD:
-                return this.MouseData >> 16
+            default: return this.MouseData >> 16
         }
     }
     X => NumGet(this, 0, 'int')
@@ -169,4 +176,47 @@ class MsLlHookStruct {
     Flags => NumGet(this, 12, 'int')
     Time => NumGet(this, 16, 'int')
     dwExtraInfo => NumGet(this, 16 + A_PtrSize, 'int')
+}
+
+MsLlHookStruct_SetConstants(force := false) {
+    global
+    if IsSet(MsLlHookStruct_constants_set) && !force {
+        return
+    }
+    ; https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-lbuttondown
+
+    ; ; The CTRL key is down.
+    ; MK_CONTROL := 0x0008
+    ; ; The left mouse button is down.
+    ; MK_LBUTTON := 0x0001
+    ; ; The middle mouse button is down.
+    ; MK_MBUTTON := 0x0010
+    ; ; The right mouse button is down.
+    ; MK_RBUTTON := 0x0002
+    ; ; The SHIFT key is down.
+    ; MK_SHIFT := 0x0004
+    ; ; The XBUTTON1 is down.
+    ; MK_XBUTTON1 := 0x0020
+    ; ; The XBUTTON2 is down.
+    ; MK_XBUTTON2 := 0x0040
+
+    WM_MOUSEMOVE := 0x0200
+    WM_LBUTTONDOWN := 0x0201
+    WM_LBUTTONUP := 0x0202
+    WM_MOUSEWHEEL := 0x020A
+    WM_RBUTTONDOWN := 0x0204
+    WM_RBUTTONUP := 0x0205
+    WM_MBUTTONDOWN := 0x0207
+    WM_MBUTTONUP := 0x0208
+    WM_MBUTTONDBLCLK := 0x0209
+    WM_MOUSEHWHEEL := 0x020E
+    WM_XBUTTONDOWN := 0x020B
+    WM_XBUTTONUP := 0x020C
+    ; WM_XBUTTONDBLCLK := 0x020D
+    ; WM_LBUTTONDBLCLK := 0x0203
+    ; WM_RBUTTONDBLCLK := 0x0206
+    ; WHEEL_DELTA := 120
+    ; WM_NCXBUTTONDOWN := 0x00AB
+    ; WM_NCXBUTTONUP := 0x00AC
+    ; WM_NCXBUTTONDBLCLK := 0x00AD
 }
