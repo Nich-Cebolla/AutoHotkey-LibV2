@@ -32,7 +32,7 @@ class test {
         ; A gui is not necessary to use the library; this is for the example.
         g := this.Gui := Gui()
         g.SetFont('s11 q5', 'Segoe Ui')
-        g.Add('Text', , 'Press start then scroll your mouse wheel.`r`n')
+        g.Add('Text', , 'Press start then use your mouse.`r`n')
         g.Add('Edit', 'w300 r1 vEdtMouseMove')
         g.Add('Edit', 'w300 r10 vEdtGeneral')
         g.Add('Button', 'Section vBtnStart', 'Start').OnEvent('Click', HClickButtonStart)
@@ -87,10 +87,8 @@ LowLevelMouseProc(nCode, wParam, lParam) {
         switch wParam {
             case WM_MOUSEMOVE:
                 test.Gui['EdtMouseMove'].Text := ('The mouse moved to ( ' ms.X ', ' ms.Y ' )`n')
-            case WM_LBUTTONDOWN:
-                text := 'LBUTTON down'
-            case WM_LBUTTONUP:
-                text := 'LBUTTON up'
+            case WM_LBUTTONDOWN: text := 'LBUTTON down'
+            case WM_LBUTTONUP: text := 'LBUTTON up'
             case WM_MOUSEWHEEL:
                 ; A positive value indicates that the wheel was rotated forward, away from the user; a
                 ; negative value indicates that the wheel was rotated backward, toward the user. One
@@ -100,18 +98,12 @@ LowLevelMouseProc(nCode, wParam, lParam) {
                 } else {
                     test.Gui['EdtGeneral'].Text := 'Mouse scrolled down`r`n' test.Gui['EdtGeneral'].Text
                 }
-            case WM_RBUTTONDOWN:
-                text := 'RBUTTON down'
-            case WM_RBUTTONUP:
-                text := 'RBUTTON up'
-            case WM_MBUTTONDOWN:
-                text := 'MBUTTON down'
-            case WM_MBUTTONUP:
-                text := 'MBUTTON up'
-            case WM_XBUTTONDOWN:
-                text := 'XBUTTON down'
-            case WM_XBUTTONUP:
-                text := 'XBUTTON up'
+            case WM_RBUTTONDOWN: text := 'RBUTTON down'
+            case WM_RBUTTONUP: text := 'RBUTTON up'
+            case WM_MBUTTONDOWN: text := 'MBUTTON down'
+            case WM_MBUTTONUP: text := 'MBUTTON up'
+            case WM_XBUTTONDOWN: text := 'XBUTTON down'
+            case WM_XBUTTONUP: text := 'XBUTTON up'
         }
         if IsSet(text) {
             test.Gui['EdtGeneral'].Text := text ' at ( ' ms.X ', ' ms.Y ')`r`n' test.Gui['EdtGeneral'].Text
