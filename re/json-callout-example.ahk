@@ -14,15 +14,13 @@ class JsonCalloutExample {
         ArrayFalse := 'false\K(?COnArrayFalse)'
         ArrayNull := 'null\K(?COnArrayNull)'
         ArrayNumber := '(?<an>-?+\d++(?:\.\d++)?(?:[eE][+-]?+\d++)?+)\K(?COnArrayNumber)'
-        ArrayEmptyQuote := '""\K(?COnArrayEmptyQuote)'
-        ArrayString := '"(?<as>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\K(?COnArrayString)'
+        ArrayString := '"(?<as>.*?(?<!\\)(?:\\\\)*+)"\K(?COnArrayString)'
         ArrayTrue := 'true\K(?COnArrayTrue)'
         ObjectFalse := 'false\K(?COnObjectFalse)'
         ObjectNull := 'null\K(?COnObjectNull)'
         ObjectNumber := '(?<on>-?+\d++(?:\.\d++)?+(?:[eE][+-]?+\d++)?)\K(?COnObjectNumber)'
-        ObjectPropName := '"(?<name>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\s*+:\s*+'
-        ObjectEmptyQuote := '""\K(?COnObjectEmptyQuote)'
-        ObjectString := '"(?<os>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\K(?COnObjectString)'
+        ObjectPropName := '"(?<name>.*?(?<!\\)(?:\\\\)*+)"\s*+:\s*+'
+        ObjectString := '"(?<os>.*?(?<!\\)(?:\\\\)*+)"\K(?COnObjectString)'
         ObjectTrue := 'true\K(?COnObjectTrue)'
         pObject := (
             '(?<object>'
@@ -34,8 +32,6 @@ class JsonCalloutExample {
                     ObjectPropName
                     ''
                     '(?:'
-                        ObjectEmptyQuote
-                    '|'
                         ObjectString
                     '|'
                         ObjectNumber
@@ -64,8 +60,6 @@ class JsonCalloutExample {
                 '\K(?COnOpenSquare)'
                 '(?:'
                     '(?:'
-                        ArrayEmptyQuote
-                    '|'
                         ArrayString
                     '|'
                         ArrayNumber
@@ -133,7 +127,6 @@ class JsonCalloutExample {
         }
         if AsMap {
             Constructor := MapCaseSense ? Map : _GetObj
-            OnObjectEmptyQuote := OnObjectEmptyQuote_1
             OnObjectFalse := OnObjectFalse_1
             OnObjectNull := OnObjectNull_1
             OnObjectNumber := OnObjectNumber_1
@@ -141,7 +134,6 @@ class JsonCalloutExample {
             OnObjectTrue := OnObjectTrue_1
         } else {
             Constructor := Object
-            OnObjectEmptyQuote := OnObjectEmptyQuote_2
             OnObjectFalse := OnObjectFalse_2
             OnObjectNull := OnObjectNull_2
             OnObjectNumber := OnObjectNumber_2
@@ -162,9 +154,6 @@ class JsonCalloutExample {
             m.CaseSense := false
             return m
         }
-        OnArrayEmptyQuote(match, *) {
-            obj.Push('')
-        }
         OnArrayFalse(match, *) {
             obj.Push(0)
         }
@@ -180,9 +169,6 @@ class JsonCalloutExample {
         OnArrayTrue(match, *) {
             obj.Push(1)
         }
-        OnObjectEmptyQuote_1(match, *) {
-            obj.Set(match['name'], '')
-        }
         OnObjectFalse_1(match, *) {
             obj.Set(match['name'], 0)
         }
@@ -197,9 +183,6 @@ class JsonCalloutExample {
         }
         OnObjectTrue_1(match, *) {
             obj.Set(match['name'], 1)
-        }
-        OnObjectEmptyQuote_2(match, *) {
-            obj.%match['name']% := ''
         }
         OnObjectFalse_2(match, *) {
             obj.%match['name']% := 0
