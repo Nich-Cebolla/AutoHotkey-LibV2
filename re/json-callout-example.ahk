@@ -15,14 +15,14 @@ class JsonCalloutExample {
         ArrayNull := 'null\K(?COnArrayNull)'
         ArrayNumber := '(?<an>-?+\d++(?:\.\d++)?(?:[eE][+-]?+\d++)?+)\K(?COnArrayNumber)'
         ArrayEmptyQuote := '""\K(?COnArrayEmptyQuote)'
-        ArrayString := '"(?<as>.+?(?<!\\)(?:\\\\)*+)"\K(?COnArrayString)'
+        ArrayString := '"(?<as>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\K(?COnArrayString)'
         ArrayTrue := 'true\K(?COnArrayTrue)'
         ObjectFalse := 'false\K(?COnObjectFalse)'
         ObjectNull := 'null\K(?COnObjectNull)'
         ObjectNumber := '(?<on>-?+\d++(?:\.\d++)?+(?:[eE][+-]?+\d++)?)\K(?COnObjectNumber)'
-        ObjectPropName := '"(?<name>.*?(?<!\\)(?:\\\\)*+)"\s*+:\s*+'
+        ObjectPropName := '"(?<name>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\s*+:\s*+'
         ObjectEmptyQuote := '""\K(?COnObjectEmptyQuote)'
-        ObjectString := '"(?<os>.+?(?<!\\)(?:\\\\)*+)"\K(?COnObjectString)'
+        ObjectString := '"(?<os>(?:\\\\|.+?(?<!\\)(?:\\\\)*+))"\K(?COnObjectString)'
         ObjectTrue := 'true\K(?COnObjectTrue)'
         pObject := (
             '(?<object>'
@@ -123,7 +123,7 @@ class JsonCalloutExample {
      * @returns {*}
      */
     static Call(Str?, Path?, Encoding?, Root?, AsMap := false, MapCaseSense := false) {
-        local obj, m
+        local obj
         if !IsSet(Str) {
             If IsSet(Path) {
                 Str := FileRead(Path, Encoding ?? unset)
@@ -164,73 +164,57 @@ class JsonCalloutExample {
         }
         OnArrayEmptyQuote(match, *) {
             obj.Push('')
-            m := match
         }
         OnArrayFalse(match, *) {
             obj.Push(0)
-            m := match
         }
         OnArrayNull(match, *) {
             obj.Push(unset)
-            m := match
         }
         OnArrayNumber(match, *) {
             obj.Push(Number(match['an']))
-            m := match
         }
         OnArrayString(match, *) {
             obj.Push(match['as'])
-            m := match
         }
         OnArrayTrue(match, *) {
             obj.Push(1)
-            m := match
         }
         OnObjectEmptyQuote_1(match, *) {
             obj.Set(match['name'], '')
         }
         OnObjectFalse_1(match, *) {
             obj.Set(match['name'], 0)
-            m := match
         }
         OnObjectNull_1(match, *) {
             obj.Set(match['name'], '')
-            m := match
         }
         OnObjectNumber_1(match, *) {
             obj.Set(match['name'], Number(match['on']))
-            m := match
         }
         OnObjectString_1(match, *) {
             obj.Set(match['name'], match['os'])
-            m := match
         }
         OnObjectTrue_1(match, *) {
             obj.Set(match['name'], 1)
-            m := match
         }
         OnObjectEmptyQuote_2(match, *) {
             obj.%match['name']% := ''
         }
         OnObjectFalse_2(match, *) {
             obj.%match['name']% := 0
-            m := match
         }
         OnObjectNull_2(match, *) {
             obj.%match['name']% := ''
-            m := match
         }
         OnObjectNumber_2(match, *) {
             obj.%match['name']% := Number(match['on'])
-            m := match
         }
         OnObjectString_2(match, *) {
             obj.%match['name']% := match['os']
-            m := match
         }
         OnObjectTrue_2(match, *) {
             obj.%match['name']% := 1
-            m := match
         }
         OnOpenSquare_1(match, *) {
             if AsMap {
@@ -245,7 +229,6 @@ class JsonCalloutExample {
             } else {
                 obj := Root := Array()
             }
-            m := match
         }
         OnOpenCurly_1(match, *) {
             if AsMap {
@@ -260,7 +243,6 @@ class JsonCalloutExample {
             } else {
                 obj := Root := Constructor()
             }
-            m := match
         }
         OnOpenSquare_2(match, *) {
             stack.Push(obj)
@@ -270,7 +252,6 @@ class JsonCalloutExample {
             } else {
                 stack[-1].Set(match['name'], obj)
             }
-            m := match
         }
         OnOpenCurly_2(match, *) {
             stack.Push(obj)
@@ -280,7 +261,6 @@ class JsonCalloutExample {
             } else {
                 stack[-1].Set(match['name'], obj)
             }
-            m := match
         }
         OnOpenSquare_3(match, *) {
             stack.Push(obj)
@@ -290,7 +270,6 @@ class JsonCalloutExample {
             } else {
                 stack[-1].%match['name']% := obj
             }
-            m := match
         }
         OnOpenCurly_3(match, *) {
             stack.Push(obj)
@@ -300,11 +279,9 @@ class JsonCalloutExample {
             } else {
                 stack[-1].%match['name']% := obj
             }
-            m := match
         }
         OnClose(match, *) {
             obj := stack.Pop()
-            m := match
         }
     }
 }
