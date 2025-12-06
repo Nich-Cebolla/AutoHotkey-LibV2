@@ -2283,9 +2283,8 @@ class PropsInfo {
      */
     class Proxy_Array extends Array {
         static __New() {
-            if this.Prototype.__Class == 'PropsInfo.Proxy_Array' {
-                this.Prototype.DefineProp('__Class', { Value: 'Array' })
-            }
+            this.DeleteProp('__New')
+            this.Prototype.DefineProp('__Class', { Value: 'Array' })
         }
         __New(Client) {
             this.DefineProp('Client', { Value: Client })
@@ -2344,9 +2343,8 @@ class PropsInfo {
      */
     class Proxy_Map extends Map {
         static __New() {
-            if this.Prototype.__Class == 'PropsInfo.Proxy_Map' {
-                this.Prototype.DefineProp('__Class', { Value: 'Map' })
-            }
+            this.DeleteProp('__New')
+            this.Prototype.DefineProp('__Class', { Value: 'Map' })
         }
         __New(Client) {
             this.DefineProp('Client', { Value: Client })
@@ -2400,9 +2398,8 @@ class PropsInfo {
  */
 class PropsInfoItem {
     static __New() {
-        if this.Prototype.__Class == 'PropsInfoItem' {
-            this.Prototype.__KindNames := ['Call', 'Get', 'Get_Set', 'Set', 'Value']
-        }
+        this.DeleteProp('__New')
+        this.Prototype.__KindNames := ['Call', 'Get', 'Get_Set', 'Set', 'Value']
     }
 
     /**
