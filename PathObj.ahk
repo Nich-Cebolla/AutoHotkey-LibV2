@@ -95,6 +95,7 @@ class PathObj {
         this.Index := 1
     }
     Call(*) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         if !this.HasOwnProp('__Path') {
             o := this
             buf := Buffer(PATHOBJ_INITIAL_BUFFER_SIZE)
@@ -138,6 +139,7 @@ class PathObj {
         return PathObj(this(), EscapePropNames, this.QuoteChar)
     }
     Unescaped(*) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         if !this.HasOwnProp('__Path_U') {
             o := this
             buf := Buffer(PATHOBJ_INITIAL_BUFFER_SIZE)
@@ -154,6 +156,7 @@ class PathObj {
         return this.__Path_U
     }
     __GetPathSegmentItem_Number(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.Name) + 2 ; -2 for null terminator, then +4 for the brackets
         if bytes > offset {
             count := buf.Size - offset
@@ -181,6 +184,7 @@ class PathObj {
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentItem_String2(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.NameEscaped) + 6 ; -2 for null terminator, then +4 for the brackets and +4 for the quotes
         if bytes > offset {
             count := buf.Size - offset
@@ -206,6 +210,7 @@ class PathObj {
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentProp2(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.NameEscaped) ; -2 for null terminator, then +2 for the period
         if bytes > offset {
             count := buf.Size - offset
@@ -231,6 +236,7 @@ class PathObj {
         return this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentRoot2(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.NameEscaped) - 2 ; -2 for null terminator
         if bytes > offset {
             count := buf.Size - offset
@@ -260,6 +266,7 @@ class PathObj {
         this.GetPathSegment(buf, &offset)
     }
     __GetPathSegmentItem_String_U2(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.__NamePartialEscaped) + 6 ; -2 for null terminator, then +4 for the brackets and +4 for the quotes
         if bytes > offset {
             count := buf.Size - offset
@@ -280,6 +287,7 @@ class PathObj {
         StrPut('[' this.QuoteChar this.__NamePartialEscaped this.QuoteChar ']', buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentProp_U(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.Name) ; -2 for null terminator, then +2 for the period
         if bytes > offset {
             count := buf.Size - offset
@@ -300,6 +308,7 @@ class PathObj {
         StrPut('.' this.Name, buf.Ptr + offset, bytes / 2)
     }
     __GetPathSegmentRoot_U(buf, &offset) {
+        global PATHOBJ_INITIAL_BUFFER_SIZE
         bytes := StrPut(this.Name) - 2 ; -2 for null terminator
         if bytes > offset {
             count := buf.Size - offset
