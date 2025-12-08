@@ -1,37 +1,4 @@
 ﻿
-/**
- * Use this to get the file paths associated with all of the #include or #IncludeAgain statements
- * in a script, optionally recursing into the included files.
- *
- * There are a few properties of interest:
- * - {@link GetIncludedFile#Result} - An array of {@link GetIncludedFile.File} objects, one for each
- * #include or #IncludeAgain statement encountered during processing and that was associated with a
- * file path for which `FileExist` returned zero.
- * - {@link GetIncludedFile#NotFound} - An array of {@link GetIncludedFile.File} objects, one for
- * each #include or #IncludeAgain statement encountered during processing and that was associated
- * with a file path for which `FileExist` returned zero.
- * - {@link GetIncludedFile.Prototype.Unique} - Call this to get a map where each key is a full file
- * path and each value is an array of {@link GetIncludedFile.File} objects, each representing an
- * #include or #IncludeAgain statement that resolved to the same file path.
- * - {@link GetIncludedFile.Prototype.CountLines} - Returns the number of lines of code in a project.
- *
- * One {@link GetIncludedFile.File} is created for each #include or #IncludeAgain statement, but
- * each individual file is only read a maximum of one time.
- *
- * {@link GetIncludedFile.File} has the following properties:
- * - Children - An array of {@link GetIncludedFile.File} objects representing #include or #IncludeAgain statements in the file.
- * - FullPath - The full path to the file.
- * - Ignore - Returns 1 if the #include or #IncludeAgain statement had the *i option. Returns 0 otherwise.
- * - IsAgain - Returns 1 if it was an #IncludeAgain statement. Returns 0 if it was an #include statement.
- * - Line - The line number on which the #include or #IncludeAgain statement was encountered.
- * - Match - The `RegExMatchInfo` object generated during processing.
- * - Name - The file name without extension of the file.
- * - Parent - The full path of the script that contained the #include or #IncludeAgain statement.
- * - Path - The unmodified path string from the script's content.
- *
- * The first item in the {@link GetIncludedFile#Result} array will not have all of the properties
- * because it will be an item created from the path passed to the `Path` parameter.
- */
 class GetIncludedFile {
     static __New() {
         this.DeleteProp('__New')
@@ -105,8 +72,41 @@ class GetIncludedFile {
     }
 
     /**
-     * Reads a file and identifies each #include or #IncludeAgain statement. Resolves the path to
+     * @classdesc - Reads a file and identifies each #include or #IncludeAgain statement. Resolves the path to
      * each included file.
+     *
+     * Use this to get the file paths associated with all of the #include or #IncludeAgain statements
+     * in a script, optionally recursing into the included files.
+     *
+     * There are a few properties of interest:
+     * - {@link GetIncludedFile#Result} - An array of {@link GetIncludedFile.File} objects, one for
+     *   each #include or #IncludeAgain statement encountered during processing and that was associated with a
+     *   file path for which `FileExist` returned zero.
+     * - {@link GetIncludedFile#NotFound} - An array of {@link GetIncludedFile.File} objects, one for
+     *   each #include or #IncludeAgain statement encountered during processing and that was associated
+     *   with a file path for which `FileExist` returned zero.
+     * - {@link GetIncludedFile.Prototype.Unique} - Call this to get a map where each key is a full file
+     *   path and each value is an array of {@link GetIncludedFile.File} objects, each representing
+     *   an #include or #IncludeAgain statement that resolved to the same file path.
+     * - {@link GetIncludedFile.Prototype.CountLines} - Returns the number of lines of code in a project.
+     *
+     * One {@link GetIncludedFile.File} is created for each #include or #IncludeAgain statement, but
+     * each individual file is only read a maximum of one time.
+     *
+     * {@link GetIncludedFile.File} has the following properties:
+     * - Children - An array of {@link GetIncludedFile.File} objects representing #include or #IncludeAgain statements in the file.
+     * - FullPath - The full path to the file.
+     * - Ignore - Returns 1 if the #include or #IncludeAgain statement had the *i option. Returns 0 otherwise.
+     * - IsAgain - Returns 1 if it was an #IncludeAgain statement. Returns 0 if it was an #include statement.
+     * - Line - The line number on which the #include or #IncludeAgain statement was encountered.
+     * - Match - The `RegExMatchInfo` object generated during processing.
+     * - Name - The file name without extension of the file.
+     * - Parent - The full path of the script that contained the #include or #IncludeAgain statement.
+     * - Path - The unmodified path string from the script's content.
+     *
+     * The first item in the {@link GetIncludedFile#Result} array will not have all of the properties
+     * because it will be an item created from the path passed to the `Path` parameter.
+     *
      * @param {String} Path - The path to the file to analyze. If a relative path is provided, it
      * is assumed to be relative to the current working directory.
      * @param {Boolean} [Recursive = true] - If true, recursively processes all included files.
@@ -123,6 +123,7 @@ class GetIncludedFile {
      * likely to be used outside of the script's context, the standard library must be provided if it
      * is to be included in the search.
      * @param {String} [Encoding] - The file encoding to use when reading the files.
+     *
      * @returns {GetIncludedFile}
      */
     __New(Path, Recursive := true, ScriptDir := '', AhkExeDir := '', Encoding?) {
@@ -160,7 +161,7 @@ class GetIncludedFile {
         read.CaseSense := false
         SplitPath(Path, , , , , &drive)
         if !drive {
-            path := ResolveRelativePath(&Path)
+            ResolveRelativePath(&Path)
         }
         pending := [ constructor('', path, '', 0) ]
         result.Push(pending[-1])
@@ -197,12 +198,8 @@ class GetIncludedFile {
                             if RegExMatch(_path, '[ \t]+;.*', &match_comment) {
                                 _path := StrReplace(_path, match_comment[0], '')
                             }
-                            while RegExMatch(_path, 'iS)%(A_(?:AhkPath|AppData|AppDataCommon|'
-                            'ComputerName|ComSpec|Desktop|DesktopCommon|IsCompiled|LineFile|MyDocuments|'
-                            'ProgramFiles|Programs|ProgramsCommon|ScriptDir|ScriptFullPath|ScriptName|'
-                            'Space|StartMenu|StartMenuCommon|Startup|StartupCommon|Tab|Temp|UserName|'
-                            'WinDir))%', &match_a) {
-                                _path := StrReplace(match_a[0], %match_a[1]%)
+                            while RegExMatch(_path, 'iS)%(A_\w+)%', &match_a) {
+                                _path := StrReplace(_path, match_a[0], %match_a[1]%)
                             }
                             SplitPath(_path, , , &ext, , &drive)
                             if !drive {
