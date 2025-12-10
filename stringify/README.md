@@ -7,10 +7,10 @@ have less features.
 The following is the result from each function processing the same object 10 times. The object produced
 a 4,454 KB (4560003 characters) string.
 - `QuickStringify` - 5.063 seconds
-- `PrettyStringify` - 6.187 seconds
 - `QuickStringifyProps` - 5.094 seconds
-- `PrettyStringifyProps` - 6.953 seconds
 - `MaxStringify` - 6.09 seconds
+- `PrettyStringify` - 6.187 seconds
+- `PrettyStringifyProps` - 6.953 seconds
 - [JSON.stringify](https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk) - 9.297 seconds
 - `StringifyAll` - 855 seconds
 
