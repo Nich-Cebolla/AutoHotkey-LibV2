@@ -1,4 +1,8 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/stringify
+    Author: Nich-Cebolla
+    License: MIT
+*/
 
 class PrettyStringify {
     static __New() {
@@ -32,12 +36,12 @@ class PrettyStringify {
      * }
      * </pre>
      *
+     * - Map objects are represented as `[ [ "key", val ] ]`.
      * - This does not work with objects that inherit from `ComValue`.
      * - This does not check for reference cycles.
      * - For Array and Map objects, only the enumerator is processed.
      * - For other object types, only the own properties are processed.
      * - Unset array indices are represented as *null* JSON value.
-     * - Map objects are represented as `[ [ "key", val ] ]`.
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
      * @param {Integer} [Options.CharThreshold = 200] - If an object's string representation is

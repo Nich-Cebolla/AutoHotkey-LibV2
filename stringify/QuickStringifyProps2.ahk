@@ -4,7 +4,7 @@
     License: MIT
 */
 
-class QuickStringifyProps {
+class QuickStringifyProps2 {
     /**
      * @description - Creates the function object.
      *
@@ -12,14 +12,15 @@ class QuickStringifyProps {
      * property names to stringify. This enables your code to stringify inherited properties, which
      * are otherwise invisible to `QuickStringify` and `PrettyStringify`.
      *
-     * - Map objects are represented as `[["key",val]]`.
+     * - Map objects are represented as `{ "key": val }`.
      * - This does not work with objects that inherit from `ComValue`.
      * - This does not check for reference cycles.
-     * - For Array and Map objects, only the enumerator is processed.
-     * - For other object types, if `Options.CallbackProps` returns an array, only the
-     *   properties in the array are processed. If `Options.CallbackProps` returns zero or an empty
-     *   string, the own properties are processed. If `Options.CallbackProps` returns `-1`, the
-     *   object is skipped (it is represented as an empty object).
+     * - For Array objects, only the enumerator is processed.
+     * - For Map objects and other object types, if `Options.CallbackProps` returns an array, only the
+     *   properties/keys in the array are processed. If `Options.CallbackProps` returns zero or an empty
+     *   string, for objects only the own properties are processed, for maps the enumerator is processed.
+     *   If `Options.CallbackProps` returns `-1`, the object is skipped (it is represented as an empty
+     *   object).
      * - Unset array indices are represented as *null* JSON value.
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
@@ -31,13 +32,14 @@ class QuickStringifyProps {
      * 1. The object being processed.
      *
      * Returns **{String[]|Integer}**
-     * - If the function returns an array, an array of property names as strings. Those properties
+     * - If the function returns an array, an array of property names or keys as strings. Those properties
      *   will be the only properties processed for that object.
-     * - If the function returns zero or an empty string, the object's own properties are processed.
+     * - If the function returns zero or an empty string, for objects only the own properties are
+     *   processed, for maps the enumerator is processed.
      * - If the function returns `-1`, the object is skipped completely (it is represented as an empty
      *   object).
      *   - Arrays: "[]"
-     *   - Maps: "[[]]"
+     *   - Maps: "{}"
      *   - Others: "{}"
      *
      * @param {String} [Options.Eol = "`n"] - The end of line character(s) to use when building
@@ -62,7 +64,7 @@ class QuickStringifyProps {
      *     }
      * }
      * obj := MyClass("value")
-     * strfy := QuickStringifyProps({ CallbackProps: CallbackProps })
+     * strfy := QuickStringifyProps2({ CallbackProps: CallbackProps })
      * strfy(obj, &str)
      * OutputDebug(str "`n")
      * @
@@ -74,60 +76,42 @@ class QuickStringifyProps {
      *     {
      *       "prop": "val"
      *     },
-     *     [
-     *       [
-     *         "key",
-     *         "val"
-     *       ]
-     *     ],
+     *     {
+     *       "key": "val"
+     *     },
      *     [
      *       "val"
      *     ]
      *   ],
-     *   "Object": {
+     *   "Map": {
      *     "arr": [
      *       "val"
-     *     ],
-     *     "map": [
-     *       [
-     *         "key",
-     *         "val"
-     *       ]
-     *     ],
+     *     ]
+     *     "map": {
+     *       "key": "val"
+     *     }
      *     "obj": {
      *       "prop": "val"
      *     }
      *   },
-     *   "Map": [
-     *     [
-     *       "arr",
-     *       [
-     *         "val"
-     *       ]
+     *   "Object": {
+     *     "arr": [
+     *       "val"
      *     ],
-     *     [
-     *       "map",
-     *       [
-     *         [
-     *           "key",
-     *           "val"
-     *         ]
-     *       ]
-     *     ],
-     *     [
-     *       "obj",
-     *       {
-     *         "prop": "val"
-     *       }
-     *     ]
-     *   ]
+     *     "map": {
+     *       "key": "val"
+     *     },
+     *     "obj": {
+     *       "prop": "val"
+     *     }
+     *   }
      * }
      * </pre>
      */
     __New(Options?) {
-        options := QuickStringifyProps.Options(Options ?? unset)
+        options := QuickStringifyProps2.Options(Options ?? unset)
         this.Eol := options.Eol
-        this.Indent := QuickStringifyProps_IndentHelper(options.IndentLen, options.IndentChar)
+        this.Indent := QuickStringifyProps2_IndentHelper(options.IndentLen, options.IndentChar)
         this.CallbackProps := options.CallbackProps
         this.MaxDepth := options.MaxDepth
     }
@@ -177,41 +161,68 @@ class QuickStringifyProps {
                         OutStr .= '[]'
                     }
                 case 'Map':
-                    if Obj.Count {
-                        OutStr .= '['
+                    value := CallbackProps(Obj)
+                    if IsObject(value) {
+                        OutStr .= '{'
                         indent++
-                        for key, val in Obj {
-                            OutStr .= c eol ind[indent] '['
-                            c := ','
-                            indent++
-                            if IsObject(key) {
-                                if key.HasOwnProp('Prototype') {
-                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }"'
-                                } else if key.HasOwnProp('__Class') {
-                                    OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }"'
+                        for key in value {
+                            if Obj.Has(key) {
+                                if IsObject(key) {
+                                    if key.HasOwnProp('Prototype') {
+                                        OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
+                                    } else if key.HasOwnProp('__Class') {
+                                        OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
+                                    } else {
+                                        OutStr .= eol ind[indent] '"{ ' key.__Class ' }": '
+                                    }
+                                } else if IsNumber(key) {
+                                    OutStr .= eol ind[indent] '"' key '": '
                                 } else {
-                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' }"'
+                                    OutStr .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
                                 }
-                            } else if IsNumber(key) {
-                                OutStr .= eol ind[indent] key
-                            } else {
-                                OutStr .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                val := Obj.Get(key)
+                                c := ','
+                                if IsObject(val) {
+                                    _Proc(val, indent)
+                                } else if IsNumber(val) {
+                                    OutStr .= val
+                                } else {
+                                    OutStr .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                }
                             }
-                            if IsObject(val) {
-                                OutStr .= ',' eol ind[indent]
-                                _Proc(val, indent)
-                            } else if IsNumber(val) {
-                                OutStr .= ',' eol ind[indent] val
-                            } else {
-                                OutStr .= ',' eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
-                            }
-                            indent--
-                            OutStr .= eol ind[indent] ']'
                         }
                         indent--
-                        OutStr .= eol ind[indent] ']'
+                        OutStr .= eol ind[indent] '}'
+                    } else if !value && Obj.Count {
+                        OutStr .= '{'
+                        indent++
+                        for key, val in Obj {
+                            if IsObject(key) {
+                                if key.HasOwnProp('Prototype') {
+                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
+                                } else if key.HasOwnProp('__Class') {
+                                    OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
+                                } else {
+                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' }": '
+                                }
+                            } else if IsNumber(key) {
+                                OutStr .= eol ind[indent] '"' key '": '
+                            } else {
+                                OutStr .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
+                            }
+                            c := ','
+                            if IsObject(val) {
+                                _Proc(val, indent)
+                            } else if IsNumber(val) {
+                                OutStr .= val
+                            } else {
+                                OutStr .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                            }
+                        }
+                        indent--
+                        OutStr .= eol ind[indent] '}'
                     } else {
-                        OutStr .= '[[]]'
+                        OutStr .= '{}'
                         indent--
                     }
                 default:
@@ -271,7 +282,7 @@ class QuickStringifyProps {
 
         __New(options?) {
             if IsSet(options) {
-                for prop in QuickStringifyProps.Options.Prototype.OwnProps() {
+                for prop in QuickStringifyProps2.Options.Prototype.OwnProps() {
                     if HasProp(options, prop) {
                         this.%prop% := options.%prop%
                     }
@@ -284,7 +295,7 @@ class QuickStringifyProps {
     }
 }
 
-class QuickStringifyProps_IndentHelper extends Array {
+class QuickStringifyProps2_IndentHelper extends Array {
     static __New() {
         this.DeleteProp('__New')
         proto := this.Prototype

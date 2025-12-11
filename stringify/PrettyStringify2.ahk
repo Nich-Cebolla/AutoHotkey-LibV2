@@ -4,7 +4,16 @@
     License: MIT
 */
 
-class PrettyStringifyProps {
+class PrettyStringify2 {
+    static __New() {
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.CharThresholdArray :=
+        proto.CharThresholdItem :=
+        proto.CharThresholdMap :=
+        proto.CharThresholdObject :=
+        4294967295
+    }
     /**
      * @description - Creates the function object.
      *
@@ -18,47 +27,23 @@ class PrettyStringifyProps {
      * and each value. This also applies to map key-value pairs. See the example code for an example
      * of what the output looks like.
      *
-     * This function also includes an option to provide a callback function that returns a list of
-     * property names to stringify. This enables your code to stringify inherited properties, which
-     * are otherwise invisible to `QuickStringify` and `PrettyStringify`.
-     *
      * The example code yields the following output:
      * <pre>
      * {
-     *   "Array": [ { "prop": "val" }, [ [ "key", "val" ] ], [ "val" ] ],
-     *   "Map": [ [ "arr", [ "val" ] ], [ "map", [ [ "key", "val" ] ] ], [ "obj", { "prop": "val" } ] ],
-     *   "Object": { "arr": [ "val" ], "map": [ [ "key", "val" ] ], "obj": { "prop": "val" } }
+     *   "Array": [ { "prop": "val" }, { "key": "val" }, [ "val" ] ],
+     *   "Map": { "arr": [ "val" ]"map": { "key": "val" }"obj": { "prop": "val" } },
+     *   "Object": { "arr": [ "val" ], "map": { "key": "val" }, "obj": { "prop": "val" } }
      * }
      * </pre>
      *
-     * - Map objects are represented as `[ [ "key", val ] ]`.
+     * - Map objects are represented as `{ "key": val }`.
      * - This does not work with objects that inherit from `ComValue`.
      * - This does not check for reference cycles.
      * - For Array and Map objects, only the enumerator is processed.
-     * - For other object types, if `Options.CallbackProps` returns an array, only the
-     *   properties in the array are processed. If `Options.CallbackProps` returns zero or an empty
-     *   string, the own properties are processed. If `Options.CallbackProps` returns `-1`, the
-     *   object is skipped (it is represented as an empty object).
+     * - For other object types, only the own properties are processed.
      * - Unset array indices are represented as *null* JSON value.
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
-     * @param {*} [Options.CallbackProps = (*) => ""] - A `Func` or callable object that returns a
-     * list of property names to include in the JSON string. `Array` and `Map` objects do not get
-     * passed to the function; their properties are never processed.
-     *
-     * Parameters:
-     * 1. The object being processed.
-     *
-     * Returns **{String[]|Integer}**
-     * - If the function returns an array, an array of property names as strings. Those properties
-     *   will be the only properties processed for that object.
-     * - If the function returns zero or an empty string, the object's own properties are processed.
-     * - If the function returns `-1`, the object is skipped completely (it is represented as an empty
-     *   object).
-     *   - Arrays: "[]"
-     *   - Maps: "[[]]"
-     *   - Others: "{}"
-     *
      * @param {Integer} [Options.CharThreshold = 200] - If an object's string representation is
      * less than or equal to `Options.CharThreshold`, that object is represented as a single line.
      * If an object's string representation is greater than `Options.CharThreshold`, that object
@@ -72,11 +57,6 @@ class PrettyStringifyProps {
      * If an array's string representation is greater than `Options.CharThresholdArray`, that array
      * is represented with a line break separating each value. The calculation does not include
      * indentation and end of line characters.
-     * @param {Integer} [Options.CharThresholdItem] - If set, and if the string representation for a
-     * key-value pair of a map object is less than or equal to `Options.CharThresholdItem`, that item
-     * is represented as a single line. If the item's string representation is greater than
-     * `Options.CharThresholdItem`, that item is represented with a line break separating the key
-     * and value. The calculation does not include indentation and end of line characters.
      * @param {Integer} [Options.CharThresholdMap] - If set, and if an Map's string representation is
      * less than or equal to `Options.CharThresholdMap`, that Map is represented as a single line.
      * If an Map's string representation is greater than `Options.CharThresholdMap`, that Map
@@ -94,41 +74,27 @@ class PrettyStringifyProps {
      * level of indentation.
      *
      * @example
-     * class MyClass {
-     *     __New(param) {
-     *         this.param := param
-     *     }
-     *     Array => [ { prop: "val" }, Map("key", "val"), [ "val" ] ]
-     *     Object => { obj: { prop: "val" }, map: Map("key", "val"), arr: [ "val" ] }
-     *     Map => Map("obj", { prop: "val" }, "map", Map("key", "val"), "arr", [ "val" ])
+     * obj := {
+     *     Map: Map("obj", { prop: "val" }, "arr", [ "val" ], "map", Map("key", "val"))
+     *   , Array: [ { prop: "val", }, Map("key", "val"), [ "val" ] ]
+     *   , Object: { obj: { prop: "val" }, map: Map("key", "val"), arr: [ "val" ] }
      * }
-     *
-     * CallbackProps(obj) {
-     *     switch obj.__Class {
-     *         case "MyClass": return [ "Array", "Object", "Map" ]
-     *     }
-     * }
-     * obj := MyClass("value")
-     * strfy := PrettyStringifyProps({ CallbackProps: CallbackProps })
+     * strfy := PrettyStringify2()
      * strfy(obj, &str)
      * OutputDebug(str "`n")
      * @
      */
     __New(Options?) {
-        options := PrettyStringifyProps.Options(Options ?? unset)
+        options := PrettyStringify2.Options(Options ?? unset)
         this.Eol := options.Eol
-        this.Indent := PrettyStringifyProps_IndentHelper(options.IndentLen, options.IndentChar)
+        this.Indent := PrettyStringify2_IndentHelper(options.IndentLen, options.IndentChar)
         if IsNumber(options.CharThreshold) {
             this.CharThresholdArray := IsNumber(options.CharThresholdArray) ? options.CharThresholdArray : options.CharThreshold
-            this.CharThresholdItem := IsNumber(options.CharThresholdItem) ? options.CharThresholdItem : options.CharThreshold
             this.CharThresholdMap := IsNumber(options.CharThresholdMap) ? options.CharThresholdMap : options.CharThreshold
             this.CharThresholdObject := IsNumber(options.CharThresholdObject) ? options.CharThresholdObject : options.CharThreshold
         } else {
             if IsNumber(options.CharThresholdArray) {
                 this.CharThresholdArray := options.CharThresholdArray
-            }
-            if IsNumber(options.CharThresholdItem) {
-                this.CharThresholdItem := options.CharThresholdItem
             }
             if IsNumber(options.CharThresholdMap) {
                 this.CharThresholdMap := options.CharThresholdMap
@@ -137,22 +103,29 @@ class PrettyStringifyProps {
                 this.CharThresholdObject := options.CharThresholdObject
             }
         }
-        this.CallbackProps := options.CallbackProps
         this.MaxDepth := options.MaxDepth
     }
+
+    /**
+     * @param {*} Obj - The object to stringify.
+     * @param {VarRef} OutStr - The variable that will receive the JSON string.
+     * @param {Integer} [InitialIndent = 0] - The initial indentation level. All lines except the
+     * first line (the opening brace) will minimally have this indentation level. The reason the first
+     * line does not is to make it easier to use the output as a value in another JSON string.
+     * @param {Integer} [ApproxGreatestDepth = 10] - `ApproxGreatestDepth` is used to approximate
+     * the size of each substring to avoid needing to frequently expand the string.
+     */
     Call(Obj, &OutStr, InitialIndent := 0, ApproxGreatestDepth := 10) {
         OutStr := ''
         VarSetStrCapacity(&OutStr, 64 * 2 ** ApproxGreatestDepth)
         eol := this.Eol
         ind := this.Indent
         thresholdArray := this.CharThresholdArray
-        thresholdItem := this.CharThresholdItem
         thresholdMap := this.CharThresholdMap
         thresholdObject := this.CharThresholdObject
         lenInd := StrLen(ind[1])
         lenEol := StrLen(eol)
         ws := depth := 0
-        CallbackProps := this.CallbackProps
         _Proc(Obj, InitialIndent, &OutStr)
         OutStr := RegExReplace(OutStr, ' +(?=\n|$)', '')
         VarSetStrCapacity(&OutStr, -1)
@@ -198,87 +171,45 @@ class PrettyStringifyProps {
                 case 'Map':
                     if Obj.Count {
                         _ws := ws
-                        s .= '[ '
+                        s .= '{ '
                         indent++
                         for key, val in Obj {
-                            _wsi := ws
-                            _s := ''
-                            VarSetStrCapacity(&_s, 64 * 2 ** (ApproxGreatestDepth - depth - 1))
-                            _s .= c eol ind[indent] '[ '
-                            ws += lenInd * indent + lenEol
-                            c := ', '
-                            indent++
                             if IsObject(key) {
                                 if key.HasOwnProp('Prototype') {
-                                    _s .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }"'
+                                    s .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
                                 } else if key.HasOwnProp('__Class') {
-                                    _s .= eol ind[indent] '"{ Prototype : ' key.__Class ' }"'
+                                    s .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
                                 } else {
-                                    _s .= eol ind[indent] '"{ ' key.__Class ' }"'
+                                    s .= eol ind[indent] '"{ ' key.__Class ' }": '
                                 }
                             } else if IsNumber(key) {
-                                _s .= eol ind[indent] key
+                                s .= eol ind[indent] '"' key '": '
                             } else {
-                                _s .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                s .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
                             }
                             ws += lenInd * indent + lenEol
+                            c := ', '
                             if IsObject(val) {
-                                _s .= ', ' eol ind[indent]
-                                _Proc(val, indent, &_s)
+                                _Proc(val, indent, &s)
                             } else if IsNumber(val) {
-                                _s .= ', ' eol ind[indent] val
+                                s .= val
                             } else {
-                                _s .= ', ' eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
-                            }
-                            ws += lenInd * indent + lenEol
-                            indent--
-                            if StrLen(_s) - ws + _wsi + 1 <= thresholdItem {
-                                ws := _wsi
-                                s .= RegExReplace(_s, '\R *(?![\]}])', '') ' ]'
-                            } else {
-                                s .= _s eol ind[indent] ']'
+                                s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
                             }
                         }
                         indent--
                         if StrLen(s) - ws + _ws + 1 <= thresholdMap {
                             ws := _ws
-                            str .= RegExReplace(s, '\R *(?![\]}])', '') ' ]'
-                        } else {
-                            str .= s eol ind[indent] ']'
-                        }
-                    } else {
-                        str .= '[[]]'
-                        indent--
-                    }
-                default:
-                    value := CallbackProps(Obj)
-                    if IsObject(value) {
-                        _ws := ws
-                        s .= '{ '
-                        indent++
-                        for prop in value {
-                            if HasProp(Obj, prop) {
-                                s .= c eol ind[indent] '"' prop '": '
-                                ws += lenInd * indent + lenEol
-                                c := ', '
-                                val := Obj.%prop%
-                                if IsObject(val) {
-                                    _Proc(val, indent, &s)
-                                } else if IsNumber(val) {
-                                    s .= val
-                                } else {
-                                    s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
-                                }
-                            }
-                        }
-                        indent--
-                        if StrLen(s) - ws + _ws + 1 <= thresholdObject {
-                            ws := _ws
                             str .= RegExReplace(s, '\R *(?![\]}])', '') ' }'
                         } else {
                             str .= s eol ind[indent] '}'
                         }
-                    } else if !value && ObjOwnPropcount(Obj) {
+                    } else {
+                        str .= '{}'
+                        indent--
+                    }
+                default:
+                    if ObjOwnPropCount(Obj) {
                         _ws := ws
                         s .= '{ '
                         indent++
@@ -313,14 +244,12 @@ class PrettyStringifyProps {
         static __New() {
             this.DeleteProp('__New')
             proto := this.Prototype
-            proto.CallbackProps := (*) => ''
             proto.CharThreshold := 200
             proto.Eol := '`n'
             proto.IndentChar := '`s'
             proto.IndentLen := 2
             proto.MaxDepth := 4294967295
             proto.CharThresholdArray :=
-            proto.CharThresholdItem :=
             proto.CharThresholdMap :=
             proto.CharThresholdObject :=
             ''
@@ -328,7 +257,7 @@ class PrettyStringifyProps {
 
         __New(options?) {
             if IsSet(options) {
-                for prop in PrettyStringifyProps.Options.Prototype.OwnProps() {
+                for prop in PrettyStringify2.Options.Prototype.OwnProps() {
                     if HasProp(options, prop) {
                         this.%prop% := options.%prop%
                     }
@@ -339,9 +268,10 @@ class PrettyStringifyProps {
             }
         }
     }
+
 }
 
-class PrettyStringifyProps_IndentHelper extends Array {
+class PrettyStringify2_IndentHelper extends Array {
     static __New() {
         this.DeleteProp('__New')
         proto := this.Prototype
