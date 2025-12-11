@@ -79,7 +79,7 @@ class WinEventHook {
      * desktop.
      *
      * @param {Integer} [Options.Thread = 0] - Specifies the ID of the thead from which the hook
-     * function receives events. Specify zero (0) to receive events from all processes on the current
+     * function receives events. Specify zero (0) to receive events from all thread on the current
      * desktop.
      */
     __New(Options) {
