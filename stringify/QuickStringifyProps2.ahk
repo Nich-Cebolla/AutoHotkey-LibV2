@@ -4,7 +4,7 @@
     License: MIT
 */
 
-class QuickStringifyProps2 {
+class  QuickStringifyProps2 {
     /**
      * @description - Creates the function object.
      *
@@ -168,16 +168,16 @@ class QuickStringifyProps2 {
                             if Obj.Has(key) {
                                 if IsObject(key) {
                                     if key.HasOwnProp('Prototype') {
-                                        OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
+                                        OutStr .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
                                     } else if key.HasOwnProp('__Class') {
-                                        OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
+                                        OutStr .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
                                     } else {
-                                        OutStr .= eol ind[indent] '"{ ' key.__Class ' }": '
+                                        OutStr .= c eol ind[indent] '"{ ' key.__Class ' }": '
                                     }
                                 } else if IsNumber(key) {
-                                    OutStr .= eol ind[indent] '"' key '": '
+                                    OutStr .= c eol ind[indent] '"' key '": '
                                 } else {
-                                    OutStr .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
+                                    OutStr .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
                                 }
                                 val := Obj.Get(key)
                                 c := ','
@@ -198,16 +198,16 @@ class QuickStringifyProps2 {
                         for key, val in Obj {
                             if IsObject(key) {
                                 if key.HasOwnProp('Prototype') {
-                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
+                                    OutStr .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
                                 } else if key.HasOwnProp('__Class') {
-                                    OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
+                                    OutStr .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
                                 } else {
-                                    OutStr .= eol ind[indent] '"{ ' key.__Class ' }": '
+                                    OutStr .= c eol ind[indent] '"{ ' key.__Class ' }": '
                                 }
                             } else if IsNumber(key) {
-                                OutStr .= eol ind[indent] '"' key '": '
+                                OutStr .= c eol ind[indent] '"' key '": '
                             } else {
-                                OutStr .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
+                                OutStr .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
                             }
                             c := ','
                             if IsObject(val) {

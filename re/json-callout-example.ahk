@@ -1,11 +1,10 @@
-﻿
-; This function parses an entire JSON string in a single RegExMatch call. It's about 30%
-; slower than QuickParse.ahk, so this is here only as an example of a complex regex pattern
-; that uses callouts to incrementally parse a string. Also I think it's pretty neat.
+﻿/*
 
-; The \K escape sequences are included to reduce the amount of characters that get copied every
-; time a callout function is called. The pattern would work without them, so don't focus
-; on them too much.
+The \K escape sequences are included to reduce the amount of characters that get copied every
+time a callout function is called. The pattern would work without them, so don't focus
+on them too much.
+
+*/
 
 class JsonCalloutExample {
     static __New() {

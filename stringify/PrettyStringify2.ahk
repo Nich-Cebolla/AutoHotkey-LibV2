@@ -174,16 +174,16 @@ class PrettyStringify2 {
                         for key, val in Obj {
                             if IsObject(key) {
                                 if key.HasOwnProp('Prototype') {
-                                    s .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
+                                    s .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
                                 } else if key.HasOwnProp('__Class') {
-                                    s .= eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
+                                    s .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
                                 } else {
-                                    s .= eol ind[indent] '"{ ' key.__Class ' }": '
+                                    s .= c eol ind[indent] '"{ ' key.__Class ' }": '
                                 }
                             } else if IsNumber(key) {
-                                s .= eol ind[indent] '"' key '": '
+                                s .= c eol ind[indent] '"' key '": '
                             } else {
-                                s .= eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
+                                s .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
                             }
                             ws += lenInd * indent + lenEol
                             c := ', '
