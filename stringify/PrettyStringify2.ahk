@@ -9,7 +9,6 @@ class PrettyStringify2 {
         this.DeleteProp('__New')
         proto := this.Prototype
         proto.CharThresholdArray :=
-        proto.CharThresholdItem :=
         proto.CharThresholdMap :=
         proto.CharThresholdObject :=
         4294967295
@@ -103,7 +102,6 @@ class PrettyStringify2 {
                 this.CharThresholdObject := options.CharThresholdObject
             }
         }
-        this.MaxDepth := options.MaxDepth
     }
 
     /**
@@ -248,7 +246,6 @@ class PrettyStringify2 {
             proto.Eol := '`n'
             proto.IndentChar := '`s'
             proto.IndentLen := 2
-            proto.MaxDepth := 4294967295
             proto.CharThresholdArray :=
             proto.CharThresholdMap :=
             proto.CharThresholdObject :=

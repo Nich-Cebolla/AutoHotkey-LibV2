@@ -113,7 +113,6 @@ class QuickStringifyProps2 {
         this.Eol := options.Eol
         this.Indent := QuickStringifyProps2_IndentHelper(options.IndentLen, options.IndentChar)
         this.CallbackProps := options.CallbackProps
-        this.MaxDepth := options.MaxDepth
     }
     /**
      * @param {*} Obj - The object to stringify.
@@ -277,7 +276,6 @@ class QuickStringifyProps2 {
             proto.Eol := '`n'
             proto.IndentChar := '`s'
             proto.IndentLen := 2
-            proto.MaxDepth := 4294967295
         }
 
         __New(options?) {

@@ -5,6 +5,14 @@
 */
 
 class PrettyStringifyProps {
+    static __New() {
+        this.DeleteProp('__New')
+        proto := this.Prototype
+        proto.CharThresholdArray :=
+        proto.CharThresholdMap :=
+        proto.CharThresholdObject :=
+        4294967295
+    }
     /**
      * @description - Creates the function object.
      *
@@ -138,7 +146,6 @@ class PrettyStringifyProps {
             }
         }
         this.CallbackProps := options.CallbackProps
-        this.MaxDepth := options.MaxDepth
     }
     Call(Obj, &OutStr, InitialIndent := 0, ApproxGreatestDepth := 10) {
         OutStr := ''
@@ -318,7 +325,6 @@ class PrettyStringifyProps {
             proto.Eol := '`n'
             proto.IndentChar := '`s'
             proto.IndentLen := 2
-            proto.MaxDepth := 4294967295
             proto.CharThresholdArray :=
             proto.CharThresholdItem :=
             proto.CharThresholdMap :=

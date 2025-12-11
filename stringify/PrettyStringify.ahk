@@ -112,7 +112,6 @@ class PrettyStringify {
                 this.CharThresholdObject := options.CharThresholdObject
             }
         }
-        this.MaxDepth := options.MaxDepth
     }
 
     /**
@@ -273,7 +272,6 @@ class PrettyStringify {
             proto.Eol := '`n'
             proto.IndentChar := '`s'
             proto.IndentLen := 2
-            proto.MaxDepth := 4294967295
             proto.CharThresholdArray :=
             proto.CharThresholdItem :=
             proto.CharThresholdMap :=
