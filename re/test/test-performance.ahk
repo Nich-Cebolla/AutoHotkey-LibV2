@@ -1,4 +1,6 @@
 ﻿
+; tests the performance difference after removing named subpatterns
+
 test()
 
 class test {
