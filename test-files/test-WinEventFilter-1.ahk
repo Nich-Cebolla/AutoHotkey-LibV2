@@ -98,7 +98,9 @@ class test {
             if test.HasOwnProp('EventFilter') {
                 test.EventFilter.Unhook()
             }
-            PostMessage(this.MsgExit.Code, , , , Number(test.ScriptHwnd))
+            if WinExist(test.ScriptHwnd) {
+                PostMessage(this.MsgExit.Code, , , , Number(test.ScriptHwnd))
+            }
         }
     }
     static CheckAll(value, Name) {
@@ -115,7 +117,10 @@ class test {
             for n in %name%_map {
                 list.Push(n)
             }
-            this.EventFilter.%Name% := this.Options.%Name% := list
+            if this.HasOwnProp('EventFilter') {
+                this.EventFilter.%Name% := list
+            }
+            this.Options.%Name% := list
         } else {
             loop lv.GetCount() {
                 lv.Modify(A_Index, '-Check')
@@ -129,7 +134,6 @@ class test {
             list.Length := 0
         }
         if this.HasOwnProp('EventFilter') {
-            this.EventFilter.UpdateCall()
             this.EventFilter.Hook()
         }
     }
@@ -142,31 +146,30 @@ class test {
     static HItemCheckObject(lv, item, checked) {
         this.ItemChecked(lv, item, checked, 'Object')
     }
-    static ItemChecked(lv, item, checked, name) {
+    static HItemCheckEvent(lv, item, checked) {
+        this.ItemChecked(lv, item, checked, 'Event')
+    }
+    static ItemChecked(lv, item, checked, Name) {
         list := this.List%Name%
         if checked {
-            if !list.Length {
-                if this.HasOwnProp('EventFilter') {
-                    this.EventFilter.Unhook()
-                    this.EventFilter.%name% := list
-                    this.EventFilter.UpdateCall()
-                    this.EventFilter.Hook()
-                }
-                this.Options.%name% := list
-            }
             list.Push(%lv.GetText(item, 1)%)
+            if this.HasOwnProp('EventFilter') {
+                this.EventFilter.Unhook()
+                this.EventFilter.%Name% := list
+                this.EventFilter.Hook()
+            }
+            this.Options.%Name% := list
         } else {
             if list.Length = 1 {
                 if this.HasOwnProp('EventFilter') {
                     this.EventFilter.Unhook()
-                    if this.EventFilter.HasOwnProp(name) {
-                        this.EventFilter.DeleteProp(name)
+                    if this.EventFilter.HasOwnProp(Name) {
+                        this.EventFilter.DeleteProp(Name)
                     }
-                    this.EventFilter.UpdateCall()
                     this.EventFilter.Hook()
                 }
-                if this.Options.HasOwnProp(name) {
-                    this.Options.DeleteProp(name)
+                if this.Options.HasOwnProp(Name) {
+                    this.Options.DeleteProp(Name)
                 }
                 list.Length := 0
             } else {
