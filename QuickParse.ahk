@@ -133,6 +133,12 @@ class QuickParse {
             Q := Object, F := F_2, G := G_2, H := H_2, I := I_2, J := J_2
         }
         K := K_1, M := M_1, P := ['']
+        ; Used when unescaping json escape sequences.
+        ch := 0xFFFD
+        while InStr(Str, Chr(ch)) {
+            ch++
+        }
+        ch := Chr(ch)
         if !RegExMatch(Str, this.Pattern) || P.Length {
             throw Error('Invalid json.')
         }
@@ -154,7 +160,11 @@ class QuickParse {
             O.Push(Number(N[7]))
         }
         D(N, *) {
-            O.Push(N[6])
+            if InStr(N[6], '\') {
+                O.Push(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(N[6], '\\', ch), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), ch, '\'))
+            } else {
+                O.Push(N[6])
+            }
         }
         E(*) {
             O.Push(1)
@@ -169,7 +179,11 @@ class QuickParse {
             O.Set(N[2], Number(N[4]))
         }
         I_1(N, *) {
-            O.Set(N[2], N[3])
+            if InStr(N[3], '\') {
+                O.Set(N[2], StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(N[3], '\\', ch), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), ch, '\'))
+            } else {
+                O.Set(N[2], N[3])
+            }
         }
         J_1(N, *) {
             O.Set(N[2], 1)
@@ -184,7 +198,11 @@ class QuickParse {
             O.%N[2]% := Number(N[4])
         }
         I_2(N, *) {
-            O.%N[2]% := N[3]
+            if InStr(N[3], '\') {
+                O.%N[2]% := StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(N[3], '\\', ch), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), ch, '\')
+            } else {
+                O.%N[2]% := N[3]
+            }
         }
         J_2(N, *) {
             O.%N[2]% := 1
