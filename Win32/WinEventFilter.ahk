@@ -143,15 +143,36 @@ class WinEventFilter {
         }
         z := 0
         if this.Hwnd {
+            if !IsObject(this.Hwnd) {
+                this.Hwnd := [ this.Hwnd ]
+            }
             z += 1
         }
         if this.TitlePattern {
             z += 2
         }
         if this.Event {
+            if !IsObject(this.Event) {
+                this.Event := [ this.Event ]
+            }
+            low := 4294967295
+            high := 0
+            for _event in this.Event {
+                if _event < low {
+                    low := _event
+                }
+                if _event > high {
+                    high := _event
+                }
+            }
+            this.Min := low
+            this.Max := high
             z += 4
         }
         if this.Object {
+            if !IsObject(this.Object) {
+                this.Object := [ this.Object ]
+            }
             z += 8
         }
         this.Proc := WinEventFilter_%z%
