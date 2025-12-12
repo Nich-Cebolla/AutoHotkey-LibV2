@@ -3,7 +3,6 @@ test()
 
 class test {
     static Call() {
-        ProcessSetPriority('High')
         ; remove last curly bracket and whitespace
         str := RegExReplace(get(), '\s+\}\s*$', '')
         ; remove open curly bracket
@@ -20,18 +19,58 @@ class test {
         }
         ; close the json
         str .= '`n}'
-        ; test
-        t1 := A_TickCount
-        loop 100 {
-            JsonCalloutExample(&str)
+
+        ; add slight delay to avoid startup lag affecting the results
+
+        SetTimer(_test, -5000)
+
+        ; The test is repeated three times
+
+        _test() {
+            ProcessSetPriority('High')
+            A_ListLines := 0
+            Critical(-1)
+            t1 := A_TickCount
+            loop 100 {
+                o := JsonCalloutExample(&str)
+            }
+            p1 := Round((A_TickCount - t1) / 1000, 3)
+
+            t2 := A_TickCount
+            loop 100 {
+                JsonCalloutExample2(&str)
+            }
+            p2 := Round((A_TickCount - t2) / 1000, 3)
+
+            t3 := A_TickCount
+            loop 100 {
+                JsonCalloutExample(&str)
+            }
+            p3 := Round((A_TickCount - t3) / 1000, 3)
+
+            t4 := A_TickCount
+            loop 100 {
+                JsonCalloutExample2(&str)
+            }
+            p4 := Round((A_TickCount - t4) / 1000, 3)
+
+            t5 := A_TickCount
+            loop 100 {
+                JsonCalloutExample(&str)
+            }
+            p5 := Round((A_TickCount - t5) / 1000, 3)
+
+            t6 := A_TickCount
+            loop 100 {
+                JsonCalloutExample2(&str)
+            }
+            p6 := Round((A_TickCount - t6) / 1000, 3)
+
+            f1 := Round((p1 + p3 + p5) / 3, 3)
+            f2 := Round((p2 + p4 + p6) / 3, 3)
+
+            MsgBox(p1 '`n' p3 '`n' p5 '`n`n' p2 '`n' p4 '`n' p6 '`n`n' f1 ' : ' f2 '`n' Round(f2 / f1, 3))
         }
-        p1 := Round((A_TickCount - t1) / 1000, 3)
-        t2 := A_TickCount
-        loop 100 {
-            JsonCalloutExample2(&str)
-        }
-        p2 := Round((A_TickCount - t2) / 1000, 3)
-        MsgBox(p1 '`n' p2 '`n' Round(p2 / p1, 3))
     }
 }
 
