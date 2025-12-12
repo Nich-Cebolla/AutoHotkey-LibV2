@@ -6,9 +6,6 @@
 class WinEventFilter {
     static __New() {
         this.DeleteProp('__New')
-        global EVENT_SYSTEM_MOVESIZEEND := 0x000B
-        , EVENT_OBJECT_DESTROY := 0x8001
-        , OBJID_WINDOW := 0x00000000
         proto := this.Prototype
         proto.DeferHook :=
         proto.Process :=
