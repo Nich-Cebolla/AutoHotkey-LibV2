@@ -115,6 +115,18 @@ class WinEventFilter {
         }
         if HasProp(Options, 'Event') {
             this.Event := IsObject(Options.Event) ? Options.Event : [ Options.Event ]
+            low := 4294967295
+            high := 0
+            for _event in this.Event {
+                if _event < low {
+                    low := _event
+                }
+                if _event > high {
+                    high := _event
+                }
+            }
+            this.Min := low
+            this.Max := high
             z += 4
         }
         if HasProp(Options, 'Object') {
