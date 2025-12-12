@@ -155,7 +155,7 @@ class WinEventHook {
             if !HasProp(options, 'Proc') {
                 throw Error('``Options.Proc`` is expected to be a ``WINEVENTPROC``.')
             }
-            for prop in WinEventHook.Options.Prototype.OwnProps() {
+            for prop, val in WinEventHook.Options.Prototype.OwnProps() {
                 if HasProp(options, prop) {
                     this.%prop% := options.%prop%
                 }
