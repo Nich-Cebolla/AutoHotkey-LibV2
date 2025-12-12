@@ -6,6 +6,8 @@
 class WinEventFilter {
     static __New() {
         this.DeleteProp('__New')
+        this.Collection := Map()
+        this.Collection.Default := 0
         proto := this.Prototype
         proto.DeferHook :=
         proto.Process :=
@@ -15,9 +17,13 @@ class WinEventFilter {
         proto.Event :=
         proto.EventHook :=
         proto.Hwnd :=
-        proto.Object =
+        proto.Object :=
         proto.TitlePattern :=
         ''
+    }
+    static __Add(obj) {
+        this.Collection.Set(obj.EventHook.Handle, obj)
+        ObjRelease(ObjPtr(obj))
     }
     /**
      * @param {Object} Options - An object with options as key : value pairs. The following option
@@ -93,6 +99,11 @@ class WinEventFilter {
      * titles.
      */
     __New(Options) {
+        if HasProp(Options, 'Callback') {
+            this.Callback := Options.Callback
+        } else {
+            throw Error('``WinEventFilter`` requires ``Options.Callback``.')
+        }
         z := 0
         if HasProp(Options, 'Hwnd') {
             this.Hwnd := IsObject(Options.Hwnd) ? Options.Hwnd : [ Options.Hwnd ]
@@ -101,15 +112,6 @@ class WinEventFilter {
         if HasProp(Options, 'TitlePattern') {
             this.TitlePattern := Options.TitlePattern
             z += 2
-        }
-        if HasProp(Options, 'Callback') {
-            this.Callback := Options.Callback
-        }
-        if (!this.Hwnd && !this.TitlePattern) || !this.Callback {
-            throw Error('Insufficient options for ``WinEventFilter``.')
-        }
-        if HasProp(Options, 'DeferHook') {
-            this.DeferHook := Options.DeferHook
         }
         if HasProp(Options, 'Event') {
             this.Event := IsObject(Options.Event) ? Options.Event : [ Options.Event ]
@@ -120,231 +122,25 @@ class WinEventFilter {
             z += 8
         }
         if HasProp(Options, 'Process') {
-            this.Process := Options.Proces
+            this.Process := Options.Process
+        } else {
+            this.Process := 0
         }
         if HasProp(Options, 'Thread') {
             this.Thread := Options.Thread
+        } else {
+            this.Thread := 0
         }
-        if z {
-            this.DefineProp('Call', WinEventFilter.Prototype.GetOwnPropDesc('__Call' z))
+        if !HasProp(options, 'DeferHook') || !options.DeferHook {
+            this.Proc := WinEventFilter_%z%
+            this.EventHook := WinEventHook(this)
+            WinEventFilter.__Add(this)
         }
-        this.EventHook := WinEventHook(this)
-    }
-    Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
     }
     Hook() {
-        return this.EventHook.Hook()
-    }
-    Unhook() {
-        return this.EventHook.Unhook()
-    }
-    __Call1(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _hwnd in this.Hwnd {
-                if hwnd = _hwnd {
-                    this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                    return
-                }
-            }
+        if this.EventHook {
+            this.EventHook.Unhook()
         }
-    }
-    __Call2(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-            this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-        }
-    }
-    __Call3(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            if RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-            } else {
-                for _hwnd in this.Hwnd {
-                    if hwnd = _hwnd {
-                        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                        return
-                    }
-                }
-            }
-        }
-    }
-    __Call4(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        for _event in this.Event {
-            if event = _event {
-                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                return
-            }
-        }
-    }
-    __Call5(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _hwnd in this.Hwnd {
-                if hwnd = _hwnd {
-                    for _event in this.Event {
-                        if event = _event {
-                            this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                            return
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    __Call6(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-            for _event in this.Event {
-                if event = _event {
-                    this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                    return
-                }
-            }
-        }
-    }
-    __Call7(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _event in this.Event {
-                if event = _event {
-                    if RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-                        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                    } else {
-                        for _hwnd in this.Hwnd {
-                            if hwnd = _hwnd {
-                                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                                return
-                            }
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    __Call8(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        for _idObject in this.Object {
-            if idObject = _idObject {
-                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                return
-            }
-        }
-    }
-    __Call9(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        for _idObject in this.Object {
-            if idObject = _idObject {
-                if WinExist(hwnd) {
-                    for _hwnd in this.Hwnd {
-                        if hwnd = _hwnd {
-                            this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                            return
-                        }
-                    }
-                }
-                return
-            }
-        }
-    }
-    __Call10(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        for _idObject in this.Object {
-            if idObject = _idObject {
-                if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-                    this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                }
-                return
-            }
-        }
-    }
-    __Call11(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _idObject in this.Object {
-                if idObject = _idObject {
-                    if RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-                        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                    } else {
-                        for _hwnd in this.Hwnd {
-                            if hwnd = _hwnd {
-                                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                                return
-                            }
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    __Call12(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        for _idObject in this.Object {
-            if idObject = _idObject {
-                for _event in this.Event {
-                    if event = _event {
-                        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                        return
-                    }
-                }
-                return
-            }
-        }
-    }
-    __Call13(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _idObject in this.Object {
-                if idObject = _idObject {
-                    for _hwnd in this.Hwnd {
-                        if hwnd = _hwnd {
-                            for _event in this.Event {
-                                if event = _event {
-                                    this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                                    return
-                                }
-                            }
-                            return
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    __Call14(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-            for _idObject in this.Object {
-                if idObject = _idObject {
-                    for _event in this.Event {
-                        if event = _event {
-                            this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                            return
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    __Call15(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-        if WinExist(hwnd) {
-            for _idObject in this.Object {
-                if idObject = _idObject {
-                    for _event in this.Event {
-                        if event = _event {
-                            if RegExMatch(WinGetTitle(hwnd), this.TitlePattern) {
-                                this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                            } else {
-                                for _hwnd in this.Hwnd {
-                                    if hwnd = _hwnd {
-                                        this.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, this)
-                                        return
-                                    }
-                                }
-                            }
-                            return
-                        }
-                    }
-                    return
-                }
-            }
-        }
-    }
-    UpdateCall() {
         z := 0
         if this.Hwnd {
             z += 1
@@ -358,19 +154,318 @@ class WinEventFilter {
         if this.Object {
             z += 8
         }
+        this.Proc := WinEventFilter_%z%
+        this.EventHook := WinEventHook(this)
+        WinEventFilter.__Add(this)
+    }
+    Unhook() {
         if this.EventHook {
-            this.EventHook.Unhook()
-        }
-        if z {
-            this.DefineProp('Call', WinEventFilter.Prototype.GetOwnPropDesc('__Call' z))
-        } else {
-            if this.HasOwnProp('Call') {
-                this.DeleteProp('Call')
+            if this.EventHook.Handle {
+                ObjPtrAddRef(this)
+                if WinEventFilter.Collection.Has(this.EventHook.Handle) {
+                    WinEventFilter.Collection.Delete(this.EventHook.Handle)
+                }
             }
         }
-        if this.EventHook {
-            this.EventHook.Hook()
+    }
+    __Delete() {
+        this.Unhook()
+    }
+}
+
+WinEventFilter_0(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_1(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _hwnd in filter.Hwnd {
+                if hwnd = _hwnd {
+                    filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                    Critical(originalCritical)
+                    return
+                }
+            }
         }
     }
-    Proc => this
+    Critical(originalCritical)
+}
+WinEventFilter_2(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+            filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_3(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            if RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+            } else {
+                for _hwnd in filter.Hwnd {
+                    if hwnd = _hwnd {
+                        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                        Critical(originalCritical)
+                        return
+                    }
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_4(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        for _event in filter.Event {
+            if event = _event {
+                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                Critical(originalCritical)
+                return
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_5(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _hwnd in filter.Hwnd {
+                if hwnd = _hwnd {
+                    for _event in filter.Event {
+                        if event = _event {
+                            filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                            Critical(originalCritical)
+                            return
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_6(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+            for _event in filter.Event {
+                if event = _event {
+                    filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_7(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _event in filter.Event {
+                if event = _event {
+                    if RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+                        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                    } else {
+                        for _hwnd in filter.Hwnd {
+                            if hwnd = _hwnd {
+                                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                                Critical(originalCritical)
+                                return
+                            }
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_8(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        for _idObject in filter.Object {
+            if idObject = _idObject {
+                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                Critical(originalCritical)
+                return
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_9(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        for _idObject in filter.Object {
+            if idObject = _idObject {
+                if WinExist(hwnd) {
+                    for _hwnd in filter.Hwnd {
+                        if hwnd = _hwnd {
+                            filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                            Critical(originalCritical)
+                            return
+                        }
+                    }
+                }
+                Critical(originalCritical)
+                return
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_10(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        for _idObject in filter.Object {
+            if idObject = _idObject {
+                if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+                    filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                }
+                Critical(originalCritical)
+                return
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_11(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _idObject in filter.Object {
+                if idObject = _idObject {
+                    if RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+                        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                    } else {
+                        for _hwnd in filter.Hwnd {
+                            if hwnd = _hwnd {
+                                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                                Critical(originalCritical)
+                                return
+                            }
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_12(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        for _idObject in filter.Object {
+            if idObject = _idObject {
+                for _event in filter.Event {
+                    if event = _event {
+                        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                        Critical(originalCritical)
+                        return
+                    }
+                }
+                Critical(originalCritical)
+                return
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_13(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _idObject in filter.Object {
+                if idObject = _idObject {
+                    for _hwnd in filter.Hwnd {
+                        if hwnd = _hwnd {
+                            for _event in filter.Event {
+                                if event = _event {
+                                    filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                                    Critical(originalCritical)
+                                    return
+                                }
+                            }
+                            Critical(originalCritical)
+                            return
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_14(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+            for _idObject in filter.Object {
+                if idObject = _idObject {
+                    for _event in filter.Event {
+                        if event = _event {
+                            filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                            Critical(originalCritical)
+                            return
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
+}
+WinEventFilter_15(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    originalCritical := Critical(-1)
+    if filter := WinEventFilter.Collection.Get(hWinEventHook) {
+        if WinExist(hwnd) {
+            for _idObject in filter.Object {
+                if idObject = _idObject {
+                    for _event in filter.Event {
+                        if event = _event {
+                            if RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
+                                filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                            } else {
+                                for _hwnd in filter.Hwnd {
+                                    if hwnd = _hwnd {
+                                        filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
+                                        Critical(originalCritical)
+                                        return
+                                    }
+                                }
+                            }
+                            Critical(originalCritical)
+                            return
+                        }
+                    }
+                    Critical(originalCritical)
+                    return
+                }
+            }
+        }
+    }
+    Critical(originalCritical)
 }
