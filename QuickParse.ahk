@@ -92,7 +92,7 @@ class QuickParse {
      * @descrpition - Parses a JSON string into an AHK object. This parser is designed for simplicity and
      * speed.
      * - JSON objects are parsed into instances of either `Object` or `Map`, depending on the value of
-     * the parameter `AsMap`.
+     *   the parameter `AsMap`.
      * - JSON arrays are parsed into instances of `Array`.
      * - `false` is represented as `0`.
      * - `true` is represented as `1`.
