@@ -1,8 +1,8 @@
 ﻿/*
 
 The \K escape sequences are included to reduce the amount of characters that get copied every
-time a callout function is called. The pattern would work without them, so don't focus
-on them too much.
+time a callout function is called. I tested this pattern against a moderate sized json with and
+without the \K escape sequence. The pattern performed 1100% worse without the \K escape sequences.
 
 */
 
