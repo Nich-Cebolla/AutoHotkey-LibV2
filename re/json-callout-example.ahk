@@ -153,10 +153,10 @@ class JsonCalloutExample {
             m.CaseSense := false
             return m
         }
-        OnArrayFalse(match, *) {
+        OnArrayFalse(*) {
             obj.Push(0)
         }
-        OnArrayNull(match, *) {
+        OnArrayNull(*) {
             obj.Push(unset)
         }
         OnArrayNumber(match, *) {
@@ -165,7 +165,7 @@ class JsonCalloutExample {
         OnArrayString(match, *) {
             obj.Push(match['as'])
         }
-        OnArrayTrue(match, *) {
+        OnArrayTrue(*) {
             obj.Push(1)
         }
         OnObjectFalse_1(match, *) {
@@ -198,7 +198,7 @@ class JsonCalloutExample {
         OnObjectTrue_2(match, *) {
             obj.%match['name']% := 1
         }
-        OnOpenSquare_1(match, *) {
+        OnOpenSquare_1(*) {
             if AsMap {
                 OnOpenCurly := OnOpenCurly_2
                 OnOpenSquare := OnOpenSquare_2
@@ -212,7 +212,7 @@ class JsonCalloutExample {
                 obj := Root := Array()
             }
         }
-        OnOpenCurly_1(match, *) {
+        OnOpenCurly_1(*) {
             if AsMap {
                 OnOpenCurly := OnOpenCurly_2
                 OnOpenSquare := OnOpenSquare_2
@@ -262,7 +262,7 @@ class JsonCalloutExample {
                 stack[-1].%match['name']% := obj
             }
         }
-        OnClose(match, *) {
+        OnClose(*) {
             obj := stack.Pop()
         }
     }
