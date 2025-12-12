@@ -50,10 +50,10 @@ class QuickStringify2 {
      *   "Map": {
      *     "arr": [
      *       "val"
-     *     ]
+     *     ],
      *     "map": {
      *       "key": "val"
-     *     }
+     *     },
      *     "obj": {
      *       "prop": "val"
      *     }

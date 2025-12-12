@@ -35,7 +35,7 @@ class PrettyStringifyProps2 {
      * {
      *   "Array": [ { "prop": "val" }, { "key": "val" }, [ "val" ] ],
      *   "Object": { "arr": [ "val" ], "map": { "key": "val" }, "obj": { "prop": "val" } },
-     *   "Map": { "arr": [ "val" ]"map": { "key": "val" }"obj": { "prop": "val" } }
+     *   "Map": { "arr": [ "val" ], "map": { "key": "val" }, "obj": { "prop": "val" } }
      * }
      * </pre>
      *

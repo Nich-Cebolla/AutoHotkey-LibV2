@@ -30,7 +30,7 @@ class PrettyStringify2 {
      * <pre>
      * {
      *   "Array": [ { "prop": "val" }, { "key": "val" }, [ "val" ] ],
-     *   "Map": { "arr": [ "val" ]"map": { "key": "val" }"obj": { "prop": "val" } },
+     *   "Map": { "arr": [ "val" ], "map": { "key": "val" }, "obj": { "prop": "val" } },
      *   "Object": { "arr": [ "val" ], "map": { "key": "val" }, "obj": { "prop": "val" } }
      * }
      * </pre>
