@@ -7,6 +7,7 @@
 class QuickParse {
     static __New() {
         this.DeleteProp('__New')
+        Comment := '/\*[\W\w]*?\*/|//.*'
         Next := '\s*+,?+\s*+'
         ArrayFalse := 'false\K(?CA)'
         ArrayNull := 'null\K(?CB)'
@@ -26,22 +27,28 @@ class QuickParse {
                 '\s*+'
                 '\K(?CK)'
                 '(?:'
-                    ObjectPropName
-                    ''
                     '(?:'
-                        ObjectString
+                        ObjectPropName
+                        ''
+                        '(?:'
+                            ObjectString
+                        '|'
+                            ObjectNumber
+                        '|'
+                            '(?1)'
+                        '|'
+                            '(?5)'
+                        '|'
+                            ObjectFalse
+                        '|'
+                            ObjectNull
+                        '|'
+                            ObjectTrue
+                        '|'
+                            Comment
+                        ')'
                     '|'
-                        ObjectNumber
-                    '|'
-                        '(?1)'
-                    '|'
-                        '(?5)'
-                    '|'
-                        ObjectFalse
-                    '|'
-                        ObjectNull
-                    '|'
-                        ObjectTrue
+                        Comment
                     ')'
                     Next
                 ')*+'
@@ -70,6 +77,8 @@ class QuickParse {
                         ArrayNull
                     '|'
                         ArrayTrue
+                    '|'
+                        Comment
                     ')'
                     Next
                 ')*+'
@@ -94,10 +103,10 @@ class QuickParse {
      * - Unquoted numeric values are processed through `Number()` before setting the value.
      * - Quoted numbers are processed as strings.
      * - Escape sequences are un-escaped and external quotations are removed from JSON string values.
+     * - The function supports JSON with comments.
      *
      * Only one of `Str` or `Path` are needed. If `Str` is set, `Path` is ignored. If both `Str` and
      * `Path` are unset, the clipboard's contents are used.
-     * @class
      *
      * @param {String} [Str] - The string to parse.
      * @param {String} [Path] - The path to the file that contains the JSON content to parse.
