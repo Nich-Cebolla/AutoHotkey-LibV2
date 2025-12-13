@@ -196,7 +196,7 @@ class PrettyStringifyProps2 {
                     }
                 case 'Map':
                     value := CallbackProps(Obj)
-                    if IsObject(value) {
+                    if IsObject(value) && Obj.Count {
                         _ws := ws
                         s .= '{ '
                         indent++
@@ -271,11 +271,10 @@ class PrettyStringifyProps2 {
                         }
                     } else {
                         str .= '{}'
-                        indent--
                     }
                 default:
                     value := CallbackProps(Obj)
-                    if IsObject(value) {
+                    if IsObject(value) && ObjOwnPropcount(Obj) {
                         _ws := ws
                         s .= '{ '
                         indent++
@@ -326,7 +325,6 @@ class PrettyStringifyProps2 {
                         }
                     } else {
                         str .= '{}'
-                        indent--
                     }
             }
             depth--

@@ -204,7 +204,6 @@ class PrettyStringify2 {
                         }
                     } else {
                         str .= '{}'
-                        indent--
                     }
                 default:
                     if ObjOwnPropCount(Obj) {
@@ -232,7 +231,6 @@ class PrettyStringify2 {
                         }
                     } else {
                         str .= '{}'
-                        indent--
                     }
             }
             depth--

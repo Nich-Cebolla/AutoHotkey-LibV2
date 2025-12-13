@@ -179,7 +179,6 @@ class MaxStringify2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
                 default:
                     if ObjOwnPropcount(Obj) {
@@ -208,7 +207,6 @@ class MaxStringify2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
             }
             --depth

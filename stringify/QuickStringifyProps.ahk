@@ -211,7 +211,6 @@ class QuickStringifyProps {
                         OutStr .= eol ind[indent] ']'
                     } else {
                         OutStr .= '[[]]'
-                        indent--
                     }
                 default:
                     value := CallbackProps(Obj)
@@ -252,7 +251,6 @@ class QuickStringifyProps {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
             }
         }

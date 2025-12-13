@@ -152,7 +152,6 @@ class QuickStringify2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
                 default:
                     if ObjOwnPropcount(Obj) {
@@ -173,7 +172,6 @@ class QuickStringify2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
             }
         }

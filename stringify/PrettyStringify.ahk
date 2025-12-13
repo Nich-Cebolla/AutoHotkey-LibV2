@@ -230,7 +230,6 @@ class PrettyStringify {
                         }
                     } else {
                         str .= '[[]]'
-                        indent--
                     }
                 default:
                     if ObjOwnPropcount(Obj) {
@@ -258,7 +257,6 @@ class PrettyStringify {
                         }
                     } else {
                         str .= '{}'
-                        indent--
                     }
             }
             depth--

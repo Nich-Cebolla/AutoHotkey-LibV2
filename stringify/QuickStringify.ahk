@@ -175,7 +175,6 @@ class QuickStringify {
                         OutStr .= eol ind[indent] ']'
                     } else {
                         OutStr .= '[[]]'
-                        indent--
                     }
                 default:
                     if ObjOwnPropcount(Obj) {
@@ -196,7 +195,6 @@ class QuickStringify {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
             }
         }

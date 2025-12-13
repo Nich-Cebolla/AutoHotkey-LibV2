@@ -15,7 +15,7 @@ class  QuickStringifyProps2 {
      * - Map objects are represented as `{ "key": val }`.
      * - This does not work with objects that inherit from `ComValue`.
      * - This does not check for reference cycles.
-     * - For Array objects, only the enumerator is processed.
+     * - For Array and Map objects, only the enumerator is processed.
      * - For Map objects and other object types, if `Options.CallbackProps` returns an array, only the
      *   properties/keys in the array are processed. If `Options.CallbackProps` returns zero or an empty
      *   string, for objects only the own properties are processed, for maps the enumerator is processed.
@@ -161,7 +161,7 @@ class  QuickStringifyProps2 {
                     }
                 case 'Map':
                     value := CallbackProps(Obj)
-                    if IsObject(value) {
+                    if IsObject(value) && Obj.Count {
                         OutStr .= '{'
                         indent++
                         for key in value {
@@ -222,11 +222,10 @@ class  QuickStringifyProps2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
                 default:
                     value := CallbackProps(Obj)
-                    if IsObject(value) {
+                    if IsObject(value) && ObjOwnPropcount(Obj) {
                         OutStr .= '{'
                         indent++
                         for prop in value {
@@ -263,7 +262,6 @@ class  QuickStringifyProps2 {
                         OutStr .= eol ind[indent] '}'
                     } else {
                         OutStr .= '{}'
-                        indent--
                     }
             }
         }
