@@ -1,73 +1,38 @@
+/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/JsonToAhk.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/tree/main/stringify
+#include <PrettyStringifyProps4>
+; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/QuickParse.ahk
+#include <QuickParse>
 
 /**
- * @description - Converts a Json string to an AutoHotKey string.
- * @param {String} [VariableName] - If set, the retun value is prefixed with `VariableName " := "`.
- * If unset, only the converted string is returned.
+ * @description - Converts a Json string to an AutoHotKey string. Only one of `Json` or `Path` are
+ * needed. If both are unset, the clipboard's contents is used.
  * @param {String} [Json] - The json string to convert.
- * @param {String} [PathInput] - If `Json` is unset, the path to the file containing the json string
+ * @param {String} [Path] - If `Json` is unset, the path to the file containing the json string
  * to convert.
  * @param {String} [Encoding] - If set, and if `Json` is unset, the encoding of the file at `PathInput`.
- * @param {VarRef} [OutPropCount] - A variable that will receive the number of object properties
- * contained in the json string.
- * @param {Integer} [ReplaceLimit] - If set, the value to pass to the `Limit` parameter of
- * `RegExReplace`.
- * @param {Integer} [StartPos = 1] - The start character position in `Json` that is to be converted.
- * @param {String} [QuoteChar = "`""] - For string literal values, if you prefer a different quote
- * character other than the double-quote, set `QuoteChar` with your preference.
- * @param {String} [LineEnding = "`r`n"] - Modifies the line endings used in the converted string.
+ * @param {String} [VariableName] - If set, the retun value is prefixed with `VariableName " := "`.
+ * @param {String} [Quote = "`""] - The quote character to use with quoted strings.
+ * @param {String} [Eol = "`n"] - The end of line character(s).
+ * @param {*} [CallbackProps] - A `Func` or callable object to set as `Options.CallbackProps`
+ * of {@link PrettyStringifyProps4.Prototype.__New}.
+ * @param {Integer} [InitialIndent = 0] - The initial indentation level. All lines except the
+ * first line (the opening brace) will minimally have this indentation level. The reason the first
+ * line does not is to make it easier to use the output as a value in another string.
+ * @param {Integer} [ApproxGreatestDepth = 10] - `ApproxGreatestDepth` is used to approximate
+ * the size of each substring to avoid needing to frequently expand the string.
  * @returns {String}
  */
-JsonToAhk(VariableName?, Json?, PathInput?, Encoding?, &OutPropCount?, ReplaceLimit?, StartPos := 1, QuoteChar := '"', LineEnding := '`r`n') {
-    if !IsSet(Json) {
-        Json := FileRead(PathInput, Encoding ?? unset)
-    }
-    StrUnescapeJson(&Json)
-    DecodeUnicodeEscapeSequence(&Json)
-    ; Remove quotes from properties
-    Json := RegExReplace(
-        Json
-      , '(?<=[\{,\s])"((?:[\p{L}_]|[^\x00-\x7F\x80-\x9F])(?:[\p{L}_0-9]|[^\x00-\x7F\x80-\x9F])+)":'
-      , '$1:'
-      , &OutPropCount
-      , ReplaceLimit ?? unset
-      , StartPos
-    )
-    ; Replace string literal quotes with preferred quote character
-    if QuoteChar !== '"' {
-        Json := RegExReplace(Json, '(?<=[,:[{\s])"(?<text>.*?(?<!\\)(?:\\\\)*+)"', QuoteChar '$1' QuoteChar)
-    }
-    ; Replace line endings
-    Json := RegExReplace(Json, '\R', LineEnding)
+JsonToAhk(Json?, Path?, Encoding?, VariableName?, Quote := '"', Eol := '`n', CallbackProps?, InitialIndent := 0, ApproxGreatestDepth := 10) {
+    PrettyStringifyProps4({ Quote: Quote, Eol: Eol, CallbackProps: CallbackProps ?? unset })(QuickParse(Json ?? unset, Path ?? unset, Encoding ?? unset), &Str, InitialIndent, ApproxGreatestDepth)
     if IsSet(VariableName) {
-        return VariableName ' := ' Json
+        return VariableName ' := ' Str
     } else {
-        return Json
+        return Str
     }
 }
-
-DecodeUnicodeEscapeSequence(&Str) {
-    while RegExMatch(Str, '\\u([dD][89aAbB][0-9a-fA-F]{2})\\u([dD][c-fC-F][0-9a-fA-F]{2})|\\u([0-9a-fA-F]{4})', &Match) {
-        if Match[1] && Match[2]
-            Str := StrReplace(Str, Match[0], Chr(((Number('0x' Match[1]) - 0xD800) << 10) + (Number('0x' Match[2]) - 0xDC00) + 0x10000))
-        else if Match[3]
-            Str := StrReplace(Str, Match[0], Chr('0x' Match[3]))
-        else if Match[1]
-            _Throw('first', 'second', Match[0])
-        else
-            _Throw('second', 'first', Match[0])
-    }
-
-    _Throw(A, B, C) {
-        throw Error('The input matched with the ' A ' capture group but not ' B ', which is'
-        '`r`nunexpected and unhandled. Match: ' C, -2)
-    }
-}
-
-StrUnescapeJson(&Str) {
-    n := 0xFFFD
-    while InStr(Str, Chr(n)) {
-        n++
-    }
-    Str := StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(Str, '\\', Chr(n)), '\n', '`n'), '\r', '`r'), '\"', '"'), '\t', '`t'), Chr(n), '\')
-}
-
