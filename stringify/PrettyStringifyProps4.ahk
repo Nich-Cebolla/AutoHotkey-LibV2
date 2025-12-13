@@ -4,7 +4,7 @@
     License: MIT
 */
 
-class PrettyStringifyProps2 {
+class PrettyStringifyProps4 {
     static __New() {
         this.DeleteProp('__New')
         proto := this.Prototype
@@ -40,7 +40,8 @@ class PrettyStringifyProps2 {
      * }
      * </pre>
      *
-     * - Map objects are represented as `{ key: val }`.
+     * - Map objects are represented as `{ key: val }`. The keys must be valid as AHK property names,
+     *   or an error occurs.
      * - This does not work with objects that inherit from `ComValue`.
      * - This does not check for reference cycles.
      * - For Array and Map objects, only the enumerator is processed.
@@ -96,8 +97,9 @@ class PrettyStringifyProps2 {
      * @param {String} [Options.Eol = "`n"] - The end of line character(s) to use when building
      * the JSON string.
      * @param {String} [Options.IndentChar = "`s"] - The character used for indentation.
-     * @param {Integer} [Options.IndentLen = 2] - The number of `Options.IndentChar` to use for one
+     * @param {Integer} [Options.IndentLen = 4] - The number of `Options.IndentChar` to use for one
      * level of indentation.
+     * @param {String} [Options.Quote = "`""] - The qoute character to use for quoted strings.
      *
      * @example
      * class MyClass {
@@ -115,15 +117,16 @@ class PrettyStringifyProps2 {
      *     }
      * }
      * obj := MyClass("value")
-     * strfy := PrettyStringifyProps2({ CallbackProps: CallbackProps })
+     * strfy := PrettyStringifyProps4({ CallbackProps: CallbackProps })
      * strfy(obj, &str)
      * OutputDebug(str "`n")
      * @
      */
     __New(Options?) {
-        options := PrettyStringifyProps2.Options(Options ?? unset)
+        options := PrettyStringifyProps4.Options(Options ?? unset)
         this.Eol := options.Eol
-        this.Indent := PrettyStringifyProps2_IndentHelper(options.IndentLen, options.IndentChar)
+        this.Indent := PrettyStringifyProps4_IndentHelper(options.IndentLen, options.IndentChar)
+        this.Quote := options.Quote
         if IsNumber(options.CharThreshold) {
             this.CharThresholdArray := IsNumber(options.CharThresholdArray) ? options.CharThresholdArray : options.CharThreshold
             this.CharThresholdMap := IsNumber(options.CharThresholdMap) ? options.CharThresholdMap : options.CharThreshold
@@ -141,6 +144,15 @@ class PrettyStringifyProps2 {
         }
         this.CallbackProps := options.CallbackProps
     }
+    /**
+     * @param {*} Obj - The object to stringify.
+     * @param {VarRef} OutStr - The variable that will receive the JSON string.
+     * @param {Integer} [InitialIndent = 0] - The initial indentation level. All lines except the
+     * first line (the opening brace) will minimally have this indentation level. The reason the first
+     * line does not is to make it easier to use the output as a value in another JSON string.
+     * @param {Integer} [ApproxGreatestDepth = 10] - `ApproxGreatestDepth` is used to approximate
+     * the size of each substring to avoid needing to frequently expand the string.
+     */
     Call(Obj, &OutStr, InitialIndent := 0, ApproxGreatestDepth := 10) {
         OutStr := ''
         VarSetStrCapacity(&OutStr, 64 * 2 ** ApproxGreatestDepth)
@@ -153,6 +165,7 @@ class PrettyStringifyProps2 {
         lenEol := StrLen(eol)
         ws := depth := 0
         CallbackProps := this.CallbackProps
+        q := this.Quote
         _Proc(Obj, InitialIndent, &OutStr)
         OutStr := RegExReplace(OutStr, ' +(?=\n|$)', '')
         VarSetStrCapacity(&OutStr, -1)
@@ -177,7 +190,7 @@ class PrettyStringifyProps2 {
                                 } else if IsNumber(val) {
                                     s .= c eol ind[indent] val
                                 } else {
-                                    s .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                    s .= c eol ind[indent] q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                                 }
                             } else {
                                 s .= c eol ind[indent] 'null'
@@ -203,19 +216,7 @@ class PrettyStringifyProps2 {
                         indent++
                         for key in value {
                             if Obj.Has(key) {
-                                if IsObject(key) {
-                                    if key.HasOwnProp('Prototype') {
-                                        s .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
-                                    } else if key.HasOwnProp('__Class') {
-                                        s .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
-                                    } else {
-                                        s .= c eol ind[indent] '"{ ' key.__Class ' }": '
-                                    }
-                                } else if IsNumber(key) {
-                                    s .= c eol ind[indent] '"' key '": '
-                                } else {
-                                    s .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
-                                }
+                                s .= c eol ind[indent] key ': '
                                 ws += lenInd * indent + lenEol
                                 c := ', '
                                 val := Obj.Get(key)
@@ -224,7 +225,7 @@ class PrettyStringifyProps2 {
                                 } else if IsNumber(val) {
                                     s .= val
                                 } else {
-                                    s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                    s .= q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                                 }
                             }
                         }
@@ -240,19 +241,7 @@ class PrettyStringifyProps2 {
                         s .= '{ '
                         indent++
                         for key, val in Obj {
-                            if IsObject(key) {
-                                if key.HasOwnProp('Prototype') {
-                                    s .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
-                                } else if key.HasOwnProp('__Class') {
-                                    s .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
-                                } else {
-                                    s .= c eol ind[indent] '"{ ' key.__Class ' }": '
-                                }
-                            } else if IsNumber(key) {
-                                s .= c eol ind[indent] '"' key '": '
-                            } else {
-                                s .= c eol ind[indent] '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(key, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '": '
-                            }
+                            s .= c eol ind[indent] key ': '
                             ws += lenInd * indent + lenEol
                             c := ', '
                             if IsObject(val) {
@@ -260,7 +249,7 @@ class PrettyStringifyProps2 {
                             } else if IsNumber(val) {
                                 s .= val
                             } else {
-                                s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                s .= q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                             }
                         }
                         indent--
@@ -281,7 +270,7 @@ class PrettyStringifyProps2 {
                         indent++
                         for prop in value {
                             if HasProp(Obj, prop) {
-                                s .= c eol ind[indent] '"' prop '": '
+                                s .= c eol ind[indent] prop ': '
                                 ws += lenInd * indent + lenEol
                                 c := ', '
                                 val := Obj.%prop%
@@ -290,7 +279,7 @@ class PrettyStringifyProps2 {
                                 } else if IsNumber(val) {
                                     s .= val
                                 } else {
-                                    s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                    s .= q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                                 }
                             }
                         }
@@ -306,7 +295,7 @@ class PrettyStringifyProps2 {
                         s .= '{ '
                         indent++
                         for prop, val in Obj.OwnProps() {
-                            s .= c eol ind[indent] '"' prop '": '
+                            s .= c eol ind[indent] prop ': '
                             ws += lenInd * indent + lenEol
                             c := ', '
                             if IsObject(val) {
@@ -314,7 +303,7 @@ class PrettyStringifyProps2 {
                             } else if IsNumber(val) {
                                 s .= val
                             } else {
-                                s .= '"' StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '\', '\\'), '`n', '\n'), '`r', '\r'), '"', '\"'), '`t', '\t') '"'
+                                s .= q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                             }
                         }
                         indent--
@@ -338,8 +327,9 @@ class PrettyStringifyProps2 {
             proto.CallbackProps := (*) => ''
             proto.CharThreshold := 200
             proto.Eol := '`n'
+            proto.Quote := '"'
             proto.IndentChar := '`s'
-            proto.IndentLen := 2
+            proto.IndentLen := 4
             proto.CharThresholdArray :=
             proto.CharThresholdMap :=
             proto.CharThresholdObject :=
@@ -348,7 +338,7 @@ class PrettyStringifyProps2 {
 
         __New(options?) {
             if IsSet(options) {
-                for prop in PrettyStringifyProps2.Options.Prototype.OwnProps() {
+                for prop in PrettyStringifyProps4.Options.Prototype.OwnProps() {
                     if HasProp(options, prop) {
                         this.%prop% := options.%prop%
                     }
@@ -361,7 +351,7 @@ class PrettyStringifyProps2 {
     }
 }
 
-class PrettyStringifyProps2_IndentHelper extends Array {
+class PrettyStringifyProps4_IndentHelper extends Array {
     static __New() {
         this.DeleteProp('__New')
         proto := this.Prototype

@@ -147,6 +147,15 @@ class PrettyStringifyProps {
         }
         this.CallbackProps := options.CallbackProps
     }
+    /**
+     * @param {*} Obj - The object to stringify.
+     * @param {VarRef} OutStr - The variable that will receive the JSON string.
+     * @param {Integer} [InitialIndent = 0] - The initial indentation level. All lines except the
+     * first line (the opening brace) will minimally have this indentation level. The reason the first
+     * line does not is to make it easier to use the output as a value in another JSON string.
+     * @param {Integer} [ApproxGreatestDepth = 10] - `ApproxGreatestDepth` is used to approximate
+     * the size of each substring to avoid needing to frequently expand the string.
+     */
     Call(Obj, &OutStr, InitialIndent := 0, ApproxGreatestDepth := 10) {
         OutStr := ''
         VarSetStrCapacity(&OutStr, 64 * 2 ** ApproxGreatestDepth)
