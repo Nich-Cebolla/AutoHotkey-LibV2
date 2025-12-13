@@ -193,7 +193,7 @@ class PrettyStringifyProps4 {
                                     s .= c eol ind[indent] q StrReplace(StrReplace(StrReplace(StrReplace(StrReplace(val, '``', '````'), '`n', '``n'), '`r', '``r'), q, '``' q), '`t', '``t') q
                                 }
                             } else {
-                                s .= c eol ind[indent] 'null'
+                                s .= c eol ind[indent] 'unset'
                             }
                             ws += lenInd * indent + lenEol
                             c := ', '
