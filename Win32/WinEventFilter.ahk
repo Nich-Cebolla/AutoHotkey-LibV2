@@ -207,38 +207,34 @@ class WinEventFilter {
 }
 
 WinEventFilter_0(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
     }
-    Critical(originalCritical)
 }
 WinEventFilter_1(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _hwnd in filter.Hwnd {
                 if hwnd = _hwnd {
                     filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_2(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
             filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_3(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             if RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
@@ -247,30 +243,26 @@ WinEventFilter_3(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, d
                 for _hwnd in filter.Hwnd {
                     if hwnd = _hwnd {
                         filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                        Critical(originalCritical)
                         return
                     }
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_4(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         for _event in filter.Event {
             if event = _event {
                 filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                Critical(originalCritical)
                 return
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_5(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _hwnd in filter.Hwnd {
@@ -278,35 +270,30 @@ WinEventFilter_5(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, d
                     for _event in filter.Event {
                         if event = _event {
                             filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                            Critical(originalCritical)
                             return
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_6(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
             for _event in filter.Event {
                 if event = _event {
                     filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_7(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _event in filter.Event {
@@ -317,34 +304,29 @@ WinEventFilter_7(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, d
                         for _hwnd in filter.Hwnd {
                             if hwnd = _hwnd {
                                 filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                                Critical(originalCritical)
                                 return
                             }
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_8(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         for _idObject in filter.Object {
             if idObject = _idObject {
                 filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                Critical(originalCritical)
                 return
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_9(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         for _idObject in filter.Object {
             if idObject = _idObject {
@@ -352,35 +334,30 @@ WinEventFilter_9(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, d
                     for _hwnd in filter.Hwnd {
                         if hwnd = _hwnd {
                             filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                            Critical(originalCritical)
                             return
                         }
                     }
                 }
-                Critical(originalCritical)
                 return
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_10(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         for _idObject in filter.Object {
             if idObject = _idObject {
                 if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
                     filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
                 }
-                Critical(originalCritical)
                 return
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_11(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _idObject in filter.Object {
@@ -391,40 +368,34 @@ WinEventFilter_11(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, 
                         for _hwnd in filter.Hwnd {
                             if hwnd = _hwnd {
                                 filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                                Critical(originalCritical)
                                 return
                             }
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_12(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         for _idObject in filter.Object {
             if idObject = _idObject {
                 for _event in filter.Event {
                     if event = _event {
                         filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                        Critical(originalCritical)
                         return
                     }
                 }
-                Critical(originalCritical)
                 return
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_13(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _idObject in filter.Object {
@@ -434,24 +405,20 @@ WinEventFilter_13(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, 
                             for _event in filter.Event {
                                 if event = _event {
                                     filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                                    Critical(originalCritical)
                                     return
                                 }
                             }
-                            Critical(originalCritical)
                             return
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_14(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) && RegExMatch(WinGetTitle(hwnd), filter.TitlePattern) {
             for _idObject in filter.Object {
@@ -459,20 +426,17 @@ WinEventFilter_14(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, 
                     for _event in filter.Event {
                         if event = _event {
                             filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                            Critical(originalCritical)
                             return
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
 WinEventFilter_15(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
-    originalCritical := Critical(-1)
+    Critical(-1)
     if filter := WinEventFilter.Collection.Get(hWinEventHook) {
         if WinExist(hwnd) {
             for _idObject in filter.Object {
@@ -485,20 +449,16 @@ WinEventFilter_15(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, 
                                 for _hwnd in filter.Hwnd {
                                     if hwnd = _hwnd {
                                         filter.Callback.Call(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime, filter)
-                                        Critical(originalCritical)
                                         return
                                     }
                                 }
                             }
-                            Critical(originalCritical)
                             return
                         }
                     }
-                    Critical(originalCritical)
                     return
                 }
             }
         }
     }
-    Critical(originalCritical)
 }
