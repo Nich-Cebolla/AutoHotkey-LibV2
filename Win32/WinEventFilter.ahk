@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/WinEventFilter.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 ; https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/WinEventHook.ahk
 #include <WinEventHook>
 ; I have not tested all combinations of options. If an error occurs please submit issue.

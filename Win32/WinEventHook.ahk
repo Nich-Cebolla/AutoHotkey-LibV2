@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Win32/WinEventHook.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 class WinEventHook {
     static __New() {
         this.DeleteProp('__New')
