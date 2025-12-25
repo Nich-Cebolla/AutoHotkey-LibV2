@@ -77,6 +77,9 @@ ResolveRelativePath(Path, RelativeTo?) {
  * @param {VarRef} Path - A variable containing the relative path to evaluate as string.
  * @param {String} [RelativeTo] - The location `Path` is relative to. If unset, the working directory
  * is used. `RelativeTo` can also be relative with "..\" leading segments.
+ *
+ * @returns {Integer} - Returns 0 if the function is successful. Returns 1 if the input parameters
+ * are invalid.
  */
 ResolveRelativePathRef(&Path, RelativeTo?) {
     if IsSet(RelativeTo) && RelativeTo {
@@ -84,7 +87,9 @@ ResolveRelativePathRef(&Path, RelativeTo?) {
         if !Drive {
             if InStr(RelativeTo, '.\') {
                 w := A_WorkingDir
-                _Process(&RelativeTo, &w)
+                if _Process(&RelativeTo, &w) {
+                    return 1
+                }
             } else {
                 RelativeTo := A_WorkingDir '\' RelativeTo
             }
@@ -93,11 +98,15 @@ ResolveRelativePathRef(&Path, RelativeTo?) {
         RelativeTo := A_WorkingDir
     }
     if InStr(Path, '.\') {
-        _Process(&Path, &RelativeTo)
+        if _Process(&Path, &RelativeTo) {
+            return 1
+        }
     } else {
         Path := RelativeTo '\' Path
     }
     Path := RTrim(Path, '\')
+
+    return 0
 
     _Process(&path, &relative) {
         split := StrSplit(path, '\')
@@ -125,15 +134,12 @@ ResolveRelativePathRef(&Path, RelativeTo?) {
             if relative {
                 path := relative path
             } else {
-                _Throw()
+                return 1
             }
         } else if relative {
             path := relative
         } else {
-            _Throw()
+            return 1
         }
-    }
-    _Throw() {
-        throw ValueError('Invalid input parameters.', -2)
     }
 }
