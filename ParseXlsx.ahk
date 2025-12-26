@@ -10,7 +10,51 @@ class ParseXlsx extends Array {
     }
     /**
      * @class
-     * @description - Converts an xlsx document into a nested data structure. The conversion
+     * @description -
+     *
+     * # Example 1
+     *
+     * @example
+     * #include <DateObj>
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     *
+     * ; Get the base date as a DateObj object.
+     * if xlsx.date1904 {
+     *     baseDate := DateObj.FromTimestamp("19040101000000")
+     * } else {
+     *     baseDate := DateObj.FromTimestamp("18991230000000")
+     * }
+     *
+     * ; Assume cell A1 of the first worksheet has a date value of 46016.2291666667.
+     * cell := xlsx[1].cell(1, 1)
+     * OutputDebug(cell.value "`n") ; 46016.2291666667
+     * ; Call "AddToNew".
+     * a1Date := baseDate.AddToNew(cell.value, "D")
+     * ; `a1Date` is now a usable date object for the date in the cell.
+     * OutputDebug(a1Date.Get("yyyy-MM-dd HH:mm:ss") "`n") ; 2025-12-25 05:30:00
+     * @
+     *
+     * # Example 2
+     *
+     * @example
+     * ; Ensure that no documents exist in the directory
+     * ; before deleting. I.e., don't use the output
+     * ; directory for anything other than decompressing
+     * ; the xlsx document.
+     * _OnExit(dir, *) {
+     *     if DirExist(dir) {
+     *         FileRecycle(dir, 1)
+     *     }
+     * }
+     * xlsx := ParseXlsx("workbook.xlsx")
+     * OnExit(_OnExit.Bind(xlsx.dir), 1)
+     * @
+     *
+     * # Documentation
+     *
+     * Converts an xlsx document into a nested data structure. The conversion
      * process decompresses the xlsx document then parses the xml documents. This approach does
      * not require Excel to be installed on the machine. This approach uses the Shell.Application
      * COM object to decompress the xlsx document.
@@ -85,33 +129,12 @@ class ParseXlsx extends Array {
      * {@link ParseXlsx#date1904} will return 1. If a workbook uses the 1900 date system, the property
      * {@link ParseXlsx#date1904} will return 0.
      *
+     * <!-- Example 1 is located above -->
      * A quick and easy way to get the actual date from the date value would be to use my
-     * {@link https://github.com/Nich-Cebolla/AutoHotkey-DateObj DateObj} class. This would require
-     * either knowing ahead of time which cells contain date values, or parsing the xl\styles.xml
-     * document to retrieve the style indices of styles that are for date values + create a list
-     * of built-in number formats that are used for date values. (This library does not do that).
-     *
-     * @example
-     * #include <DateObj>
-     * #include <ParseXlsx>
-     *
-     * xlsx := ParseXlsx("ParseXlsx-content.xlsx")
-     *
-     * ; Get the base date as a DateObj object.
-     * if xlsx.date1904 {
-     *     baseDate := DateObj.FromTimestamp("19040101000000")
-     * } else {
-     *     baseDate := DateObj.FromTimestamp("18991230000000")
-     * }
-     *
-     * ; Assume cell A1 of the first worksheet has a date value of 46016.2291666667.
-     * cell := xlsx[1].cell(1, 1)
-     * OutputDebug(cell.value "`n") ; 46016.2291666667
-     * ; Call "AddToNew".
-     * a1Date := baseDate.AddToNew(cell.value, "D")
-     * ; `a1Date` is now a usable date object for the date in the cell.
-     * OutputDebug(a1Date.Get("yyyy-MM-dd HH:mm:ss") "`n") ; 2025-12-25 05:30:00
-     * @
+     * {@link https://github.com/Nich-Cebolla/AutoHotkey-DateObj DateObj} class (see example 1). This
+     * would require either knowing ahead of time which cells contain date values, or parsing the
+     * xl\styles.xml document to retrieve the style indices of styles that are for date values + create
+     * a list of built-in number formats that are used for date values. (This library does not do that).
      *
      * ### Beyond cell values
      *
@@ -240,6 +263,18 @@ class ParseXlsx extends Array {
      * @param {String} path - `path` can be one of the following:
      * - The path to the xlsx document. {@link ParseXlsx} will make a copy and decompress the copy.
      * - The path to a directory containing the contents from a previously decompressed document.
+     *
+     * When you set `path` with a path to an xlsx document, it decompresses the document to `dir`
+     * but does not clean up the directory when the process is finished. So, if you make changes to
+     * the workbook then try running your script again, you will likely not see the changes because
+     * the decompression function will not overwrite the existing documents.
+     *
+     * <!-- Example 2 is located above -->
+     * This can be troublesome, particularly during testing and development when you might want to
+     * make changes to the workbook then see how the script responds. The most straightforward approach
+     * to handle this is to set an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit}
+     * function to delete the directory when the process exits (see example 2).
+     *
      * @param {String} dir - The directory to which the xlsx document will be decompressed. `dir` is
      * ignored when `path` is a path to a directory.
      * @param {String} [encoding = "utf-8"] - The file encoding of the xml documents. Excel uses
