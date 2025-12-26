@@ -636,7 +636,15 @@ class ParseXlsx extends Array {
          * letter(s) of the column.
          */
         cell(rowIndex, col) {
-            return this.rows[rowIndex].Get2(IsNumber(col) ? col : ParseXlsx_ColToIndex(col))
+            if this.rows.Has(rowIndex) {
+                row := this.rows[rowIndex]
+                if !IsNumber(col) {
+                    col := ParseXlsx_ColToIndex(col)
+                }
+                if row.Has(col) {
+                    return row.Get2(col)
+                }
+            }
         }
         /**
          * @description - Returns an array containing the cells in a column.
