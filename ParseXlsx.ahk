@@ -1,5 +1,4 @@
 ﻿
-
 class ParseXlsx extends Array {
     static __New() {
         this.DeleteProp('__New')
@@ -12,8 +11,116 @@ class ParseXlsx extends Array {
      * @class
      * @description -
      *
-     * # Example 1
+     * ## Example 1
      *
+     * Instantiating the class and getting a worksheet
+     * @example
+     * #include <ParseXlsx>
+     *
+     * path := "workbook.xlsx"
+     * xlsx := ParseXlsx(path)
+     *
+     * ; `xlsx` is an array of `ParseXlsx.Worksheet` objects
+     * ; xlsx.Length is the number of worksheets in the workbook
+     * OutputDebug(xlsx.Length "`n")
+     * ; Get a worksheet by index
+     * ws1 := xlsx[1]
+     * ; Get a worksheet by name
+     * ws2 := xlsx.getWs("Sheet2")
+     * ; Get a worksheet using a pattern
+     * ws3 := xlsx.getWs("\w+3", true)
+     * @
+     *
+     * ## Example 2
+     *
+     * Producing a csv copy of the worksheet
+     * @example
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     *
+     * ; Get an unmodified csv copy of the worksheet
+     * ws := xlsx[1]
+     * FileAppend(ws.toCsv(), "sheet1.csv", "utf-8")
+     *
+     * ; using a callback to modify the cell values. You can copy this callback to your code
+     * ; and it will work.
+     * callback(cell) {
+     *     ; All together this expression does:
+     *     ; Standardizes end of line to line feed
+     *     ; Fixes floating point imprecision using the built-in ParseXlsx_FixFloatingPoint
+     *     ; Decodes "&amp;", "&gt;", and "&lt;"
+     *     return RegExReplace(ParseXlsx_FixFloatingPoint(cell.decoded), '\R', '`n')
+     * }
+     * ws3 := xlsx[3]
+     * ; call "toCsv2" instead of "toCsv"
+     * FileAppend(ws3.toCsv2(callback), "sheet3.csv", "utf-8")
+     * @
+     *
+     * ## Example 3
+     *
+     * Access individual cells
+     * @example
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     * ws := xlsx[1]
+     * ca1 := ws.cell(1, 1)
+     * cb3 := ws.cell(3, "B")
+     * caz19 := ws.cell(19, "AZ")
+     * @
+     *
+     * ## Example 4
+     *
+     * Using a cell object
+     * @example
+     *
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     * ws := xlsx[1]
+     * ca1 := ws.cell(1, 1)
+     * ; value
+     * OutputDebug(ca1.value "`n")
+     * ; decoded value
+     * OutputDebug(ca1.decoded "`n")
+     * ; xml attributes. See the documentation for ParseXlsx.Cell for details
+     * OutputDebug(ca1.r "`n")
+     * OutputDebug(ca1.s "`n")
+     * ; xml child elements See the documentation for ParseXlsx.Cell for details
+     * ; The cell's formula, if applicable.
+     * OutputDebug(ca1.f "`n")
+     * ; The <v> element might be the cell's value or it might be an integer pointing to a shared string
+     * OutputDebug(ca1.v "`n")
+     * @
+     *
+     * ## Example 5
+     *
+     * Get a range of cells
+     * @example
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     * ws := xlsx[1]
+     * ; Get the range R5C3:R9C9
+     * r1 := 5
+     * c1 := 3
+     * r2 := 9
+     * c2 := 9
+     * rng := ws.getRange(r1, r2, c1, c2)
+     * for cell in rng {
+     *     ; skip blank cells
+     *     if !IsSet(cell) {
+     *         continue
+     *     }
+     *     ; do work...
+     * }
+     * @
+     *
+     * ## Example 6
+     *
+     * Use {@link https://github.com/Nich-Cebolla/AutoHotkey-DateObj DateObj} to work with dates.
+     * See section "Dates" for more information.
      * @example
      * #include <DateObj>
      * #include <ParseXlsx>
@@ -36,7 +143,34 @@ class ParseXlsx extends Array {
      * OutputDebug(a1Date.Get("yyyy-MM-dd HH:mm:ss") "`n") ; 2025-12-25 05:30:00
      * @
      *
-     * # Example 2
+     * ## Example 7
+     *
+     * Work with dates without external scripts. See section "Dates" for more information.
+     * @example
+     * #include <ParseXlsx>
+     *
+     * xlsx := ParseXlsx("workbook.xlsx")
+     *
+     * ; Get the base date as a DateObj object.
+     * if xlsx.date1904 {
+     *     ts := "19040101000000"
+     * } else {
+     *     ts := "18991230000000"
+     * }
+     *
+     * ; Assume cell A1 of the first worksheet has a date value of 46016.2291666667.
+     * cell := xlsx[1].cell(1, 1)
+     * OutputDebug(cell.value "`n") ; 46016.2291666667
+     * ; Call DateAdd
+     * tsA1 := DateAdd(ts, cell.value, "D")
+     * ; Work with the timestamp
+     * OutputDebug(FormatTime(tsA1, "yyyy-MM-dd HH:mm:ss") "`n") ; 2025-12-25 05:30:00
+     * @
+     *
+     * ## Example 8
+     *
+     * Set an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit} function to delete the
+     * directory when the process exits
      *
      * @example
      * ; Ensure that no documents exist in the directory
@@ -74,7 +208,7 @@ class ParseXlsx extends Array {
      * - {@link ParseXlsx#date1904} - Returns 1 if the workbook uses the 1904 date system. Returns
      *   0 otherwise. See section "Dates" below for more information.
      * - {@link ParseXlsx#workbookPr} - Returns a `Map` object, each key : value pair representing the name
-     *   and value of a workbook property defined in xl\workbook.xml.
+     *   and value of a workbook property defined in xl\\workbook.xml.
      * - {@link ParseXlsx#sharedStrings} - A {@link ParseXlsx.SharedStringCollection} object.
      *   See section "ParseXlsx.SharedStringCollection and ParseXlsx.SharedString" below for more
      *   information.
@@ -91,7 +225,7 @@ class ParseXlsx extends Array {
      *
      * - {@link ParseXlsx.Cell#col} - The column index represented as letters, e.g. "A", "B", "AZ".
      * - {@link ParseXlsx.Cell#columnIndex} - The 1-based column index as integer.
-     * - {@link ParseXlsx.Cell#decoded} - Returns the cell's value, decoding "&amp;", "&gt;", and "&lt;"
+     * - {@link ParseXlsx.Cell#decoded} - Returns the cell's value, decoding "&amp;amp;", "&amp;gt;", and "&amp;lt;"
      *   to "&", ">", and "<", respectively.
      * - {@link ParseXlsx.Cell#r} - The full cell reference, e.g. "A1", "B6", "AZ12".
      * - {@link ParseXlsx.Cell#rowIndex} - The 1-based row index as integer.
@@ -129,12 +263,10 @@ class ParseXlsx extends Array {
      * {@link ParseXlsx#date1904} will return 1. If a workbook uses the 1900 date system, the property
      * {@link ParseXlsx#date1904} will return 0.
      *
-     * <!-- Example 1 is located above -->
-     * A quick and easy way to get the actual date from the date value would be to use my
-     * {@link https://github.com/Nich-Cebolla/AutoHotkey-DateObj DateObj} class (see example 1). This
-     * would require either knowing ahead of time which cells contain date values, or parsing the
-     * xl\styles.xml document to retrieve the style indices of styles that are for date values + create
-     * a list of built-in number formats that are used for date values. (This library does not do that).
+     * Working with dates will generally require your code to know beforehand which cells contain
+     * date values, or you can parse the xl\\styles.xml document to identify cells which have a date
+     * number format, but this library does not do that. See examples 6 and 7 for examples working
+     * with dates.
      *
      * ### Beyond cell values
      *
@@ -217,8 +349,8 @@ class ParseXlsx extends Array {
      *
      * ## ParseXlsx.SharedStringCollection and ParseXlsx.SharedString
      *
-     * This library parses the xl\sharedStrings.xml document, which contains a number of strings
-     * that are referenced by more than one object. For each item in xl\sharedStrings.xml, a
+     * This library parses the xl\\sharedStrings.xml document, which contains a number of strings
+     * that are referenced by more than one object. For each item in xl\\sharedStrings.xml, a
      * {@link ParseXlsx.SharedString} object is created.
      *
      * The {@link ParseXlsx.SharedString} objects have the following properties:
@@ -226,8 +358,8 @@ class ParseXlsx extends Array {
      * - {@link ParseXlsx.SharedString#attributes} - Returns the xml text for any attributes associated
      *   with the string. This property is defined within the body of
      *   {@link ParseXlsx.SharedStringCollection.Prototype.__New}.
-     * - {@link ParseXlsx.SharedString#decoded} - Returns the string value, replacing "&amp;", "&gt;",
-     *   and "&lt;" with "&", ">", "<", respectively.
+     * - {@link ParseXlsx.SharedString#decoded} - Returns the string value, replacing "&amp;amp;", "&amp;gt;",
+     *   and "&amp;lt;" with "&", ">", "<", respectively.
      * - {@link ParseXlsx.SharedString#value} - Returns the string value. This property is defined
      *   within the body of {@link ParseXlsx.SharedStringCollection.Prototype.__New}.
      *
@@ -273,7 +405,7 @@ class ParseXlsx extends Array {
      * This can be troublesome, particularly during testing and development when you might want to
      * make changes to the workbook then see how the script responds. The most straightforward approach
      * to handle this is to set an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit}
-     * function to delete the directory when the process exits (see example 2).
+     * function to delete the directory when the process exits (see example 8).
      *
      * @param {String} dir - The directory to which the xlsx document will be decompressed. `dir` is
      * ignored when `path` is a path to a directory.
