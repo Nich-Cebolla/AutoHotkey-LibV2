@@ -397,12 +397,18 @@ class ParseXlsx extends Array {
      * By default, `setOnExit` is 1, which will cause the script to clean up the output directory,
      * avoiding this issue. See the details for parameters `dir` and `setOnExit` for more information.
      *
-     * @param {String} [dir = A_Temp "\ParseXlsx-output"] - The directory to which the xlsx document
-     * will be decompressed. `dir` does not need to exist. An error is thrown if `dir` already
+     * @param {String} [dir] - The directory to which the xlsx document will be decompressed. Leave
+     * `dir` unset to direct {@link ParseXlsx} to create a temp directory.
+     *
+     * `dir` does not need to exist. An error is thrown if `dir` already
      * contains at least one of the following files: .\[Content_Types].xml, .\docProps\app.xml,
      * .\xl\sharedStrings.xml, .\xl\styles.xml, .\xl\workbook.xml, .\xl\worksheets\sheet1.xml.
      *
      * `dir` is ignored when `path` is a path to a directory.
+     *
+     * If `dir` is unset, the default `A_Temp "\ParseXlsx-output"` is used. If `A_Temp "\ParseXlsx-output"`
+     * already exists, a hyphen and integer is added to the end of the name. The integer is incremented
+     * by 1 until it produces a path that does not yet exist.
      *
      * @param {String} [encoding = "utf-8"] - The file encoding of the xml documents. Excel uses
      * utf-8 by default.
@@ -428,7 +434,7 @@ class ParseXlsx extends Array {
      *
      * @throws {Error} - "The ParseXlsx output directory is already occupied."
      */
-    __New(path, dir := A_Temp '\ParseXlsx-output', encoding := 'utf-8', deferProcess := false, setOnExit := 1) {
+    __New(path, dir?, encoding := 'utf-8', deferProcess := false, setOnExit := 1) {
         ; Assign a unique id and cache a reference to this object within the
         ; ParseXlsx.Collection map. This allows related objects to obtain a reference
         ; to one another without creating a reference cycle.
@@ -459,7 +465,20 @@ class ParseXlsx extends Array {
                 this()
             }
         } else {
-            this.dir := dir
+            if IsSet(dir) {
+                this.dir := dir
+            } else {
+                dir := A_Temp '\ParseXlsx-output'
+                if FileExist(dir) {
+                    i := 2
+                    while FileExist(A_Temp '\ParseXlsx-output-' i) {
+                        ++i
+                    }
+                    this.dir := A_Temp '\ParseXlsx-output-' i
+                } else {
+                    this.dir := dir
+                }
+            }
             this.path := path
             if !deferProcess {
                 this.decompress()
