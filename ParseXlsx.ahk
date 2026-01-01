@@ -538,6 +538,14 @@ class ParseXlsx extends Array {
     }
 
     /**
+     * @description - When {@link ParseXlsx#date1904} is true, returns "19040101000000". Else,
+     * returns "18991230000000". These are the yyyyMMddHHmmss timestamp of the relevant base date.
+     * @instance
+     * @memberof ParseXlsx
+     * @type {String}
+     */
+    baseDate => this.date1904 ? '19040101000000' : '18991230000000'
+    /**
      * @description - When true, the workbook uses the 1904 date system. When false, the workbook
      * uses the 1900 date system.
      *
@@ -552,6 +560,7 @@ class ParseXlsx extends Array {
      * 1st, 1904, which has a serial date-time of 0.
      * @instance
      * @memberof ParseXlsx
+     * @type {Boolean}
      */
     date1904 => this.workbookPr.Get('date1904')
 
