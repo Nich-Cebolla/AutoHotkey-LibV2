@@ -414,7 +414,7 @@ class ParseXlsx extends Array {
      * utf-8 by default.
      *
      * @param {Boolean} [deferProcess = false] - If true, the core process is not invoked; your code
-     * must call {@link ParseXlsx.Prototype.Decompress} if applicable, and/or call {@link ParseXlsx.Prototype.Call}.
+     * must call {@link ParseXlsx.Prototype.decompress} if applicable, and/or call {@link ParseXlsx.Prototype.call}.
      *
      * @param {Integer} [setOnExit = 1] - An integer directing {@link ParseXlsx} to set, or not set,
      * {@link ParseXlsx_OnExit} as an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit}
