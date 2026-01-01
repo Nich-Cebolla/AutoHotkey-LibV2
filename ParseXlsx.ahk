@@ -4,7 +4,10 @@ class ParseXlsx extends Array {
         this.DeleteProp('__New')
         this.Collection := Map()
         this.Collection.CaseSense := this.Collection.Default := false
-        this.prototype.encoding := 'utf-8'
+        proto := this.Prototype
+        proto.encoding := 'utf-8'
+        proto.__setOnExit := 0
+        proto.callbackOnExit := ''
         ParseXlsx_SetConstants()
     }
     /**
@@ -167,25 +170,6 @@ class ParseXlsx extends Array {
      * OutputDebug(FormatTime(tsA1, "yyyy-MM-dd HH:mm:ss") "`n") ; 2025-12-25 05:30:00
      * @
      *
-     * ## Example 8
-     *
-     * Set an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit} function to delete the
-     * directory when the process exits
-     *
-     * @example
-     * ; Ensure that no documents exist in the directory
-     * ; before deleting. I.e., don't use the output
-     * ; directory for anything other than decompressing
-     * ; the xlsx document.
-     * _OnExit(dir, *) {
-     *     if DirExist(dir) {
-     *         FileRecycle(dir, 1)
-     *     }
-     * }
-     * xlsx := ParseXlsx("workbook.xlsx")
-     * OnExit(_OnExit.Bind(xlsx.dir), 1)
-     * @
-     *
      * # Documentation
      *
      * Converts an xlsx document into a nested data structure. The conversion
@@ -205,6 +189,7 @@ class ParseXlsx extends Array {
      *
      * The {@link ParseXlsx} objects have the following properties:
      *
+     * - {@link ParseXlsx#baseDate} - Returns the base date as yyyyMMddHHmmss timestamp.
      * - {@link ParseXlsx#date1904} - Returns 1 if the workbook uses the 1904 date system. Returns
      *   0 otherwise. See section "Dates" below for more information.
      * - {@link ParseXlsx#workbookPr} - Returns a `Map` object, each key : value pair representing the name
@@ -225,6 +210,8 @@ class ParseXlsx extends Array {
      *
      * - {@link ParseXlsx.Cell#col} - The column index represented as letters, e.g. "A", "B", "AZ".
      * - {@link ParseXlsx.Cell#columnIndex} - The 1-based column index as integer.
+     * - {@link ParseXlsx.Cell#date} - If the cell's value is a number, returns the return value from
+     *   adding the value to the workbook's base date.
      * - {@link ParseXlsx.Cell#decoded} - Returns the cell's value, decoding "&amp;amp;", "&amp;gt;", and "&amp;lt;"
      *   to "&", ">", and "<", respectively.
      * - {@link ParseXlsx.Cell#r} - The full cell reference, e.g. "A1", "B6", "AZ12".
@@ -396,25 +383,50 @@ class ParseXlsx extends Array {
      * - The path to the xlsx document. {@link ParseXlsx} will make a copy and decompress the copy.
      * - The path to a directory containing the contents from a previously decompressed document.
      *
-     * When you set `path` with a path to an xlsx document, it decompresses the document to `dir`
-     * but does not clean up the directory when the process is finished. So, if you make changes to
-     * the workbook then try running your script again, you will likely not see the changes because
-     * the decompression function will not overwrite the existing documents.
+     * The following information is only relevant when `path` is a path to a file.
      *
-     * <!-- Example 2 is located above -->
-     * This can be troublesome, particularly during testing and development when you might want to
-     * make changes to the workbook then see how the script responds. The most straightforward approach
-     * to handle this is to set an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit}
-     * function to delete the directory when the process exits (see example 8).
+     * {@link ParseXlsx} decompresses the document at `path` to `dir`. If parameter `setOnExit` is
+     * 0, the decompressed documents will remain after the script exits. If you make changes to the
+     * workbook then try running your script again, you will likely not see the changes because the
+     * decompression function will not overwrite the existing documents. This can be troublesome,
+     * particularly during testing and development when you might want to make changes to the workbook
+     * then see how the script responds.
      *
-     * @param {String} dir - The directory to which the xlsx document will be decompressed. `dir` is
-     * ignored when `path` is a path to a directory.
+     * By default, `setOnExit` is 1, which will cause the script to clean up the output directory,
+     * avoiding this issue. See the details for parameters `dir` and `setOnExit` for more information.
+     *
+     * @param {String} [dir = A_Temp "\ParseXlsx-output"] - The directory to which the xlsx document
+     * will be decompressed. `dir` does not need to exist. An error is thrown if `dir` already
+     * contains at least one of the following files: .\[Content_Types].xml, .\docProps\app.xml,
+     * .\xl\sharedStrings.xml, .\xl\styles.xml, .\xl\workbook.xml, .\xl\worksheets\sheet1.xml.
+     *
+     * `dir` is ignored when `path` is a path to a directory.
+     *
      * @param {String} [encoding = "utf-8"] - The file encoding of the xml documents. Excel uses
      * utf-8 by default.
+     *
      * @param {Boolean} [deferProcess = false] - If true, the core process is not invoked; your code
      * must call {@link ParseXlsx.Prototype.Decompress} if applicable, and/or call {@link ParseXlsx.Prototype.Call}.
+     *
+     * @param {Integer} [setOnExit = 1] - An integer directing {@link ParseXlsx} to set, or not set,
+     * {@link ParseXlsx_OnExit} as an {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit}
+     * callback.
+     *
+     * One of the following values:
+     * - 0 : Does not set the callback.
+     * - 1 : If parameter `path` is a path to a file, sets the callback. Else, does not set the callback.
+     *       The directory is deleted.
+     * - 2 : Sets the callback. The directory is deleted.
+     * - 3 : If parameter `path` is a path to a file, sets the callback. Else, does not set the callback.
+     *       The directory is recycled.
+     * - 4 : Sets the callback. The directory is recycled.
+     *
+     * If `path` is a path to a file, and if `deferProcess` is true, and if your code never
+     * calls {@link ParseXlsx.Prototype.decompress}, `setOnExit` is ignored.
+     *
+     * @throws {Error} - "The ParseXlsx output directory is already occupied."
      */
-    __New(path, dir := A_Temp, encoding := 'utf-8', deferProcess := false) {
+    __New(path, dir := A_Temp '\ParseXlsx-output', encoding := 'utf-8', deferProcess := false, setOnExit := 1) {
         ; Assign a unique id and cache a reference to this object within the
         ; ParseXlsx.Collection map. This allows related objects to obtain a reference
         ; to one another without creating a reference cycle.
@@ -430,15 +442,27 @@ class ParseXlsx extends Array {
         if encoding != this.encoding {
             this.encoding := encoding
         }
-        if !deferProcess {
-            if DirExist(path) {
-                this.dir := path
-            } else {
-                this.dir := dir
-                this.path := path
-                this.Decompress()
+        this.__setOnExit := setOnExit
+        if DirExist(path) {
+            this.dir := path
+            this.path := ''
+            if setOnExit = 2 {
+                this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(path, encoding)
+                OnExit(this.callbackOnExit, 1)
+            } else if setOnExit = 4 {
+                this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(path, encoding)
+                OnExit(this.callbackOnExit, 1)
             }
-            this()
+            if !deferProcess {
+                this()
+            }
+        } else {
+            this.dir := dir
+            this.path := path
+            if !deferProcess {
+                this.decompress()
+                this()
+            }
         }
     }
     /**
@@ -494,10 +518,19 @@ class ParseXlsx extends Array {
     }
     /**
      * @description - Calls {@link ParseXlsx_Decompress} with the `path` and `dir` values
-     * passed to {@link ParseXlsx.Prototype.__New}.
+     * passed to {@link ParseXlsx.Prototype.__New}. Also sets the
+     * {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit} callback depending on the
+     * value of {@link ParseXlsx#setOnExit}.
      */
     decompress() {
         ParseXlsx_Decompress(this.path, this.dir)
+        if this.__setOnExit = 2 || (this.__setOnExit = 1 && !DirExist(this.path)) {
+            this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(this.dir, this.encoding)
+            OnExit(this.callbackOnExit, 1)
+        } else if this.__setOnExit = 4 || (this.__setOnExit = 3 && !DirExist(this.path)) {
+            this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(this.dir, this.encoding)
+            OnExit(this.callbackOnExit, 1)
+        }
     }
     /**
      * @description - Retuns the {@link ParseXlsx.Worksheet} object for `value`.
@@ -534,6 +567,11 @@ class ParseXlsx extends Array {
         ObjPtrAddRef(this)
         if ParseXlsx.Collection.Has(this.id) {
             ParseXlsx.Collection.Delete(this.id)
+        }
+        if this.callbackOnExit {
+            OnExit(this.callbackOnExit, 0)
+            this.callbackOnExit.Call()
+            this.DeleteProp('callbackOnExit')
         }
     }
 
@@ -610,6 +648,12 @@ class ParseXlsx extends Array {
                 return this.%name%
             }
         }
+        /**
+         * @description - Calls {@link https://www.autohotkey.com/docs/v2/lib/DateAdd.htm DateAdd}
+         * to get the date value.
+         * @returns {String}
+         */
+        date => IsNumber(this.value) ? DateAdd(this.xlsx.baseDate, this.value, 'D') : ''
         /**
          * @description - Returns the cell's value, decoding "&amp;", "&gt;", and "&lt;" to "&", ">",
          * and "<", respectively.
@@ -741,22 +785,24 @@ class ParseXlsx extends Array {
          */
         __New(xlsx) {
             this.id := xlsx.id
-            content := FileRead(xlsx.dir '\xl\sharedStrings.xml', xlsx.encoding)
-            ch := 0xFFFD
-            while InStr(content, Chr(ch)) {
-                ++ch
-            }
-            ch := Chr(ch)
-            content := StrReplace(StrReplace(SubStr(content, InStr(content, '<si><t') + 6), '</t></si><si><t', ch, , &count), '</t></si></sst>', '')
-            this.Capacity := count + 1
-            constructor := ParseXlsx.SharedString
-            loop parse content, ch {
-                this.Push(constructor())
-                if RegExMatch(A_LoopField, 's)^([^>]+)>(.+)', &match) {
-                    this[-1].value := match[2]
-                    this[-1].attributes := match[1]
-                } else {
-                    this[-1].value := SubStr(A_LoopField, 2)
+            if FileExist(xlsx.dir '\xl\sharedStrings.xml') {
+                content := FileRead(xlsx.dir '\xl\sharedStrings.xml', xlsx.encoding)
+                ch := 0xFFFD
+                while InStr(content, Chr(ch)) {
+                    ++ch
+                }
+                ch := Chr(ch)
+                content := StrReplace(StrReplace(SubStr(content, InStr(content, '<si><t') + 6), '</t></si><si><t', ch, , &count), '</t></si></sst>', '')
+                this.Capacity := count + 1
+                constructor := ParseXlsx.SharedString
+                loop parse content, ch {
+                    this.Push(constructor())
+                    if RegExMatch(A_LoopField, 's)^([^>]+)>(.+)', &match) {
+                        this[-1].value := match[2]
+                        this[-1].attributes := match[1]
+                    } else {
+                        this[-1].value := SubStr(A_LoopField, 2)
+                    }
                 }
             }
         }
@@ -1141,7 +1187,11 @@ ParseXlsx_ColToIndex(col) {
  * @description - Decompresses an xlsx document.
  * @param {String} pathIn - The path to the xlsx document.
  * @param {String} dirOut - The directory where the xlsx contents will be decompressed. The directory
- * does not need to exist.
+ * does not need to exist. An error is thrown if `dir` already contains at least one of the following
+ * files: .\[Content_Types].xml, .\docProps\app.xml, .\xl\sharedStrings.xml, .\xl\styles.xml,
+ * .\xl\workbook.xml, .\xl\worksheets\sheet1.xml.
+ *
+ * @throws {Error} - "The ParseXlsx output directory is already occupied."
  */
 ParseXlsx_Decompress(pathIn, dirOut) {
     ; Resolve relative paths
@@ -1153,7 +1203,16 @@ ParseXlsx_Decompress(pathIn, dirOut) {
     if !drive && ParseXlsx_ResolveRelativePathRef(&dirOut) {
         throw Error('Failed to resolve ``path``.')
     }
-    DirCreate(dirOut)
+    if DirExist(dirOut) {
+        for path in [ '\[Content_Types].xml', '\docProps\app.xml', '\xl\sharedStrings.xml'
+        , '\xl\styles.xml', '\xl\workbook.xml', '\xl\worksheets\sheet1.xml' ] {
+            if FileExist(dirOut path) {
+                throw Error('The ParseXlsx output directory is already occupied.')
+            }
+        }
+    } else {
+        DirCreate(dirOut)
+    }
     if FileExist(dirOut '\wb.zip') {
         i := 1
         while FileExist(dirOut '\wb-' i '.zip') {
@@ -1170,7 +1229,7 @@ ParseXlsx_Decompress(pathIn, dirOut) {
     ; https://learn.microsoft.com/en-us/windows/win32/shell/folder-copyhere
     ; This decompresses the xlsx document, exposing the internal file
     ; structure and various xml documents.
-    dst.CopyHere(src.Items(), 4 | 16)
+    dst.CopyHere(src.Items(), 20)
     FileDelete(temp)
 }
 /**
@@ -1212,6 +1271,34 @@ ParseXlsx_IndexToCol(index) {
     return col
 }
 /**
+ * @description - A function intended to be used as an
+ * {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit} callback to delete the directory
+ * on exit. This is used when parameter {@link ParseXlsx.Prototype.__New~setOnExit} is true.
+ *
+ * This deletes the directory.
+ *
+ * @param {String} dir - Bind the directory path to this parameter.
+ */
+ParseXlsx_OnExit_Delete(dir, *) {
+    if DirExist(dir) {
+        DirDelete(dir, 1)
+    }
+}
+/**
+ * @description - A function intended to be used as an
+ * {@link https://www.autohotkey.com/docs/v2/lib/OnExit.htm OnExit} callback to delete the directory
+ * on exit. This is used when parameter {@link ParseXlsx.Prototype.__New~setOnExit} is true.
+ *
+ * This recycles the directory.
+ *
+ * @param {String} dir - Bind the directory path to this parameter.
+ */
+ParseXlsx_OnExit_Recycle(dir, *) {
+    if DirExist(dir) {
+        FileRecycle(dir)
+    }
+}
+/**
  * @description - Parses the xml text for the object. For each attribute of the element associated with
  * the object, defines a property with the same name and value on the object.
  * @param {ParseXlsx.Row|ParseXlsx.Cell} obj - The object.
@@ -1239,6 +1326,29 @@ ParseXlsx_ParseAttributes2(str) {
         result.Push({ name: match[1], value: match[2] })
     }
     return result
+}
+/**
+ * @description - Parses the [Content_Types].xml document. For each <Override> element, a
+ * `RegExMatchInfo` object is added to an array. The `RegExMatchInfo` objects have two subcapture
+ * groups:
+ * - name : Returns the value of the PartName attribute.
+ * - type : Returns the value of the ContentType attribute.
+ *
+ * This can be used to get a list of documents associated with the decompressed workbook.
+ *
+ * @param {String} path - The path to the [Content_Types].xml document.
+ * @param {String} [encoding = "utf-8"] - The file encoding.
+ * @returns {RegExMatchInfo[]} - An array of `RegExMatchInfo` objects.
+ */
+ParseXlsx_ParseContentTypes(path, encoding := 'utf-8') {
+    content := FileRead(path, encoding)
+    list := []
+    pos := 1
+    while RegExMatcH(content, '<Override.+?PartName="(?<name>[^"]+)".+?ContentType="(?<type>[^"]+)', &match, pos) {
+        pos := match.Pos + match.Len
+        list.Push(match)
+    }
+    return list
 }
 /**
  * @description - Parses the xml text for the object. For each nested element associated with

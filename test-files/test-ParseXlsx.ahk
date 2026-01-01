@@ -2,12 +2,49 @@
 #include ..\ParseXlsx.ahk
 
 if !A_IsCompiled && A_LineFile == A_ScriptFullPath {
-    test_xlsx()
+    test_ParseXlsx()
 }
 
-class test_xlsx {
+class test_ParseXlsx {
     static Call() {
-        xlsx := this.xlsx := ParseXlsx('ParseXlsx-content.xlsx')
+        dir := this.dir := A_Temp '\ParseXlsx-test-output'
+        OnExit(Test_ParseXlsx_OnExit, 1)
+
+        ; Ensure an error is thrown if the output directory is already occupied
+        DirCreate(dir)
+        if !FileExist(dir '\[Content_Types].xml') {
+            FileAppend('', dir '\[Content_Types].xml')
+        }
+        try {
+            xlsx := ParseXlsx('ParseXlsx-content.xlsx', dir, , , 0)
+            flag_error := false
+        } catch Error as err {
+            flag_error := true
+        }
+        if !flag_error {
+            throw Error('Expected an error.')
+        }
+        if !InStr(err.Message, 'The ParseXlsx output directory is already occupied.') {
+            throw err
+        }
+        DirDelete(dir, 1)
+
+        xlsx := ParseXlsx('ParseXlsx-content.xlsx', dir)
+
+        ; Ensure that an error is thrown if attempting to use the same directory before cleaning it up.
+        try {
+            xlsx2 := ParseXlsx('ParseXlsx-content.xlsx', dir, , , 0)
+            flag_error := false
+        } catch Error as err {
+            flag_error := true
+        }
+        if !flag_error {
+            throw Error('Expected an error.')
+        }
+        if !InStr(err.Message, 'The ParseXlsx output directory is already occupied.') {
+            throw err
+        }
+
         csv1 := '
         (
 Sheet1,date,amount,name,block,time,percentage,special,general,test,test2,test3
@@ -331,8 +368,59 @@ Sheet3,date,amount,name,block,time,percentage,special,general,test,test2,test3,,
                 }
             }
         }
+
+        ; The current xlsx should have 1900 base date
+        test_baseDate := xlsx.baseDate
+        if test_baseDate != '18991230000000' {
+            throw Error('Invalid base date.')
+        }
+        test_date := FormatTime(DateAdd(xlsx.baseDate, 46016.2291666667, 'D'), 'yyyy-MM-dd HH:mm:ss')
+        if test_date != '2025-12-25 05:30:00' {
+            throw Error('Invalid date.')
+        }
+        xlsx := ''
+
+        ; This spreadsheet should have 1904 base date
+        xlsx := ParseXlsx('base-date-1904.xlsx', dir)
+        test_baseDate := xlsx.baseDate
+        if test_baseDate != '19040101000000' {
+            throw Error('Invalid base date.')
+        }
+        ws := xlsx[1]
+        cell := ws.cell(1, 1)
+        test_value := cell.value
+        if test_value != 44554 {
+            throw Error('Invalid value.')
+        }
+        test_date := cell.date
+        if test_date != '20251225000000' {
+            throw Error('Invalid date value.')
+        }
+        cell := ws.cell(1, 2)
+        test_value := cell.value
+        if Abs(test_value - 44554.7291666667) > 0.000001 {
+            throw Error('Invalid value.')
+        }
+        test_date := cell.date
+        if test_date != '20251225173000' {
+            throw Error('Invalid date value.')
+        }
+
+        ; The directory should be deleted when the object is deleted because no files were added to
+        ; the directory.
+        xlsx := ''
+        if DirExist(dir) {
+            throw Error('Expected the directory to be deleted.')
+        }
+
         OutputDebug(A_ScriptName ' - done`n')
     }
 }
 
 ParseXlsx_callback(cell) => RegExReplace(ParseXlsx_FixFloatingPoint(cell.decoded), '\R', '`n')
+
+Test_ParseXlsx_OnExit(*) {
+    if DirExist(test_ParseXlsx.dir) {
+        DirDelete(test_ParseXlsx.dir, 1)
+    }
+}
