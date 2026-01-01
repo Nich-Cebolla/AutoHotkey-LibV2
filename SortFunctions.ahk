@@ -151,11 +151,6 @@ class SortFunctions {
             this.SaveOnExit(true)
         }
 
-        if IsSet(GuiResizer) {
-            G['Display'].Resizer := { W: 1, H: 1 }
-            GuiResizer(G)
-        }
-
         G['Copy'].GetPos(, &cy1, , &ch)
         Mid1 := cy1 + ch * 0.5
         G['Path'].GetPos(, &cy2, , &ch)
@@ -182,6 +177,11 @@ class SortFunctions {
         this.Callback := Callback ?? ''
 
         G.Show()
+
+        if IsSet(GuiResizer) {
+            G['Display'].Resizer := { W: 1, H: 1 }
+            GuiResizer(G)
+        }
         return
 
         _Align(Ctrl) {
