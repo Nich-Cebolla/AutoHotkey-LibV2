@@ -14,6 +14,8 @@ class ParseXlsx extends Array {
      * @class
      * @description -
      *
+     * View the full documentation on Reddit: {@link https://www.reddit.com/r/AutoHotkey/comments/1pvq3rc/parsexlsx_parses_a_workbook_into_a_data_object_no/}
+     *
      * ## Example 1
      *
      * Instantiating the class and getting a worksheet
