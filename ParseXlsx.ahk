@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 class ParseXlsx extends Array {
     static __New() {
         this.DeleteProp('__New')
