@@ -460,10 +460,10 @@ class ParseXlsx extends Array {
             this.dir := path
             this.path := ''
             if setOnExit = 2 {
-                this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(path, encoding)
+                this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(path)
                 OnExit(this.callbackOnExit, 1)
             } else if setOnExit = 4 {
-                this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(path, encoding)
+                this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(path)
                 OnExit(this.callbackOnExit, 1)
             }
             if !deferProcess {
@@ -551,10 +551,10 @@ class ParseXlsx extends Array {
     decompress() {
         ParseXlsx_Decompress(this.path, this.dir)
         if this.__setOnExit = 2 || (this.__setOnExit = 1 && !DirExist(this.path)) {
-            this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(this.dir, this.encoding)
+            this.callbackOnExit := ParseXlsx_OnExit_Delete.Bind(this.dir)
             OnExit(this.callbackOnExit, 1)
         } else if this.__setOnExit = 4 || (this.__setOnExit = 3 && !DirExist(this.path)) {
-            this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(this.dir, this.encoding)
+            this.callbackOnExit := ParseXlsx_OnExit_Recycle.Bind(this.dir)
             OnExit(this.callbackOnExit, 1)
         }
     }
