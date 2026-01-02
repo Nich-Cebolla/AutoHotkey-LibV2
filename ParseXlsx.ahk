@@ -1213,7 +1213,7 @@ ParseXlsx_ColToIndex(col) {
  * @description - Decompresses an xlsx document.
  * @param {String} pathIn - The path to the xlsx document.
  * @param {String} dirOut - The directory where the xlsx contents will be decompressed. The directory
- * does not need to exist. An error is thrown if `dir` already contains at least one of the following
+ * does not need to exist. An error is thrown if `dirOut` already contains at least one of the following
  * files: .\[Content_Types].xml, .\docProps\app.xml, .\xl\sharedStrings.xml, .\xl\styles.xml,
  * .\xl\workbook.xml, .\xl\worksheets\sheet1.xml.
  *
