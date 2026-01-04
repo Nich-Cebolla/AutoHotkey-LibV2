@@ -622,7 +622,6 @@ class RectBase {
         Proto.DefineProp(Prefix 'ToStringDeconstructed' Suffix, { Call: RectToStringDeconstructed })
         Proto.DefineProp(Prefix 'TR' Suffix, { Get: RectGetPoint.Bind(8, 4) })
         Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
-        Proto.DefineProp(Prefix 'Union' Suffix, { Call: RectUnion })
         Proto.DefineProp(Prefix 'W' Suffix, { Get: RectGetLength.Bind(0), Set: RectSetLength.Bind(0) })
         Proto.DefineProp('Ptr', { Get: RectGetPtrFromBuffer })
         Proto.DefineProp('Size', { Get: RectGetSizeFromBuffer })
