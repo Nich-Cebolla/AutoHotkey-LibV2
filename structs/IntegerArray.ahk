@@ -165,7 +165,7 @@ class IntegerArray extends Buffer {
             if Abs(Index) > this.Size / this.__IntBytes || !Index {
                 throw IndexError('Index out of range.', -1, 'Index: ' Index '; Length: ' (this.Size / this.__IntBytes))
             }
-            return NumGet(this, Index > 0 ? (Index - 1) * this.__IntBytes : this.Size + Index * this.__IntBytes, 'int')
+            return NumGet(this, Index > 0 ? (Index - 1) * this.__IntBytes : this.Size + Index * this.__IntBytes, this.Type)
 
         }
         Set {
