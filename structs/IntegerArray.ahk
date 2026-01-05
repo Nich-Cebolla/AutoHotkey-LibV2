@@ -92,16 +92,16 @@ class IntegerArray extends Buffer {
      * @class
      */
     __New(Capacity := 0, IntType := 'int', IntBytes := 4, Values*) {
-        if Values.Length > Capacity {
-            throw ValueError('Insufficient memory allocated for quantity of values.', -1
-            , 'Capacity: ' Capacity '; Quantity: ' Values.Length)
-        }
-        this.Capacity := Capacity
         this.__IntBytes := IntBytes
-        /**
-         * @property Type - The integer type to use with `NumGet` and `NumPut`.
-         */
         this.Type := IntType
+        if IsSet(Capacity) {
+            this.Capacity := Capacity
+            if Values.Length > Capacity {
+                throw ValueError('The number of values exceeds the capacity.')
+            }
+        } else {
+            this.Capacity := Values.Length
+        }
         for Value in Values {
             NumPut(IntType, Value, this, (A_Index - 1) * this.__IntBytes)
         }
