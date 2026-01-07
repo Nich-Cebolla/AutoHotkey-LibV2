@@ -49,7 +49,7 @@
         WinRect.Prototype.DpiAwarenessContext := -4
         hwnd := WinExist('A')
         if !hwnd {
-            throw Error('Window not found.', -1)
+            throw Error('Window not found.')
         }
         wrc := WinRect(hwnd)
         ; This sets the dpi awareness context to -4 prior to performing the action
@@ -234,7 +234,7 @@ class Window32 {
         this.Hwnd := Hwnd
         if IsSet(Buf) {
             if Buf.Size < this.cbSize + Offset {
-                throw Error('The buffer`'s size is insufficient. The size must be 60 + offset or greater.', -1)
+                throw Error('The buffer`'s size is insufficient. The size must be 60 + offset or greater.')
             }
             this.Buffer := Buf
         } else {
@@ -292,7 +292,7 @@ class Window32 {
      *
      *  hwnd := WinExist('A')
      *  if !hwnd {
-     *      throw Error('Window not found.', -1)
+     *      throw Error('Window not found.')
      *  }
      *  win := Window32(hwnd)
      *  win.SetCallback(MyHelperFunc)
@@ -343,7 +343,7 @@ class Window32 {
             if IsInteger(hwnd) {
                 this.Hwnd := hwnd
             } else {
-                throw TypeError('Invalid ``Hwnd`` returned.', -1, Type(hwnd))
+                throw TypeError('Invalid ``Hwnd`` returned.', , Type(hwnd))
             }
             if !DllCall(RectBase.GetWindowInfo, 'ptr', this.Hwnd, 'ptr', this, 'int') {
                 throw OSError()
@@ -465,7 +465,7 @@ class WinRect extends Rect {
         this.Hwnd := Hwnd
         if IsSet(Buf) {
             if Buf.Size < 16 + Offset {
-                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.', -1)
+                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.')
             }
             this.Buffer := Buf
         } else {
@@ -485,7 +485,7 @@ class WinRect extends Rect {
                 DllCall(RectBase.GetClientRect, 'ptr', this.Hwnd, 'ptr', this, 'int')
             case 2:
                 if HRESULT := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', this.Hwnd, 'uint', 9, 'ptr', this.Buffer.Ptr, 'uint', 16, 'uint') {
-                    throw oserror('``DwmGetWindowAttribute`` failed.', -1, 'HRESULT: ' Format('{:X}', HRESULT))
+                    throw oserror('``DwmGetWindowAttribute`` failed.', , 'HRESULT: ' Format('{:X}', HRESULT))
                 }
         }
     }
@@ -508,7 +508,7 @@ class Rect extends RectBase {
     __New(L := 0, T := 0, R := 0, B := 0, Buf?, Offset := 0) {
         if IsSet(Buf) {
             if Buf.Size < 16 + Offset {
-                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.', -1)
+                throw Error('The buffer`'s size is insufficient. The size must be 16 + offset or greater.')
             }
             this.Buffer := Buf
         } else {
@@ -549,7 +549,7 @@ class RectBase {
                 if hModule {
                     this.Modules.Set(modName, hModule)
                 } else {
-                    throw Error('Unable to locate module.', -1, modName)
+                    throw Error('Unable to locate module.', , modName)
                 }
             }
             _name := SubStr(Name, InStr(Name, '_', , , -1) + 1)
@@ -565,7 +565,7 @@ class RectBase {
                     return address
                 }
             }
-            throw Error('Unable to locate the function.', -1, Name)
+            throw Error('Unable to locate the function.', , Name)
         } else {
             for dllName in this.ResidentModules {
                 if address := DllCall('GetProcAddress', 'ptr', this.Modules.Get(dllName), 'Astr', Name, 'ptr') {
@@ -678,7 +678,7 @@ class Point {
     __New(X := 0, Y := 0, Buf?, Offset := 0) {
         if IsSet(Buf) {
             if Buf.Size < 8 + Offset {
-                throw Error('The buffer`'s size is insufficient. The size must be 8 + offset or greater.', -1)
+                throw Error('The buffer`'s size is insufficient. The size must be 8 + offset or greater.')
             }
             this.Buffer := Buf
         } else {
@@ -779,7 +779,7 @@ PtGetDpi(pt) {
     if DllCall(RectBase.Shcore_GetDpiForMonitor, 'ptr'
         , DllCall(RectBase.MonitorFromPoint, 'int', pt.Value, 'uint', 0, 'ptr')
     , 'uint', 0, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'int') {
-        throw OSError('MonitorFomPoint received an invalid parameter.', -1)
+        throw OSError('MonitorFomPoint received an invalid parameter.')
     } else {
         return DpiX
     }
@@ -857,7 +857,7 @@ RectGetDpi(rc) {
     if DllCall(RectBase.Shcore_GetDpiForMonitor, 'ptr'
         , DllCall(RectBase.Shcore_MonitorFromRect, 'ptr', rc, 'uint', 0, 'ptr')
     , 'uint', 0, 'uint*', &DpiX := 0, 'uint*', &DpiY := 0, 'int') {
-        throw OSError('``MonitorFomPoint`` received an invalid parameter.', -1)
+        throw OSError('``MonitorFomPoint`` received an invalid parameter.')
     } else {
         return DpiX
     }
@@ -1129,7 +1129,7 @@ RectSetThreadDpiAwareness__Call(Obj, Name, Params) {
             return Obj.%Split[1]%()
         }
     } else {
-        throw PropertyError('Property not found.', -1, Name)
+        throw PropertyError('Property not found.', , Name)
     }
 }
 RectSubtract(rc1, rc2) {
@@ -1699,7 +1699,7 @@ WinRectUpdate(wrc) {
                 DllCall(RectBase.GetClientRect, 'ptr', wrc.Hwnd, 'ptr', wrc, 'int')
             case 2:
                 if hresult := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', wrc.Hwnd, 'uint', 9, 'ptr', wrc, 'uint', 16, 'uint') {
-                    throw oserror('DwmGetWindowAttribute failed.', -1, hresult)
+                    throw oserror('DwmGetWindowAttribute failed.', , hresult)
                 }
         }
     } else {
@@ -1758,7 +1758,7 @@ OrderRects(List, Primary := 'X', LeftToRight := true, TopToBottom := true) {
     } else if Primary = 'Y' {
         _InsertionSort(List, _ConditionFnV)
     } else {
-        throw ValueError('Unexpected ``Primary`` value.', -1, Primary)
+        throw ValueError('Unexpected ``Primary`` value.', , Primary)
     }
 
     return
