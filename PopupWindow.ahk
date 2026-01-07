@@ -188,7 +188,7 @@ class PopupWindow extends Gui {
             ' h' (this.__MarginT + this.__MarginB + h)
         )
         if this.__Duration {
-            SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.__Priority)
+            SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.Priority)
         }
     }
     Show2() {
@@ -214,7 +214,7 @@ class PopupWindow extends Gui {
             ' h' (this.__MarginT + this.__MarginB + h)
         )
         if this.__Duration {
-            SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.__Priority)
+            SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.Priority)
         }
     }
     UpdateTextRect() {
