@@ -4,7 +4,6 @@ class PopupWindow extends Gui {
         this.DeleteProp('__New')
         proto := this.Prototype
         proto.__Duration :=
-        proto.InsufficientSpaceAction :=
         proto.Padding :=
         proto.OffsetX :=
         proto.OffsetY :=
@@ -12,13 +11,14 @@ class PopupWindow extends Gui {
         proto.__MarginL :=
         proto.__MarginT :=
         proto.__MarginR :=
-        proto.__MarginB := 2
+        proto.__MarginB := 3
         proto.HwndCtrl :=
         proto.ContainerRect :=
         proto.Dimension :=
         proto.Prefer :=
         proto.WrapTextOptions :=
         proto.__Width := ''
+        proto.InsufficientSpaceAction := 2
     }
     /**
      * @description - {@link PopupWindow} is an alternative to the native
@@ -34,8 +34,8 @@ class PopupWindow extends Gui {
      *   `Options.WrapTextOptions` or {@link PopupWindow#WrapTextOptions}.
      * - {@link PopupWindow} automatically adjusts the text control's dimensions and the window's
      *   dimensions to fit the text content. Use the "Margin" options to control the margins.
-     * - Method {@link PopupWindow.Prototype.Show2} automatically calculates the optimal position
-     *   to display the window by the mouse pointer. By default, Show2 will ensure that the window
+     * - Method {@link PopupWindow.Prototype.ShowByMouse} automatically calculates the optimal position
+     *   to display the window by the mouse pointer. By default, ShowByMouse will ensure that the window
      *   is within the monitor's work area. You can customize the behavior with the following. See
      *   {@link PopupWindow_MoveAdjacent} for details.
      *   - `Options.ContainerRect` / {@link PopupWindow#ContainerRect}
@@ -45,13 +45,91 @@ class PopupWindow extends Gui {
      *   - `Options.InsufficientSpaceAction` / {@link PopupWindow#InsufficientSpaceAction}
      * - {@link PopupWindow} has a built-in display timer. Set `Options.Duration` or
      *   {@link PopupWindow#Duration}, and the next tim your code calls
-     *   {@link PopupWindow.Prototype.Show} or {@link PopupWindow.Prototype.Show2}, the timer will
+     *   {@link PopupWindow.Prototype.Show} or {@link PopupWindow.Prototype.ShowByMouse}, the timer will
      *   be invoked and the window will auto-hide after the duration.
+     * @class
+     *
+     * @param {String} [Text] - The initial text to display in the window. This can be changed by
+     * calling {@link PopupWindow.Prototype.SetText}.
+     *
+     * @param {Object} [Options] - An object with zero or more options as property : value pairs.
+     *
+     * @param {Integer|String} [Options.BackColor] - The
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#BackColor background color}.
+     *
+     * @param {Buffer|Object} [Options.ContainerRect] - See {@link PopupWindow_MoveAdjacent~ContainerRect}.
+     *
+     * @param {Boolean} [Options.DeferShow = false] - If set and true, the window is not immediately
+     * shown. Your code must call either {@link PopupWindow.Prototype.Show} or
+     * {@link PopupWindow.Prototype.ShowByMouse}.
+     *
+     * @param {String} [Options.Dimension] - See {@link PopupWindow_MoveAdjacent~ContainerRect}.
+     *
+     * @param {Integer} [Options.Duration = 0] - The duration, in milliseconds, that the window will
+     * be displayed when calling {@link PopupWindow.Prototype.Show} and {@link PopupWindow.Prototype.ShowByMouse}.
+     * If `0`, the window is displayed indefinitely.
+     *
+     * @param {*} [Options.EventHandler] - The value to pass to the `EventObj` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     *
+     * @param {String} [Options.FaceName = "Segoe Ui"] - `Options.FaceName` is passed to the `FontName`
+     * parameter of {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
+     *
+     * @param {String} [Options.FontOpt = "s11 q5"] - `Options.FontOpt` is passed to the `Options`
+     * parameter of {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#SetFont Gui.Prototype.SetFont}.
+     *
+     * @param {Integer} [Options.InsufficientSpaceAction = 2] - See
+     * {@link PopupWindow_MoveAdjacent~InsufficientSpaceAction}.
+     *
+     * @param {Integer} [Options.MarginB = 3] - The margin, in pixels, between the text and the bottom
+     * of the window.
+     *
+     * @param {Integer} [Options.MarginL = 3] - The margin, in pixels, between the text and the left
+     * side of the window.
+     *
+     * @param {Integer} [Options.MarginR = 3] - The margin, in pixels, between the text and the right
+     * side of the window.
+     *
+     * @param {Integer} [Options.MarginT = 3] - The margin, in pixels, between the text and the top
+     * of the window.
+     *
+     * @param {Integer} [Options.OffsetX = 0] - An offset that is applied to the x-coordinate when
+     * the window is repositioned during the execution of {@link PopupWindow.Prototype.ShowByMouse}.
+     *
+     * @param {Integer} [Options.OffsetY = 0 ] - An offset that is applied to the y-coordinate when
+     * the window is repositioned during the execution of {@link PopupWindow.Prototype.ShowByMouse}.
+     *
+     * @param {String} [Options.Opt = "+Owner -SysMenu -Caption +AlwaysOnTop"] - The value to pass to
+     * the `Options` parameter of {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     * If you set this, you should include "+Owner -SysMenu -Caption +AlwaysOnTop".
+     *
+     * @param {Integer} [Options.Padding = 0] - See {@link PopupWindow_MoveAdjacent~Padding}.
+     *
+     * @param {String} [Options.Prefer] - See {@link PopupWindow_MoveAdjacent~Prefer}.
+     *
+     * @param {Integer} [Options.Priority = 0] - The value passed to the `Priority` parameter
+     * of {@link https://www.autohotkey.com/docs/v2/lib/SetTimer.htm SetTimer} when setting the timer
+     * to hide the window.
+     *
+     * @param {String} [Options.TextOpt] - The value passed to the `Options` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Add Gui.Prototype.Add} when adding
+     * the text control.
+     *
+     * @param {String} [Options.Title] - The value to pass to the `Title` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/Gui.htm#Call Gui.Call}.
+     *
+     * @param {Integer} [Options.Width] - Set `Options.Width` to restrict the width of the window
+     * to a maximum size in pixels. The text wrapping is faciliated by {@link PopupWindow_WrapText}.
+     * Also see `Options.WrapTextOptions`.
+     *
+     * @param {Object} [Options.WrapTextOptions] - When `Options.Width` is set,
+     * {@link PopupWindow_WrapText} is used to handle wrapping the text. You can customize the behavior
+     * by setting `Options.WrapTextOptions` with an options object.
      */
     __New(Text?, Options?) {
         if IsSet(Options) {
             super.__New(
-                HasProp(Options, 'Opt') ? Options.Opt : '+Owner -SysMenu -Caption',
+                HasProp(Options, 'Opt') ? Options.Opt : '+Owner -SysMenu -Caption +AlwaysOnTop',
                 HasProp(Options, 'Title') ? Options.Title : unset,
                 HasProp(Options, 'EventHandler') ? Options.EventHandler : unset
             )
@@ -108,28 +186,24 @@ class PopupWindow extends Gui {
                             HasProp(Options, 'Y') ? Options.Y : unset
                         )
                     } else {
-                        this.Show2()
+                        this.ShowByMouse()
                     }
+                    return
                 }
-            } else {
-                this.Hide()
-                this.Move(0, 0)
             }
         } else {
             super.__New('+Owner -SysMenu -Caption')
             super.SetFont('s11 q5', 'Segoe Ui')
             this.HwndCtrl := this.Add('Text').Hwnd
-            x := _GetRBound()
-            super.Show('x' x)
-            super.Show('x0 y0')
+            super.Show('x' _GetRBound())
             if IsSet(Text) {
                 this.SetText(Text)
-                this.Show2()
-            } else {
-                this.Hide()
-                this.Move(0, 0)
+                this.ShowByMouse()
+                return
             }
         }
+        this.Hide()
+        this.Move(0, 0)
 
         return
 
@@ -149,7 +223,7 @@ class PopupWindow extends Gui {
         if IsSet(X) || IsSet(Y) {
             this.Show(X ?? unset, Y ?? unset)
         } else {
-            this.Show2()
+            this.ShowByMouse()
         }
     }
     SetFont(FontOpt?, FaceName?) {
@@ -179,39 +253,35 @@ class PopupWindow extends Gui {
         this.Ctrl.Text := RegExReplace(Text, '\R', '`r`n')
         this.UpdateTextRect()
     }
-    Show(X?, Y?) {
+    Show(X?, Y?, Options := 'NoActivate') {
         this.Ctrl.GetPos(, , &w, &h)
         super.Show(
             (IsSet(X) ? 'x' X : '')
             (IsSet(Y) ? ' y' Y : '')
             ' w' (this.__MarginL + this.__MarginR + w)
             ' h' (this.__MarginT + this.__MarginB + h)
+            ' ' Options
         )
         if this.__Duration {
             SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.Priority)
         }
     }
-    Show2() {
-        CoordMode('Mouse', 'Screen')
-        MouseGetPos(&mx, &my)
-        rc := PopupWindow_Rect()
-        if HRESULT := DllCall('Dwmapi\DwmGetWindowAttribute', 'ptr', this.Hwnd, 'uint', 9, 'ptr', rc, 'uint', 16, 'uint') {
-            throw OSError('``DwmGetWindowAttribute`` failed.', , 'HRESULT: ' Format('{:X}', HRESULT))
-        }
-        PopupWindow_MoveAdjacent(
-            rc,
-            { L: mx + this.OffsetX, T: my + this.OffsetY, R: mx + this.OffsetX, B: my + this.OffsetY },
+    ShowByMouse(Options := 'NoActivate') {
+        PopupWindow_MoveByMouse(
+            this.Hwnd,
             this.ContainerRect || unset,
             this.Dimension || unset,
             this.Prefer || unset,
             this.Padding,
-            this.InsufficientSpaceAction
+            this.InsufficientSpaceAction,
+            &rc
         )
         this.Ctrl.GetPos(, , &w, &h)
         super.Show(
             'x' rc.L ' y' rc.T
             ' w' (this.__MarginL + this.__MarginR + w)
             ' h' (this.__MarginT + this.__MarginB + h)
+            ' ' Options
         )
         if this.__Duration {
             SetTimer(PopupWindow_Hide.Bind(this.Hwnd), this.__Duration, this.Priority)
@@ -2037,6 +2107,67 @@ PopupWindow_MoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Pre
             return ValueError('Unexpected value passed to ``' name '``.', -2, Value)
         }
     }
+}
+
+/**
+ * @description - Calculates the optimal position to a window adjacent to the mouse's current
+ * position, ensuring that the window stays within the monitor's work area. The object passed to
+ * `Subject` is updated to reflect the resulting position. If successful, the window is moved to the
+ * new position.
+ *
+ * @param {*} Subject - The object representing the window that will be moved. This can be an
+ * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
+ * { L, T, R, B }. Those four property values will be updated with the result of this function call.
+ *
+ * @param {*} [ContainerRect] - If set, `ContainerRect` defines the boundaries which restrict
+ * the area that the window is permitted to be moved within. The object must have poperties
+ * { L, T, R, B } to be valid. If unset, the work area of the monitor which contains the mouse
+ * pointer is used.
+ *
+ * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the window is centered with
+ * the mouse's position along the X or Y axis. If "X", `Subject`'s vertical center is aligned with the
+ * mouse's position. If "Y", `Subject`'s horizontal center is aligned with the mouse's position.
+ *
+ * @param {String} [Prefer = ""] - A character indicating a preferred side. If `Prefer` is an
+ * empty string, the function will move the window to the side the has the greatest amount of
+ * space between the monitor's border and the mouse. If `Prefer` is any of the following values,
+ * the window will be moved to that side unless doing so would cause the the window to extend
+ * outside of the monitor's work area.
+ * - "L" - Prefers the left side.
+ * - "T" - Prefers the top side.
+ * - "R" - Prefers the right side.
+ * - "B" - Prefes the bottom.
+ *
+ * @param {Number} [Padding = 0] - The amount of padding to leave between `Subject` and the mouse.
+ *
+ * @param {Integer} [InsufficientSpaceAction = 0] - Determines the action taken if there is
+ * insufficient space to move the window adjacent to the mouse while also keeping the window
+ * entirely within the monitor's work area. The function will always sacrifice some of the padding
+ * if it will allow the window to stay within the monitor's work area. If the space is still
+ * insufficient, the action can be one of the following:
+ * - 0 : The function will not move the window.
+ * - 1 : The function will move the window, allowing the window's area to extend into a non-visible
+ *   region of the monitor.
+ * - 2 : The function will move the window, keeping the window's area within the monitor's work
+ *   area by allowing the window to overlap with the mouse.
+ *
+ * @param {VarRef} [OutRect] - A variable that will receive a reference to the {@link PopupWindow_Rect}
+ * object representing the window's dimensions.
+ *
+ * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
+ */
+PopupWindow_MoveByMouse(Hwnd, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0, &OutRect?) {
+    OutRect := PopupWindow_Rect()
+    if HRESULT := DllCall('Dwmapi\DwmGetWindowAttribute', 'ptr', Hwnd, 'uint', 9, 'ptr', OutRect, 'uint', 16, 'uint') {
+        throw OSError('``DwmGetWindowAttribute`` failed.', , 'HRESULT: ' Format('{:X}', HRESULT))
+    }
+    CoordMode('Mouse', 'Screen')
+    MouseGetPos(&x, &y)
+    result := PopupWindow_MoveAdjacent(OutRect, { L: x, T: y, R: x, B: y }, ContainerRect ?? unset, Dimension, Prefer, Padding, InsufficientSpaceAction)
+    if !result || InsufficientSpaceAction {
+        WinMove(OutRect.L, OutRect.T, , , Hwnd)
+    }
+    return result
 }
 
 class PopupWindow_Rect extends Buffer {
