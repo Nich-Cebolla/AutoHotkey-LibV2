@@ -916,20 +916,20 @@ RectDispose(Obj) {
  * "T" and "B" equivalent to one another.
  *
  * @param {*} [ContainerRect] - If set, `ContainerRect` defines the boundaries which restrict
- * the area that the window is permitted to be moved within. The object must have poperties
+ * the area that the rectangle is permitted to be moved within. The object must have poperties
  * { L, T, R, B } to be valid. If unset, the work area of the monitor with the greatest area of
  * intersection with `Target` is used.
  *
- * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the window is to be moved
+ * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the rectangle is to be moved
  * adjacent to `Target` on either the X or Y axis. If "X", `Subject` is moved to the left or right
  * of `Target`, and `Subject`'s vertical center is aligned with `Target`'s vertical center. If "Y",
  * `Subject` is moved to the top or bottom of `Target`, and `Subject`'s horizontal center is aligned
  * with `Target`'s horizontal center.
  *
  * @param {String} [Prefer = ""] - A character indicating a preferred side. If `Prefer` is an
- * empty string, the function will move the window to the side the has the greatest amount of
+ * empty string, the function will move the rectangle to the side the has the greatest amount of
  * space between the monitor's border and `Target`. If `Prefer` is any of the following values,
- * the window will be moved to that side unless doing so would cause the the window to extend
+ * the rectangle will be moved to that side unless doing so would cause the the rectangle to extend
  * outside of the monitor's work area.
  * - "L" - Prefers the left side.
  * - "T" - Prefers the top side.
@@ -939,15 +939,15 @@ RectDispose(Obj) {
  * @param {Number} [Padding = 0] - The amount of padding to leave between `Subject` and `Target`.
  *
  * @param {Integer} [InsufficientSpaceAction = 0] - Determines the action taken if there is
- * insufficient space to move the window adjacent to `Target` while also keeping the window
+ * insufficient space to move the rectangle adjacent to `Target` while also keeping the rectangle
  * entirely within the monitor's work area. The function will always sacrifice some of the padding
- * if it will allow the window to stay within the monitor's work area. If the space is still
+ * if it will allow the rectangle to stay within the monitor's work area. If the space is still
  * insufficient, the action can be one of the following:
- * - 0 : The function will not move the window.
- * - 1 : The function will move the window, allowing the window's area to extend into a non-visible
+ * - 0 : The function will not move the rectangle.
+ * - 1 : The function will move the rectangle, allowing the rectangle's area to extend into a non-visible
  *   region of the monitor.
- * - 2 : The function will move the window, keeping the window's area within the monitor's work
- *   area by allowing the window to overlap with `Target`.
+ * - 2 : The function will move the rectangle, keeping the rectangle's area within the monitor's work
+ *   area by allowing the rectangle to overlap with `Target`.
  *
  * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
  */
@@ -1100,6 +1100,54 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
             return ValueError('Unexpected value passed to ``' name '``.', -2, Value)
         }
     }
+}
+/**
+ * @description - Calculates the optimal position to a rectangle adjacent to the mouse's current
+ * position, ensuring that the rectangle stays within the monitor's work area. The properties
+ * { L, T, R, B } of `Subject` are updated with the new values.
+ *
+ * @param {*} Subject - The object representing the rectangle that will be moved. This can be an
+ * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
+ * { L, T, R, B }. Those four property values will be updated with the result of this function call.
+ *
+ * @param {*} [ContainerRect] - If set, `ContainerRect` defines the boundaries which restrict
+ * the area that the rectangle is permitted to be moved within. The object must have poperties
+ * { L, T, R, B } to be valid. If unset, the work area of the monitor which contains the mouse
+ * pointer is used.
+ *
+ * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the rectangle is centered with
+ * the mouse's position along the X or Y axis. If "X", `Subject`'s vertical center is aligned with the
+ * mouse's position. If "Y", `Subject`'s horizontal center is aligned with the mouse's position.
+ *
+ * @param {String} [Prefer = ""] - A character indicating a preferred side. If `Prefer` is an
+ * empty string, the function will move the rectangle to the side the has the greatest amount of
+ * space between the monitor's border and the mouse. If `Prefer` is any of the following values,
+ * the rectangle will be moved to that side unless doing so would cause the the rectangle to extend
+ * outside of the monitor's work area.
+ * - "L" - Prefers the left side.
+ * - "T" - Prefers the top side.
+ * - "R" - Prefers the right side.
+ * - "B" - Prefes the bottom.
+ *
+ * @param {Number} [Padding = 0] - The amount of padding to leave between `Subject` and the mouse.
+ *
+ * @param {Integer} [InsufficientSpaceAction = 0] - Determines the action taken if there is
+ * insufficient space to move the rectangle adjacent to the mouse while also keeping the rectangle
+ * entirely within the monitor's work area. The function will always sacrifice some of the padding
+ * if it will allow the rectangle to stay within the monitor's work area. If the space is still
+ * insufficient, the action can be one of the following:
+ * - 0 : The function will not move the rectangle.
+ * - 1 : The function will move the rectangle, allowing the rectangle's area to extend into a non-visible
+ *   region of the monitor.
+ * - 2 : The function will move the rectangle, keeping the rectangle's area within the monitor's work
+ *   area by allowing the rectangle to overlap with the mouse.
+ *
+ * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
+ */
+RectMoveByMouse(Subject, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0) {
+    CoordMode('Mouse', 'Screen')
+    MouseGetPos(&x, &y)
+    return RectMoveAdjacent(Subject, { L: x, T: y, R: x, B: y }, ContainerRect ?? unset, Dimension, Prefer, Padding, InsufficientSpaceAction)
 }
 RectOffset(rc, dx, dy) => DllCall(RectBase.OffsetRect, 'ptr', rc, 'int', dx, 'int', dy, 'int')
 RectPtIn(rc, pt) => DllCall(RectBase.PtInRect, 'ptr', rc, 'ptr', pt, 'int')
@@ -1449,6 +1497,64 @@ Window32MoveClient(win, X := 0, Y := 0, W := 0, H := 0, InsertAfter := 0, Flags 
     if !DllCall(RectBase.GetWindowRect, 'ptr', win.Hwnd, 'ptr', win, 'int') {
         throw OSError()
     }
+}
+
+/**
+ * @description - Calculates the optimal position to a window adjacent to the mouse's current
+ * position, ensuring that the window stays within the monitor's work area. The object passed to
+ * `Subject` is updated to reflect the resulting position. If successful, the window is moved to the
+ * new position.
+ *
+ * @param {*} Subject - The object representing the window that will be moved. This can be an
+ * instance of `Rect` or any class that inherits from `Rect`, or any object with properties
+ * { L, T, R, B }. Those four property values will be updated with the result of this function call.
+ *
+ * @param {*} [ContainerRect] - If set, `ContainerRect` defines the boundaries which restrict
+ * the area that the window is permitted to be moved within. The object must have poperties
+ * { L, T, R, B } to be valid. If unset, the work area of the monitor which contains the mouse
+ * pointer is used.
+ *
+ * @param {String} [Dimension = "X"] - Either "X" or "Y", specifying if the window is centered with
+ * the mouse's position along the X or Y axis. If "X", `Subject`'s vertical center is aligned with the
+ * mouse's position. If "Y", `Subject`'s horizontal center is aligned with the mouse's position.
+ *
+ * @param {String} [Prefer = ""] - A character indicating a preferred side. If `Prefer` is an
+ * empty string, the function will move the window to the side the has the greatest amount of
+ * space between the monitor's border and the mouse. If `Prefer` is any of the following values,
+ * the window will be moved to that side unless doing so would cause the the window to extend
+ * outside of the monitor's work area.
+ * - "L" - Prefers the left side.
+ * - "T" - Prefers the top side.
+ * - "R" - Prefers the right side.
+ * - "B" - Prefes the bottom.
+ *
+ * @param {Number} [Padding = 0] - The amount of padding to leave between `Subject` and the mouse.
+ *
+ * @param {Integer} [InsufficientSpaceAction = 0] - Determines the action taken if there is
+ * insufficient space to move the window adjacent to the mouse while also keeping the window
+ * entirely within the monitor's work area. The function will always sacrifice some of the padding
+ * if it will allow the window to stay within the monitor's work area. If the space is still
+ * insufficient, the action can be one of the following:
+ * - 0 : The function will not move the window.
+ * - 1 : The function will move the window, allowing the window's area to extend into a non-visible
+ *   region of the monitor.
+ * - 2 : The function will move the window, keeping the window's area within the monitor's work
+ *   area by allowing the window to overlap with the mouse.
+ *
+ * @param {VarRef} [OutRect] - A variable that will receive a reference to the {@link WinRect}
+ * object representing the window's dimensions.
+ *
+ * @returns {Integer} - If the insufficient space action was invoked, returns 1. Else, returns 0.
+ */
+Window32MoveByMouse(Hwnd, ContainerRect?, Dimension := 'X', Prefer := '', Padding := 0, InsufficientSpaceAction := 0, &OutRect?) {
+    OutRect := WinRect(Hwnd, 2)
+    CoordMode('Mouse', 'Screen')
+    MouseGetPos(&x, &y)
+    result := RectMoveAdjacent(OutRect, { L: x, T: y, R: x, B: y }, ContainerRect ?? unset, Dimension, Prefer, Padding, InsufficientSpaceAction)
+    if !result || InsufficientSpaceAction {
+        WinMove(OutRect.L, OutRect.T, , , Hwnd)
+    }
+    return result
 }
 
 Window32RealChildFromPoint(win, X, Y) {
