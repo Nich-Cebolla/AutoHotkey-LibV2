@@ -232,11 +232,11 @@ class Logfont {
         }
     }
     /**
-     * @description - Creates a `Logfont` object using a ptr address instead of a buffer. The
+     * @description - Creates a {@link Logfont} object using a ptr address instead of a buffer. The
      * expected use case for this is when a Windows API function returns a LOGFONT structure. In
      * such cases, the system is managing that memory, and so it should be assumed that the memory
      * will only be available temporarily. When using `Logfont.FromPtr`, do not cache a reference to
-     * the `Logfont` object; use it then let it go out of scope, or copy its values to an AHK buffer
+     * the {@link Logfont} object; use it then let it go out of scope, or copy its values to an AHK buffer
      * using `Logfont.Prototype.Clone`.
      * @param {Integer} Ptr - The address of the LOGFONT structure.
      */
@@ -246,7 +246,7 @@ class Logfont {
         return lf
     }
     /**
-     * Constructs a new `Logfont` object, optionally associating the object with a window handle.
+     * Constructs a new {@link Logfont} object, optionally associating the object with a window handle.
      * @class
      *
      * @example
@@ -266,12 +266,12 @@ class Logfont {
      *  lf.Apply()
      * @
      *
-     * @param {Integer} [Hwnd = 0] - The window handle to associate with the `Logfont` object. If
+     * @param {Integer} [Hwnd = 0] - The window handle to associate with the {@link Logfont} object. If
      * `Hwnd` is set with a nonzero value, `Logfont.Prototype.Call` is called to initialize this
-     * `Logfont` object's properties with values obtained from the window. If `Hwnd` is zero, this
-     * `Logfont` object's properties will all be zero.
+     * {@link Logfont} object's properties with values obtained from the window. If `Hwnd` is zero, this
+     * {@link Logfont} object's properties will all be zero.
      * @param {String} [Encoding] - The encoding used when getting and setting string values associated
-     * with LOGFONT members. The default encoding used by `Logfont` objects is UTF-16.
+     * with LOGFONT members. The default encoding used by {@link Logfont} objects is UTF-16.
      * @return {Logfont}
      */
     __New(Hwnd := 0, Encoding?) {
@@ -309,7 +309,7 @@ class Logfont {
     }
     /**
      * @description - Calls `CreateFontIndirectW` then sends WM_SETFONT to the window associated
-     * with this `Logfont` object.
+     * with this {@link Logfont} object.
      * @param {Boolean} [Redraw = true] - The value to pass to the `lParam` parameter when sending
      * WM_SETFONT. If true, the control redraws itself.
      */
@@ -323,7 +323,7 @@ class Logfont {
         }
     }
     /**
-     * @description - Sends WM_GETFONT to the window associated with this `Logfont` object, updating
+     * @description - Sends WM_GETFONT to the window associated with this {@link Logfont} object, updating
      * this object's properties with the values obtained from the window.
      * @throws {OSError} - Failed to get font object.
      */
@@ -334,9 +334,9 @@ class Logfont {
         }
     }
     /**
-     * @description - Copies the bytes from this `Logfont` object's buffer to another buffer.
+     * @description - Copies the bytes from this {@link Logfont} object's buffer to another buffer.
      * @param {Logfont|Buffer|Object} [Buf] - If set, one of the following three kinds of objects:
-     * - A `Logfont` object.
+     * - A {@link Logfont} object.
      * - A `Buffer` object.
      * - An object with properties { Ptr, Size }.
      *
@@ -346,18 +346,18 @@ class Logfont {
      * @param {Integer} [Offset = 0] - The byte offset from the start of `Buf` into which the LOGFONT
      * structure will be copied. If `Buf` is unset, then the LOGFONT structure will begin at
      * byte `Offset` within the buffer created by `Logfont.Prototype.Clone`.
-     * @param {Boolean} [MakeInstance = true] - If true, then an instance of `Logfont` will be
+     * @param {Boolean} [MakeInstance = true] - If true, then an instance of {@link Logfont} will be
      * created and returned by the function. If false, then only the buffer object will be returned;
-     * the object will not have any of the properties or methods associated with the `Logfont` class.
+     * the object will not have any of the properties or methods associated with the {@link Logfont} class.
      * @returns {Buffer|Logfont} - Depending on the value of `MakeInstance`, the `Buffer` object
-     * or the `Logfont` object.
+     * or the {@link Logfont} object.
      * @throws {Error} - The input buffer's size is insufficient.
      */
     Clone(Buf?, Offset := 0, MakeInstance := true) {
         ; This is overridden
     }
     /**
-     * @description - If a font object has been created by this `Logfont` object, the font object
+     * @description - If a font object has been created by this {@link Logfont} object, the font object
      * is deleted.
      */
     DisposeFont() {
@@ -414,7 +414,7 @@ class Logfont {
         return result
     }
     /**
-     * @description - Updates a property's value and calls `Logfont.Prototype.Apply` immediately afterward.
+     * @description - Updates a property's value then calls {@link Logfont.Prototype.Apply}.
      * @param {String} Name - The name of the property.
      * @param {String|Number} Value - The value.
      */
@@ -447,7 +447,7 @@ class Logfont {
         Set => NumPut('uchar', Value, this, 25)
     }
     /**
-     * If this `Logfont` object is associated with a window, returns the dpi for the window.
+     * If this {@link Logfont} object is associated with a window, returns the dpi for the window.
      * @memberof Logfont
      * @instance
      */
@@ -480,7 +480,7 @@ class Logfont {
         Set => NumPut('uchar', (this.Family & 0x0F) | (Value & 0xF0), this, 27)
     }
     /**
-     * Gets or sets the font size. "FontSize" requires that the `Logfont` object is associated
+     * Gets or sets the font size. "FontSize" requires that the {@link Logfont} object is associated
      * with a window handle because it needs a dpi value to work with.
      * @memberof Logfont
      * @instance
@@ -631,7 +631,7 @@ class EnumFontFamExProcParams {
             this.TextMetric := TextMetric(lpntme)
         }
         /**
-         * A `Logfont` object.
+         * A {@link Logfont} object.
          * @memberof EnumFontFamExProcParams
          * @instance
          */
