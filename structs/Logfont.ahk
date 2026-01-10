@@ -1,7 +1,6 @@
 ﻿/*
     Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/structs/Logfont.ahk
     Author: Nich-Cebolla
-    Version: 2.0.0
     License: MIT
 */
 
@@ -331,7 +330,7 @@ class Logfont {
     Call(*) {
         hFont := SendMessage(WM_GETFONT,,, this.Hwnd)
         if !DllCall('Gdi32.dll\GetObject', 'ptr', hFont, 'int', this.Size, 'ptr', this, 'uint') {
-            throw OSError('Failed to get font object.', -1)
+            throw OSError('Failed to get font object.')
         }
     }
     /**
@@ -588,30 +587,30 @@ class Logfont {
     }
 }
 
-/**
- * @classdesc - To be used with the Windows API function `EnumFontFamiliesExW`. Do not use with
- * the ANSI version (EnumFontFamiliesExA).
- *
- * Pass the first three parameters received by the callback function to
- * `EnumFontFamExProcParams`, and the values will be processed into familiar AHK objects with
- * the properties mapped to the structure byte offsets.
- *
- * When using `EnumFontFamExProcParams`, do not cache a reference to the object. You must
- * only use it within the scope of your callback function because the system is managing that
- * memory. If you need values outside of the callback function's scope, you'll have to copy
- * the memory into an AHK buffer. Simply call `EnumFontFamExProcParams.Prototype.Clone` to
- * copy the memory into an AHK buffer.
- *
- * See the description above {@link Logfont.EnumFonts} for an example.
- */
 class EnumFontFamExProcParams {
     /**
+     * @description - To be used with the Windows API function `EnumFontFamiliesExW`. Do not use with
+     * the ANSI version (EnumFontFamiliesExA).
+     *
+     * Pass the first three parameters received by the callback function to
+     * `EnumFontFamExProcParams`, and the values will be processed into familiar AHK objects with
+     * the properties mapped to the structure byte offsets.
+     *
+     * When using `EnumFontFamExProcParams`, do not cache a reference to the object. You must
+     * only use it within the scope of your callback function because the system is managing that
+     * memory. If you need values outside of the callback function's scope, you'll have to copy
+     * the memory into an AHK buffer. Simply call `EnumFontFamExProcParams.Prototype.Clone` to
+     * copy the memory into an AHK buffer.
+     *
+     * See the description above {@link Logfont.EnumFonts} for an example.
+     *
      * For TrueType fonts, the object set to the property "TextMetric" has two properties.
      * - "TextMetric" (enumFontFamParamsObj.TextMetric.TextMetric) - A {@link NewTextMetric} object.
      * - "FontSignature" (enumFontFamParamsObj.TextMetric.FontSignature) - A {@link FontSignature} object.
      *
      * For all other fonts, the object set to the property "TextMetric" is a `TextMetric` object.
      * @class
+     *
      * @param {Integer} lpelfe - The first parameter received by `EnumFontFamExProc`, a pointer to
      * a LOGFONT structure.
      * @param {Integer} lpntme - The second parameter received by `EnumFontFamExProc`, a pointer
@@ -676,14 +675,6 @@ class EnumFontFamExProcParams {
     IsTrueType => this.FontType & 0x0004
 }
 
-/**
- * @classdesc - Maps a pointer received by a Windows API function to object properties.
- *
- * Do not cache a reference to this object unless you are certain that the AHK process is
- * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, use
- * `TextMetric.Prototype.Clone` to make a copy.
- */
 class TextMetric {
     static __New() {
         this.DeleteProp('__New')
@@ -717,6 +708,13 @@ class TextMetric {
         this.Prototype.DefineProp('Clone', { Call: LF_CloneBuffer })
     }
     /**
+     * @description - Maps a pointer received by a Windows API function to object properties.
+     *
+     * Do not cache a reference to this object unless you are certain that the AHK process is
+     * managing the memory. Typically the system will be managing the memory. If you need
+     * access to the values outside of the scope which this object is constructed, use
+     * {@link TextMetric.Prototype.Clone} to make a copy.
+     *
      * @class
      * @param {Integer} Ptr - The pointer to the structure.
      */
@@ -919,22 +917,9 @@ class TextMetric {
     Ptr => this.Buffer.Ptr
 }
 
-/**
- * @classdesc - Maps a pointer received by a Windows API function to object properties.
- *
- * Do not cache a reference to this object unless you are certain that the AHK process is
- * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, use
- * `NewTextMetric.Prototype.Clone` to make a copy.
- */
 class NewTextMetric extends TextMetric {
     static __New() {
         this.DeleteProp('__New')
-        /**
-         * The structure's size.
-         * @memberof NewTextMetric
-         * @instance
-         */
         this.Prototype.Size := this.Prototype.Base.Size +
         4 +    ; DWORD ntmFlags         60
         4 +    ; UINT  ntmSizeEM        64
@@ -943,12 +928,18 @@ class NewTextMetric extends TextMetric {
         this.Prototype.DefineProp('Clone', { Call: LF_CloneBuffer })
     }
     /**
+     * @description - Maps a pointer received by a Windows API function to object properties.
+     *
+     * Do not cache a reference to this object unless you are certain that the AHK process is
+     * managing the memory. Typically the system will be managing the memory. If you need
+     * access to the values outside of the scope which this object is constructed, use
+     * {@link NewTextMetric.Prototype.Clone} to make a copy.
+     *
      * @class
      * @param {Integer} Ptr - The pointer to the structure.
      */
     __New(Ptr) {
         /**
-         * A faux buffer object.
          * @memberof NewTextMetric
          * @instance
          */
@@ -1095,13 +1086,13 @@ class NewTextMetricEx {
     Clone(Buf?, Offset := 0, MakeInstance := true) {
         if IsSet(Buf) {
             if not Buf is Buffer && Type(Buf) != this.__Class {
-                throw TypeError('Invalid input parameter ``Buf``.', -1)
+                throw TypeError('Invalid input parameter ``Buf``.')
             }
         } else {
             Buf := Buffer(this.Size + Offset)
         }
         if Buf.Size < this.Size + Offset {
-            throw Error('The input buffer`'s size is insufficient.', -1, Buf.Size)
+            throw Error('The input buffer`'s size is insufficient.', , Buf.Size)
         }
         DllCall(
             'msvcrt.dll\memmove'
@@ -1123,14 +1114,6 @@ class NewTextMetricEx {
     Ptr => this.Buffer.Ptr
 }
 
-/**
- * @classdesc - Maps a pointer received by a Windows API function to object properties.
- *
- * Do not cache a reference to this object unless you are certain that the AHK process is
- * managing the memory. Typically the system will be managing the memory. If you need
- * access to the values outside of the scope which this object is constructed, use
- * `FontSignature.Prototype.Clone` to make a copy.
- */
 class FontSignature {
     static __New() {
         this.DeleteProp('__New')
@@ -1375,7 +1358,7 @@ class FontSignature {
         )
 
         ; This sorts the objects in order from lowest to highest using the value of "Lb"
-        ; and adds them to array `NewTextMetic.UsbOrdered`.
+        ; and adds them to array NewTextMetic.UsbOrdered`.
         list := ''
         for bit, obj in this.Usb {
             if HasProp(obj, 'Ranges') {
@@ -1386,7 +1369,7 @@ class FontSignature {
                 list .= obj.Lb ':' ObjPtr(obj) '`n'
             }
         }
-        list := StrSplit(Sort(SubStr(list, 1, -1), 'N'), '`n')
+        list := StrSplit(Sort(SubStr(list, 1), 'N'), '`n')
         /**
          * An array containing references to the same objects in the map {@link FontSignature.Usb}
          * @memberof FontSignature
@@ -1453,7 +1436,14 @@ class FontSignature {
         cp2b.Set(720, 61)
     }
     /**
+     * @description - Maps a pointer received by a Windows API function to object properties.
+     *
+     * Do not cache a reference to this object unless you are certain that the AHK process is
+     * managing the memory. Typically the system will be managing the memory. If you need
+     * access to the values outside of the scope which this object is constructed, use
+     * {@link FontSignature.Prototype.Clone} to make a copy.
      * @class
+     *
      * @param {Integer} Ptr - The pointer to the structure.
      */
     __New(Ptr) {
@@ -1488,12 +1478,15 @@ class FontSignature {
         ; This is overridden
     }
     /**
-     * Takes a code page identifier as an input and returns a boolean indicating whether the bit
-     * in the bitfield is 1 or 0.
+     * @description - Takes a code page identifier as an input and returns a boolean indicating whether
+     * the bit in the bitfield is 1 or 0.
      *
-     * All locales do not support code pages. The bitfields described in this topic do not apply to
+     * Not all locales support code pages. The bitfields described in this topic do not apply to
      * Unicode locales. To determine supported scripts for a locale, your application can use the
-     * locale identifier constant LOCALE_SSCRIPTS with GetLocaleInfoEx.
+     * locale identifier constant
+     * {@link https://learn.microsoft.com/en-us/windows/win32/intl/locale-sscripts LOCALE_SSCRIPTS}
+     * with
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getlocaleinfoex GetLocaleInfoEx}.
      *
      * The presence of a bit in a code page bitfield does not necessarily mean that all strings for
      * a locale can be encoded in that code page without loss. To preserve data without loss, using
@@ -1516,8 +1509,8 @@ class FontSignature {
         return (NumGet(this.Ptr + 16, OutObj.Bit >> 3, 'uchar') >> (OutObj.Bit & 7)) & 1
     }
     /**
-     * Takes a unicode code point as an input and returns an integer repesenting one of the following
-     * conditions:
+     * @description - Takes a unicode code point as an input and returns an integer repesenting one
+     * of the following conditions:
      *
      * - -2 : The unicode code point is invalid for this operation (the value is less than zero
      * or greater than 1114109, which is the greatest "Ub" in the set).
@@ -1577,24 +1570,24 @@ class FontSignature {
 
 LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
     if Offset < 0 {
-        throw ValueError('``Offset`` must be a positive integer.', -1, Offset)
+        throw ValueError('``Offset`` must be a positive integer.', , Offset)
     }
     if IsSet(Buf) {
         if not Buf is Buffer && Type(Buf) != Self.__Class {
-            throw TypeError('Invalid input parameter ``Buf``.', -1)
+            throw TypeError('Invalid input parameter ``Buf``.')
         }
     } else {
         Buf := Buffer(Self.Size + Offset)
     }
     if Buf.Size < Self.Size + Offset {
-        throw Error('The input buffer`'s size is insufficient.', -1, Buf.Size)
+        throw Error('The input buffer`'s size is insufficient.', , Buf.Size)
     }
     DllCall(
         'msvcrt.dll\memmove'
       , 'ptr', Buf.Ptr + Offset
       , 'ptr', Self.Ptr
       , 'int', Self.Size
-      , 'ptr'
+      , 'cdecl'
     )
     if MakeInstance && Type(Buf) != Self.__Class {
         b := Self
@@ -1604,7 +1597,7 @@ LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
                     break
                 }
             } else {
-                throw Error('Unable to identify the prototype object.', -1)
+                throw Error('Unable to identify the prototype object.')
             }
         }
         if Offset {
