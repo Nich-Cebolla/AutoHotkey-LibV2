@@ -1369,7 +1369,7 @@ class FontSignature {
                 list .= obj.Lb ':' ObjPtr(obj) '`n'
             }
         }
-        list := StrSplit(Sort(SubStr(list, 1), 'N'), '`n')
+        list := StrSplit(Sort(SubStr(list, 1, -1), 'N'), '`n')
         /**
          * An array containing references to the same objects in the map {@link FontSignature.Usb}
          * @memberof FontSignature
