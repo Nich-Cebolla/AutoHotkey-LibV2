@@ -2,6 +2,19 @@
 class ShFolderCustomSettings {
     static __New() {
         this.DeleteProp('__New')
+
+        global FCS_READ := 0x00000001
+        , FCS_FORCEWRITE := 0x00000002
+        , FCS_FLAG_DRAGDROP := 2
+        , FCSM_VIEWID := 0x00000001
+        , FCSM_WEBVIEWTEMPLATE := 0x00000002
+        , FCSM_INFOTIP := 0x00000004
+        , FCSM_CLSID := 0x00000008
+        , FCSM_ICONFILE := 0x00000010
+        , FCSM_LOGO := 0x00000020
+        , FCSM_FLAGS := 0x00000040
+        , FCS_WRITE := FCS_READ | FCS_FORCEWRITE
+
         proto := this.Prototype
         proto.cbSizeInstance :=
         ; Size      Type             Symbol                       Offset                 Padding
@@ -22,13 +35,13 @@ class ShFolderCustomSettings {
         A_PtrSize   ; DWORD          cchLogo                      16 + A_PtrSize * 10    +4 on x64 only
         proto.offset_dwSize                     := 0
         proto.offset_dwMask                     := 4
-        proto.offset_*pvid                      := 8
+        proto.offset_pvid                      := 8
         proto.offset_pszWebViewTemplate         := 8 + A_PtrSize * 1
         proto.offset_cchWebViewTemplate         := 8 + A_PtrSize * 2
         proto.offset_pszWebViewTemplateVersion  := 8 + A_PtrSize * 3
         proto.offset_pszInfoTip                 := 8 + A_PtrSize * 4
         proto.offset_cchInfoTip                 := 8 + A_PtrSize * 5
-        proto.offset_*pclsid                    := 8 + A_PtrSize * 6
+        proto.offset_pclsid                    := 8 + A_PtrSize * 6
         proto.offset_dwFlags                    := 8 + A_PtrSize * 7
         proto.offset_pszIconFile                := 8 + A_PtrSize * 8
         proto.offset_cchIconFile                := 8 + A_PtrSize * 9
@@ -162,6 +175,15 @@ class ShFolderCustomSettings {
             this.pszLogo := pszLogo
         }
         this.cchLogo := cchLogo
+    }
+    Read(path) {
+        return DllCall(
+            'Shell32\SHGetSetFolderCustomSettings',
+            'ptr', this,
+            'wstr', path,
+            'uint', FCS_READ,
+            'uint'
+        )
     }
     dwSize {
         Get => NumGet(this.Buffer, this.offset_dwSize, 'uint')
