@@ -45,7 +45,7 @@ class WindowsHook {
      * @example
      * #include <WindowsHook>
      * #include <MouseHookStruct>
-     *     *  MouseProc(nCode, wParam, lParam) {
+     * MouseProc(nCode, wParam, lParam) {
      *     if nCode == 0 {
      *         _mouseHookStruct := MouseHookStruct(lParam)
      *         OutputDebug('The mouse moved to ( ' _mouseHookStruct.X ', ' _mouseHookStruct.Y ' )`n')
