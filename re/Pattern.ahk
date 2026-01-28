@@ -153,34 +153,27 @@ class Pattern {
     static QuotedString := '(?<!``)(?:````)*([`"`'])(?<text>.*?)(?<!``)(?:````)*\g{-2}'
 
     /**
-     * @description - Matches a complete quoted string. This differentiates between quote chars
-     * that have an even or odd number of escape characters behind it, allowing certainty that
-     * the closing quote character is the correct closing character, and not an escaped character.
-     * There is one subcapture group available:
-     * - text - The content of the quoted string.
-     * @example
-     *  Pattern := Re.Pattern.GetQuotedString('\', '"', false)
-     *  Text := 'Variable := "Some Json field with \"escaped quotes\""'
-     *  RegExMatch(Text, Pattern, &Match)
-     *  MsgBox(Match['text']) ; Some Json field with "escaped quotes"
-     *  MsgBox(Match[0]) ; "Some Json field with \"escaped quotes\""
-     * @
-     * @param {String} [EscapeChar='``'] - The escape character.
-     * @param {String} [QuoteChars='"`''] - The quote characters. If the strings will only
-     * be quoted by one type of character, you can slightly improve performance by setting this
-     * to just that character.
-     * @param {Boolean} [Options] - The RegEx options to include at the start of the pattern.
-     * {@link https://www.autohotkey.com/docs/v2/misc/RegEx-QuickRef.htm#Options}
-     * The option "Dot-All" is a primary consideration with this pattern.
+     * @description - Returns a pattern that will match with a quoted string, accounting for
+     * internal escaped quotation characters. Includes a subcapture group that returns the quoted
+     * text without the external quote characters, but the index of the subcapture group depends
+     * on the value of `QuoteChars`. If `QuoteChars` is a single character, the subcapture group
+     * is `1`. Else, the subcapture group is `2`.
+     * @param {String} [EscapeChar = "``"] - The escape character.
+     * @param {String} [QuoteChars = "`"'"] - The quote character(s).
+     * @param {Boolean} [Options = ""] - The RegEx options to include at the start of the pattern.
+     * See {@link https://www.autohotkey.com/docs/v2/misc/RegEx-QuickRef.htm#Options}. If used,
+     * include the closing parentheses.
      * @returns {String} - The regular expression pattern.
      */
-    static GetQuotePattern(EscapeChar := '``', QuoteChars := '"`'', Options?) {
-        if InStr(EscapeChar, '\') && StrLen(EscapeChar) == 1
-            EscapeChar .= EscapeChar
-        Options := IsSet(Options) ? StrReplace(Options, ')', '') ')' : ''
-        return Format('{2}(?<!{1})(?:{1}{1})*+({3})(?<text>.*?)'
-        '(?<!{1})(?:{1}{1})*+\g{-2}', EscapeChar, Options
-        , '[' StrReplace(StrReplace(QuoteChars, '"', '``"'), "'", "``'") ']')
+    static GetQuotePattern(EscapeChar := '``', QuoteChars := '"`'', Options := '') {
+        if EscapeChar = '\' {
+            EscapeChar .= '\'
+        }
+        if StrLen(QuoteChars) = 1 {
+            return Options Format('{1}(.*?(?<!{2})(?:{2}{2})*+){1}', QuoteChars, EscapeChar)
+        } else {
+            return Options Format('([{1}])(.*?(?<!{2})(?:{2}{2})*+)\g{-2}', QuoteChars, EscapeChar)
+        }
     }
 
     /**
