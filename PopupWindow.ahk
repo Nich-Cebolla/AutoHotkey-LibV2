@@ -1,4 +1,9 @@
-﻿
+﻿/*
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/PopupWindow.ahk
+    Author: Nich-Cebolla
+    License: MIT
+*/
+
 class PopupWindow extends Gui {
     static __New() {
         this.DeleteProp('__New')
@@ -1726,12 +1731,6 @@ class PopupWindow_Logfont {
             'uint'
         ) {
             throw OSError('Failed to get font object.')
-        }
-    }
-    __Delete() {
-        if this.Handle {
-            DllCall('DeleteObject', 'ptr', this.Handle)
-            this.Handle := 0
         }
     }
     /**
