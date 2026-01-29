@@ -11,6 +11,10 @@ test4()
 MyLibrary_InitializeVars()
 o := MyLibrary()
 o := unset
+o := MyLibrary2()
+sz := o.Measure('Hello, world!')
+OutputDebug("The text's width is: " NumGet(sz, 0, "int") ", and the height is: " NumGet(sz, 4, "int") "`n")
+ExitApp()
 
 test1() {
     global g_user32_GetDc, g_gdi32_GetTextExtentPoint32W,
@@ -109,6 +113,43 @@ class MyLibrary {
         if this.HasOwnProp("libraryToken") {
             this.libraryToken.Free()
             this.DeleteProp("libraryToken")
+            OutputDebug("Called Free`n")
         }
+    }
+}
+
+class MyLibrary2 {
+    static __New() {
+        global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+        g_user32_ReleaseDC, g_gdi32_SelectObject
+        this.DeleteProp("__New")
+        this.libraryToken := LibraryManager(
+            "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+            "user32", [ "GetDC", "ReleaseDC" ]
+        )
+    }
+    __New() {
+        this.g := Gui()
+        this.txt := this.g.Add("Text")
+    }
+    Measure(str) {
+        hwnd := this.txt.Hwnd
+        hdc := DllCall(g_user32_GetDC, "ptr", hwnd, "ptr")
+        hFont := SendMessage(0x0031, 0, 0, , hwnd) ; WM_GETFONT
+        oldFont := DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", hFont, "ptr")
+        sz := Buffer(8)
+        if !DllCall(
+            g_gdi32_GetTextExtentPoint32W
+            , "ptr", hdc
+            , "ptr", StrPtr(Str)
+            , "int", StrLen(Str)
+            , "ptr", sz
+            , "int"
+        ) {
+            throw OSError()
+        }
+        DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", oldFont, "int")
+        DllCall(g_user32_ReleaseDC, "ptr", hwnd, "ptr", hdc, "int")
+        return sz
     }
 }
