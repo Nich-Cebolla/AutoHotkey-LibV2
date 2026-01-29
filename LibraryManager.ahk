@@ -355,7 +355,7 @@ class LibraryManager extends Array {
                         if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
                             throw OSError(, , dllName)
                         }
-                        LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
+                        LibraryManager_Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
                         this.Push(hmod)
                     }
                 }
@@ -366,7 +366,7 @@ class LibraryManager extends Array {
                     if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
                         throw OSError(, , dllName)
                     }
-                    LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
+                    LibraryManager_Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
                     this.Push(hmod)
                 }
             }
@@ -383,7 +383,7 @@ class LibraryManager extends Array {
     }
 }
 
-LibraryManager_LoadLibraries(&dllName, modifiedDllName, hmod, list) {
+LibraryManager_Load(&dllName, modifiedDllName, hmod, list) {
     global
     for proc in list {
         if !(%LIBRARYMANAGER_VAR_PREFIX%_%modifiedDllName%_%proc%
