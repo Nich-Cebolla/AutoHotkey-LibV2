@@ -4,324 +4,350 @@
     License: MIT
 */
 
-/**
- * @classdesc -
- * The purpose of {@link LibraryManager} is to improve application performance by obtaining procedure
- * addresses and storing the addresses in a global variable so any subsystem that calls that procedure
- * can have access to the direct address.
- *
- * The optimal storage method for storing a procedure address that will be used repeatedly is to
- * store the address in a global variable. Each subsystem should refer to the same variable when
- * calling the procedure. {@link LibraryManager} facilitates this process.
- *
- * # Usage
- *
- * Using {@link LibraryManager} is easy, but requires a bit of preparation. See the test file
- * "test-files\test-LibraryManager.ahk" for a working example.
- *
- * ## Initialize global variables for procedure addresses
- *
- * The global variables used to store procedure addresses must be initialized. The structure of the
- * variable name is:
- *
- * <prefix>_<library name>_<procedure name>
- *
- * By default, the <prefix> is "g". The value of the prefix is defined by the global variable
- * `LIBRARYMANAGER_VAR_PREFIX` which is initialized within {@link LibraryManager.__New} (unless
- * `LIBRARYMANAGER_VAR_PREFIX` has already been set). Your code can overwrite `LIBRARYMANAGER_VAR_PREFIX`
- * and use a different prefix if necessary, but this should be avoided so open source code does not
- * need to navigate various prefixes among shared libraries. If you do need to redefine
- * `LIBRARYMANAGER_VAR_PREFIX`, note that the variables used internally by {@link LibraryManager}
- * are always `g_kernel32_GetProcAddress`, `g_kernel32_LoadLibraryW`, and
- * `g_kernel32_FreeLibrary`.
- *
- * <library name> is the literal name of the dll without the ".dll" extension.
- *
- * <procedure name> is the literal name of the procedure from which the address will be assigned
- * to the variable.
- *
- * Any characters which are invalid for use within variable names are removed from the name when used
- * to refer to a variable. The variable name is not case sensitive, but the values passed to
- * {@link LibraryManager.Call} are case sensitive.
- *
- * Internally, the variable names are dereferenced with this logic:
- *
- * @example
- *  hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')
- *  address := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureName, 'ptr')
- *  dllName := RegExReplace(StrReplace(dllName, '.dll', ''), LibraryManager.InvalidCharPattern, '')
- *  procedureName := RegExReplace(procedureName, LibraryManager.InvalidCharPattern, '')
- *  %LIBRARYMANAGER_VAR_PREFIX%_%dllName%_%procedureName% := address
- * @
- *
- * The default value of {@link LibraryManager.InvalidCharPattern} is "[^\p{L}0-9_\x{00A0}-\x{10FFFF}]",
- * which should correctly encapsulate AutoHotkey's requirements.
- *
- * Here are a few effective approaches to accomplish initializing the variables:
- *
- * - Use a single file which initializes the variables.
- *
- * @example
- *  global g_dllName_Procedure1,
- *  g_dllName_Procedure2,
- *  g_dllName_Procedure3,
- *  ; ...
- *  g_dllName_ProcedureN
- * @
- *
- * Then #include the file in your code. The auto-execute portion of the script must reach the
- * #included file before {@link LibraryManager} is used.
- *
- * - Use multiple files which initialize the variables. If a variable is already initialized,
- * re-initializing the variable with a `global VarName` statement has no effect and is valid.
- * For example, this is acceptable and causes no issues:
- *
- * script1.ahk:
- * @example
- *  global g_dllName_Procedure1, g_dllName_Procedure2
- * @
- *
- * script2.ahk:
- * @example
- *  global g_dllName_Procedure1, g_dllName_Procedure3
- * @
- *
- * script3.ahk:
- * @example
- *  #include script1.ahk
- *  token1 := LibraryManager('dllName', ['Procedure1', 'Procedure2'])
- *  DllCall(g_dllName_Procedure1, 'int', 0, 'int', 0)
- *
- *  ; Re-initializing the variables does not cause issues
- *  ; even though `g_dllName_Procedure1` has already been
- *  ; set with a value.
- *  #include script2.ahk
- *  token2 := LibraryManager('dllName', ['Procedure1', 'Procedure3'])
- *  DllCall(g_dllName_Procedure1, 'int', 0, 'int', 0)
- * @
- *
- * Using this approach, each library can initialize the variables it needs. However, depending
- * on the structure of the code, it is possible that "script2.ahk" is not reached prior to attempting
- * to read the value of `g_dllName_Procedure1` or `g_dllName_Procedure3`, resulting in a `VarUnset`
- * error, even if the code is correctly written. One of the following approaches can be used to avoid
- * this eventuality.
- *
- * - If a custom class will rely on a set of procedures, initialize them in the static "__New" method.
- * Check if the variable is set before initializing the value with `0`.
- *
- * @example
- *  class MyClass {
- *      static __New() {
- *          global
- *          this.DeleteProp('__New')
- *          if !IsSet(g_dllName_Precedure1) {
- *              g_dllName_Procedure1 := 0
- *          }
- *          if !IsSet(g_dllName_Procedure2) {
- *              g_dllName_Procedure2 := 0
- *          }
- *          ; ...
- *      }
- *  }
- * @
- *
- * If the static method "__New" uses local variables which you do not want to be global, you can do
- * either of the following:
- *
- * Define a separate static method to handle the variables.
- *
- * @example
- *  class MyClass {
- *      static __New() {
- *          this.DeleteProp('__New')
- *          this.__InitializeProcedureVars()
- *      }
- *      static __InitializeProcedureVars() {
- *          global
- *          if !IsSet(g_dllName_Precedure1) {
- *              g_dllName_Procedure1 := 0
- *          }
- *          if !IsSet(g_dllName_Procedure2) {
- *              g_dllName_Procedure2 := 0
- *          }
- *          ; ...
- *      }
- *  }
- * @
- *
- * Reference the global variables explicitly.
- *
- * @example
- *  class MyClass {
- *      static __New() {
- *          global g_dllName_Precedure1, g_dllName_Procedure2
- *          this.DeleteProp('__New')
- *          if !IsSet(g_dllName_Precedure1) {
- *              g_dllName_Procedure1 := 0
- *          }
- *          if !IsSet(g_dllName_Procedure2) {
- *              g_dllName_Procedure2 := 0
- *          }
- *      }
- *  }
- * @
- *
- * - Use a helper function.
- *
- * @example
- *  InitializeProcedureVars() {
- *      global
- *      if !IsSet(g_dllName_Procedure1) {
- *          g_dllName_Procedure1 := 0
- *      }
- *      if !IsSet(g_dllName_Procedure2) {
- *          g_dllName_Procedure2 := 0
- *      }
- *      ; ...
- *  }
- * @
- *
- * ## Call LibraryManager.Call
- *
- * Each subsystem calls {@link LibraryManager.Call} with a `Map` object, where the keys are dll
- * file names and the values are an array of procedure names as string. {@link LibraryManager.Call}
- * then calls `LoadLibraryW` for the dlls, and calls `GetProcAddress` for the procedures.
- *
- * @example
- *  global g_dllName_Procedure1,
- *  g_dllName_Procedure2,
- *  g_dllName_Procedure3
- *
- *  procedures := Map('dllName', ['Procedure1', 'Procedure2', 'Procedure3'])
- *  token := LibraryManager(procedures)
- *
- *  ; do work
- *
- *  ; If the libraries are no longer needed
- *  token.Free()
- * @
- *
- * ## Call LibraryManagerToken.Prototype.Free
- *
- * If a subsystem no longer requires the libraries associated with one of its tokens, or if a
- * subsystem is no longer needed altogether, call {@link LibraryManagerToken.Prototype.Free} to
- * decrement the Windows API's reference count for the libraries.
- *
- * # A brief note about `LoadLibrary` and `FreeLibrary`
- *
- * The system uses reference counts to manage calls to `LoadLibrary` and `FreeLibrary`. When
- * `LoadLibrary` is called, if the library has already been loaded, the reference count is increased
- * and the same handle is returned. When `FreeLibrary` is called, the reference count is decreased.
- * If the reference count reaches 0 then the library is unloaded and the handle associated with the
- * library is no longer valid. {@link LibraryManager} handles this internally; your code is only
- * responsible for managing the token it receives from {@link LibraryManager}.
- *
- * # Persistent global variable values
- *
- * When the reference count for a library managed by {@link LibraryManager} reaches 0, any variables
- * associated with that dll do not get changed in any way; if the variable was set with a value, the
- * variable will maintain the value even after the reference count reaches 0.
- *
- * This decision was made because keeping track of which variables are in use would require
- * significant additional memory. {@link LibraryManager} would need to track what variables are
- * associated with what dlls, requiring another stored string for each variable. There is little
- * benefit to doing this, and {@link LibraryManager} works without doing it.
- */
-class LibraryManager {
+class LibraryManager extends Array {
     static __New() {
+        global
         this.DeleteProp('__New')
-        this.Tokens := LibraryManagerTokenCollection()
-        this.InvalidCharPattern := 'S)[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
-        this.__InitializeProcedureVars()
-    }
-    static Free(Token) {
-        if this.Tokens.Has(Token.Id) {
-            for hMod in Token.Libraries {
-                DllCall(g_kernel32_FreeLibrary, 'ptr', hMod)
-            }
-            this.Tokens.Delete(Token.Id)
-        } else {
-            throw UnsetItemError('Token not found.', -1, Token.Id)
+        this.Collection := LibraryManagerTokenCollection()
+        local proto := this.Prototype
+        proto.id := proto.__flag_reference := ''
+        proto.invalidCharPattern := 'S)[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
+        if !IsSet(LIBRARYMANAGER_VAR_PREFIX) {
+            LIBRARYMANAGER_VAR_PREFIX := 'g'
+        }
+        local hmod := DllCall('GetModuleHandleW', 'wstr', 'kernel32', 'ptr')
+        if !IsSet(g_kernel32_GetProcAddress) {
+            g_kernel32_GetProcAddress := DllCall('GetProcAddress', 'ptr', hmod, 'astr', 'GetProcAddress', 'ptr')
+        }
+        if !IsSet(g_kernel32_LoadLibraryW) {
+            g_kernel32_LoadLibraryW := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', 'LoadLibraryW', 'ptr')
+        }
+        if !IsSet(g_kernel32_FreeLibrary) {
+            g_kernel32_FreeLibrary := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', 'FreeLibrary', 'ptr')
         }
     }
-    static Call(Procedures*) {
-        pattern := this.InvalidCharPattern
-        token := LibraryManagerToken()
-        this.Tokens.Set(token.Id, token)
+    /**
+     * @description - The purpose of {@link LibraryManager} is to improve application performance by obtaining
+     * procedure addresses and storing the addresses in a global variable so any subsystem that calls that
+     * procedure can have access to the direct address.
+     *
+     * See {@link https://www.autohotkey.com/docs/v2/lib/DllCall.htm#load} for a discussion of this
+     * in the AHK official docs.
+     *
+     * {@link LibraryManager} handles loading the libraries, and returns a token that makes it easy
+     * to release the libraries when they are no longer needed.
+     *
+     *
+     * # LoadLibrary and FreeLibrary
+     *
+     * Windows uses reference counts to manage calls to
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw LoadLibraryW}
+     * and
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary FreeLibrary}.
+     * When `LoadLibrary` is called, if the library has already been loaded, the reference count is
+     * increased and the same handle is returned. When `FreeLibrary` is called, the reference count
+     * is decreased. If the reference count reaches 0 then the library is unloaded and the handle
+     * associated with the library is no longer valid. {@link LibraryManager} handles this internally;
+     * your code is only responsible for storing a reference to the  {@link LibraryManager} object.
+     *
+     *
+     * # Usage
+     *
+     * Using {@link LibraryManager} is easy, but requires some preparation. There are three
+     * components to using {@link LibraryManager}:
+     *
+     * 1. Declare the global variables.
+     * 2. Call {@link LibraryManager.Prototype.__New} (this method).
+     * 3. (Optional) When the libraries are no longer needed, call
+     *    {@link LibraryManager.Prototype.Free}.
+     *
+     *
+     * ## Declare the global variables
+     *
+     * Since variables cannot be declared dynamically at runtime, we must adhere to a standard format.
+     * The structure of the variable name is:
+     *
+     * `%LIBRARYMANAGER_VAR_PREFIX%_<library name>_<procedure name>`
+     *
+     * By default, {@link LIBRARYMANAGER_VAR_PREFIX} is "g". You can override this in your code before
+     * calling {@link LibraryManager.Prototype.__New}, but generally this should be avoided.
+     *
+     * <library name> is the name of the dll without the ".dll" extension.
+     *
+     * <procedure name> is the name of the procedure. The address of this procedure will be assigned
+     * to the variable.
+     *
+     * Internally, the variable names are dereferenced with this logic:
+     *
+     * @example
+     * hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')
+     * address := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', procedureName, 'ptr')
+     * dllName := RegExReplace(StrReplace(dllName, '.dll', ''), LibraryManager.Prototype.invalidCharPattern, '')
+     * %LIBRARYMANAGER_VAR_PREFIX%_%dllName%_%procedureName% := address
+     * @
+     *
+     * The variables must be declared anywhere in the code as global variables. This could be in a
+     * separate file as a simple list of variables, or anywhere in the auto-execute section of the
+     * code. For example:
+     *
+     * @example
+     * global g_user32_SetWindowPos, g_user32_GetClientRect, g_user32_GetWindowRect,
+     * g_gdi32_GetTextExtentPoint32W, g_gdi32_GetTextExtentExPoint
+     * @
+     *
+     * Variables can also be declared in a function statement. For example:
+     *
+     * @example
+     * MyLibrary_InitializeVars() {
+     *     global g_user32_SetWindowPos, g_user32_GetClientRect,
+     *     g_user32_GetWindowRect, g_gdi32_GetTextExtentPoint32W,
+     *     g_gdi32_GetTextExtentExPoint
+     *     ; initialization logic...
+     * }
+     * @
+     *
+     *
+     * ## Calling LibraryManager
+     *
+     * Each subsystem calls {@link LibraryManager.Prototype.__New}, specifying the dll names to be
+     * loaded along with an array of procedure names.
+     *
+     * {@link LibraryManager.Prototype.__New} then calls
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw LoadLibraryW}
+     * for the dlls, and calls
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress GetProcAddress}
+     * for the procedures.
+     *
+     * @example
+     * global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     * g_user32_ReleaseDC, g_gdi32_SelectObject
+     *
+     * token := LibraryManager(
+     *     "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *     "user32", [ "GetDC", "ReleaseDC" ]
+     * )
+     * @
+     *
+     * Your code can include any number of libraries in the function call. Alternate the values
+     * as <dll name>, <array of procedure names>, <dll name>, <array of procedure names>, ...
+     *
+     * @example
+     * global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     * g_user32_ReleaseDC, g_gdi32_SelectObject,
+     * g_shcore_GetDpiForMonitor, g_shcore_GetProcessDpiAwareness
+     *
+     * token := LibraryManager(
+     *     "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *     "user32", [ "GetDC", "ReleaseDC" ],
+     *     "shcore", [ "GetDpiForMonitor", "GetProcessDpiAwareness" ]
+     * )
+     * @
+     *
+     * Your code can also use a Map object if that is preferable.
+     *
+     * @example
+     * global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     * g_user32_ReleaseDC, g_gdi32_SelectObject,
+     * g_shcore_GetDpiForMonitor, g_shcore_GetProcessDpiAwareness
+     *
+     * token := LibraryManager(Map(
+     *     "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *     "user32", [ "GetDC", "ReleaseDC" ],
+     *     "shcore", [ "GetDpiForMonitor", "GetProcessDpiAwareness" ]
+     * ))
+     * @
+     *
+     * ## Using the global variables
+     *
+     * The variables are used as the first parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/DllCall.htm DllCall}.
+     *
+     * @example
+     * global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     * g_user32_ReleaseDC, g_gdi32_SelectObject
+     *
+     * token := LibraryManager(
+     *     "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *     "user32", [ "GetDC", "ReleaseDC" ]
+     * )
+     *
+     * ; Do work. These are examples of using the variables with DllCall.
+     * g := Gui()
+     * txt := g.Add("Text")
+     * hdc := DllCall(g_user32_GetDC, 'ptr', txt.Hwnd, 'ptr')
+     * hFont := SendMessage(0x0031, 0, 0, , txt.Hwnd) ; WM_GETFONT
+     * oldFont := DllCall(g_gdi32_SelectObject, 'ptr', hdc, 'ptr', hFont, 'ptr')
+     * sz := Buffer(8)
+     * str := "Hello, world!"
+     * if !DllCall(
+     *     g_gdi32_GetTextExtentPoint32W
+     *     , 'ptr', hdc
+     *     , 'ptr', StrPtr(Str)
+     *     , 'int', StrLen(Str)
+     *     , 'ptr', sz
+     *     , 'int'
+     * ) {
+     *     throw OSError()
+     * }
+     * DllCall(g_gdi32_SelectObject, 'ptr', hdc, 'ptr', oldFont, 'int')
+     * DllCall(g_user32_ReleaseDC, 'ptr', txt.Hwnd, 'ptr', hdc, 'int')
+     * OutputDebug("The text's width is: " NumGet(sz, 0, "int") ", and the height is: " NumGet(sz, 4, "int") "`n")
+     *
+     * ; If the libraries are no longer needed
+     * token.Free()
+     * @
+     *
+     *
+     * ## Call LibraryManager.Prototype.Free
+     *
+     * Call {@link LibraryManager.Prototype.Free} to decrement the Windows API's reference count for
+     * the libraries associated with that token.
+     *
+     * Note that {@link LibraryManager} only ever assigns values to the global variables; it never
+     * unsets the variables. If a library is unloaded and the reference count reaches zero, the
+     * procedures will no longer be accessible from the process, but the variables will still have
+     * the addresses, which would then be invalid. This decision was made because including the logic
+     * that would allow unsetting the variables when the libraries are unloaded would require
+     * significant additional memory. Additionally, if a library is unloaded and one's code attempts
+     * to access a procedure from the library, that represents a logical error in the code, and
+     * so an error should be thrown regardless.
+     *
+     *
+     * # Usage patterns
+     *
+     * Using a function like the below example is helpful in cases when the following are true:
+     * - Multiple subsystems will use the same libraries.
+     * - It is not guaranteed that any of the subsystems will be accessed during the lifetime of the process.
+     * - It is unknown which subsystem might be accessed first.
+     * - Once the libraries are loaded, they will not be unloaded.
+     *
+     * In this context, the application can avoid using the memory until the libraries are needed,
+     * but since multiple subsystems may potentially call the function, we include the `force`
+     * parameter and the `MyLibrary_Initialized` global variable to avoid loading the libraries
+     * multiple times. Since the application will never unload the libraries, there is no need for
+     * multiple tokens to exist.
+     *
+     * @example
+     * MyLibrary_InitializeVars(force := false) {
+     *     global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     *     g_user32_ReleaseDC, g_gdi32_SelectObject, MyLibrary_Initialized
+     *     if IsSet(MyLibrary_Initialized) && !force {
+     *         return
+     *     }
+     *     LibraryManager(
+     *         "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *         "user32", [ "GetDC", "ReleaseDC" ]
+     *     )
+     *     MyLibrary_Initialized := true
+     * }
+     * @
+     *
+     * If your application is designed to unload the libraries when they are no longer needed, you
+     * will likely want each subsystem to obtain and manage its own token, and so you would not use
+     * a function like the above example. Instead, you would likely use a class object and define the
+     * {@link https://www.autohotkey.com/docs/v2/Objects.htm#Custom_NewDelete __Delete} method.
+     * For example:
+     *
+     * @example
+     * class MyLibrary {
+     *     __New() {
+     *         global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     *         g_user32_ReleaseDC, g_gdi32_SelectObject
+     *         this.libraryToken := LibraryManager(
+     *             "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *             "user32", [ "GetDC", "ReleaseDC" ]
+     *         )
+     *     }
+     *     ; __Delete executes when an object's reference count
+     *     ; reaches 0.
+     *     __Delete() {
+     *         if this.HasOwnProp("libraryToken") {
+     *             this.libraryToken.Free()
+     *             this.DeleteProp("libraryToken")
+     *         }
+     *     }
+     * }
+     * @
+     *
+     * @param {<String>,<String[]>, ...} Procedures - An alternating list of values where the first
+     * value is the name of a dll and the second value is an array of names of procedures.
+     */
+    __New(Procedures*) {
+        loop 100 {
+            id := Random(0, 4294967295)
+            if !LibraryManager.Collection.Has(id) {
+                this.id := id
+                LibraryManager.Collection.Set(id, this)
+                ObjRelease(ObjPtr(this))
+                this.__flag_reference := true
+            }
+        }
+        if !this.id {
+            throw Error('Failed to produce a unique id.')
+        }
+        pattern := this.invalidCharPattern
         if Procedures[1] is Map {
             for procedureMap in Procedures {
                 for dllName, procedureList in procedureMap {
-                    if !(hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
-                        throw Error('Failed to load the dll.', -1, dllName)
+                    if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                        throw OSError(, , dllName)
                     }
-                    this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
-                    token.Add(hMod)
+                    LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, procedureList)
+                    this.Push(hmod)
                 }
             }
         } else {
             loop Procedures.Length / 2 {
                 dllName := Procedures[A_Index * 2 - 1]
                 procedureList := Procedures[A_Index * 2]
-                if !(hMod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
-                    throw Error('Failed to load the dll.', -1, dllName)
+                if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                    throw OSError(, , dllName)
                 }
-                this.__Load(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hMod, procedureList, &pattern)
-                token.Add(hMod)
+                LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, procedureList)
+                this.Push(hmod)
             }
         }
-        return token
-    }
-    static __Load(&DllName, ModifiedDllName, hMod, procedureList, &pattern) {
-        global
-        loop procedureList.Length {
-            if !(%LIBRARYMANAGER_VAR_PREFIX%_%ModifiedDllName%_%RegExReplace(procedureList[A_Index], pattern, '')%
-            := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', procedureList[A_Index], 'ptr')) {
-                throw Error('Failed to look up the procedure address.', -1, DllName ':' procedureList[A_Index])
-            }
-        }
-    }
-    static __InitializeProcedureVars() {
-        global LIBRARYMANAGER_VAR_PREFIX, g_kernel32_GetProcAddress
-        , g_kernel32_LoadLibraryW, g_kernel32_FreeLibrary
-        if !IsSet(LIBRARYMANAGER_VAR_PREFIX) {
-            LIBRARYMANAGER_VAR_PREFIX := 'g'
-        }
-        hMod := DllCall('GetModuleHandleW', 'wstr', 'kernel32', 'ptr')
-        if !IsSet(g_kernel32_GetProcAddress) {
-            g_kernel32_GetProcAddress := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'GetProcAddress', 'ptr')
-        }
-        if !IsSet(g_kernel32_LoadLibraryW) {
-            g_kernel32_LoadLibraryW := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'LoadLibraryW', 'ptr')
-        }
-        if !IsSet(g_kernel32_FreeLibrary) {
-            g_kernel32_FreeLibrary := DllCall(g_kernel32_GetProcAddress, 'ptr', hMod, 'astr', 'FreeLibrary', 'ptr')
-        }
-    }
-}
-
-class LibraryManagerToken {
-    __New() {
-        this.Libraries := LibraryManagerLibraryCollection()
-        loop {
-            id := Random(0, 4294967295)
-            if LibraryManager.Tokens.Has(id) {
-                OutputDebug('Congratulations, you should buy a lottery ticket today.`n')
-                continue
-            }
-            this.Id := id
-            return
-        }
-    }
-    Add(hMod) {
-        this.Libraries.Push(hMod)
     }
     Free() {
-        LibraryManager.Free(this)
-        this.Id := this.Libraries := 0
+        if this.Length {
+            for hmod in this {
+                if !DllCall(g_kernel32_FreeLibrary, 'ptr', hmod, 'int') {
+                    throw OSError()
+                }
+            }
+        }
+        if LibraryManager.Collection.Has(this.id) {
+            if this.__flag_reference {
+                ObjPtrAddRef(this)
+                this.DeleteProp('__flag_reference')
+            }
+            LibraryManager.Collection.Delete(this.id)
+            this.DeleteProp('id')
+        } else if this.id {
+            this.DeleteProp('id')
+        }
+    }
+    __Delete() {
+        if this.__flag_reference {
+            ObjPtrAddRef(this)
+            this.DeleteProp('__flag_reference')
+        }
+        if LibraryManager.Collection.Has(this.id) {
+            LibraryManager.Collection.Delete(this.id)
+        }
     }
 }
 
 class LibraryManagerTokenCollection extends Map {
 }
-class LibraryManagerLibraryCollection extends Array {
+
+LibraryManager_LoadLibraries(&dllName, modifiedDllName, hmod, list) {
+    global
+    for proc in list {
+        name := LIBRARYMANAGER_VAR_PREFIX '_' modifiedDllName '_' proc
+        if !(%LIBRARYMANAGER_VAR_PREFIX%_%modifiedDllName%_%proc%
+        := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', proc, 'ptr')) {
+            throw OSError(, , dllName '\' proc)
+        }
+    }
 }
