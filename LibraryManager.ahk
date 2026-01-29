@@ -386,7 +386,6 @@ class LibraryManager extends Array {
 LibraryManager_LoadLibraries(&dllName, modifiedDllName, hmod, list) {
     global
     for proc in list {
-        name := LIBRARYMANAGER_VAR_PREFIX '_' modifiedDllName '_' proc
         if !(%LIBRARYMANAGER_VAR_PREFIX%_%modifiedDllName%_%proc%
         := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', proc, 'ptr')) {
             throw OSError(, , dllName '\' proc '. Note that the procedure names are case sensitive.')
