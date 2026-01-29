@@ -8,10 +8,7 @@ class LibraryManager extends Array {
     static __New() {
         global
         this.DeleteProp('__New')
-        this.Collection := LibraryManagerTokenCollection()
-        local proto := this.Prototype
-        proto.id := proto.__flag_reference := ''
-        proto.invalidCharPattern := 'S)[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
+        this.Prototype.invalidCharPattern := 'S)[^\p{L}0-9_\x{00A0}-\x{10FFFF}]'
         if !IsSet(LIBRARYMANAGER_VAR_PREFIX) {
             LIBRARYMANAGER_VAR_PREFIX := 'g'
         }
@@ -80,9 +77,9 @@ class LibraryManager extends Array {
      * Internally, the variable names are dereferenced with this logic:
      *
      * @example
-     * hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')
-     * address := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', procedureName, 'ptr')
-     * dllName := RegExReplace(StrReplace(dllName, '.dll', ''), LibraryManager.Prototype.invalidCharPattern, '')
+     * hmod := DllCall(g_kernel32_LoadLibraryW, "wstr", dllName, "ptr")
+     * address := DllCall(g_kernel32_GetProcAddress, "ptr", hmod, "astr", procedureName, "ptr")
+     * dllName := RegExReplace(StrReplace(dllName, ".dll", ""), LibraryManager.Prototype.invalidCharPattern, "")
      * %LIBRARYMANAGER_VAR_PREFIX%_%dllName%_%procedureName% := address
      * @
      *
@@ -174,23 +171,23 @@ class LibraryManager extends Array {
      * ; Do work. These are examples of using the variables with DllCall.
      * g := Gui()
      * txt := g.Add("Text")
-     * hdc := DllCall(g_user32_GetDC, 'ptr', txt.Hwnd, 'ptr')
+     * hdc := DllCall(g_user32_GetDC, "ptr", txt.Hwnd, "ptr")
      * hFont := SendMessage(0x0031, 0, 0, , txt.Hwnd) ; WM_GETFONT
-     * oldFont := DllCall(g_gdi32_SelectObject, 'ptr', hdc, 'ptr', hFont, 'ptr')
+     * oldFont := DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", hFont, "ptr")
      * sz := Buffer(8)
      * str := "Hello, world!"
      * if !DllCall(
      *     g_gdi32_GetTextExtentPoint32W
-     *     , 'ptr', hdc
-     *     , 'ptr', StrPtr(Str)
-     *     , 'int', StrLen(Str)
-     *     , 'ptr', sz
-     *     , 'int'
+     *     , "ptr", hdc
+     *     , "ptr", StrPtr(Str)
+     *     , "int", StrLen(Str)
+     *     , "ptr", sz
+     *     , "int"
      * ) {
      *     throw OSError()
      * }
-     * DllCall(g_gdi32_SelectObject, 'ptr', hdc, 'ptr', oldFont, 'int')
-     * DllCall(g_user32_ReleaseDC, 'ptr', txt.Hwnd, 'ptr', hdc, 'int')
+     * DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", oldFont, "int")
+     * DllCall(g_user32_ReleaseDC, "ptr", txt.Hwnd, "ptr", hdc, "int")
      * OutputDebug("The text's width is: " NumGet(sz, 0, "int") ", and the height is: " NumGet(sz, 4, "int") "`n")
      *
      * ; If the libraries are no longer needed
@@ -200,7 +197,7 @@ class LibraryManager extends Array {
      *
      * ## Call LibraryManager.Prototype.Free
      *
-     * Call {@link LibraryManager.Prototype.Free} to decrement the Windows API's reference count for
+     * Call {@link LibraryManager.Prototype.Free} to decrement the Windows API"s reference count for
      * the libraries associated with that token.
      *
      * Note that {@link LibraryManager} only ever assigns values to the global variables; it never
@@ -208,12 +205,15 @@ class LibraryManager extends Array {
      * procedures will no longer be accessible from the process, but the variables will still have
      * the addresses, which would then be invalid. This decision was made because including the logic
      * that would allow unsetting the variables when the libraries are unloaded would require
-     * significant additional memory. Additionally, if a library is unloaded and one's code attempts
+     * significant additional memory. Additionally, if a library is unloaded and one"s code attempts
      * to access a procedure from the library, that represents a logical error in the code, and
      * so an error should be thrown regardless.
      *
      *
      * # Usage patterns
+     *
+     *
+     * ## Initialization function
      *
      * Using a function like the below example is helpful in cases when the following are true:
      * - Multiple subsystems will use the same libraries.
@@ -241,6 +241,55 @@ class LibraryManager extends Array {
      *     MyLibrary_Initialized := true
      * }
      * @
+     *
+     *
+     * ## Class initialization
+     *
+     * When writing a class with properties that frequently call `DllCall`, calling {@link LibraryManager}
+     * from the static {@link https://www.autohotkey.com/docs/v2/Objects.htm#Custom_NewDelete __New}
+     * method is an effective approach. The static "__New" method is invoked the first time a
+     * class is referenced.
+     *
+     * @example
+     * class MyLibrary {
+     *     static __New() {
+     *         global g_user32_GetDC, g_gdi32_GetTextExtentPoint32W,
+     *         g_user32_ReleaseDC, g_gdi32_SelectObject
+     *         this.DeleteProp("__New")
+     *         this.libraryToken := LibraryManager(
+     *             "gdi32", [ "GetTextExtentPoint32W", "SelectObject" ],
+     *             "user32", [ "GetDC", "ReleaseDC" ]
+     *         )
+     *     }
+     *     __New() {
+     *         this.g := Gui()
+     *         this.txt := this.g.Add("Text")
+     *     }
+     *     Measure(str) {
+     *         hwnd := this.txt.Hwnd
+     *         hdc := DllCall(g_user32_GetDC, "ptr", hwnd, "ptr")
+     *         hFont := SendMessage(0x0031, 0, 0, , hwnd) ; WM_GETFONT
+     *         oldFont := DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", hFont, "ptr")
+     *         sz := Buffer(8)
+     *         if !DllCall(
+     *             g_gdi32_GetTextExtentPoint32W
+     *             , "ptr", hdc
+     *             , "ptr", StrPtr(Str)
+     *             , "int", StrLen(Str)
+     *             , "ptr", sz
+     *             , "int"
+     *         ) {
+     *             throw OSError()
+     *         }
+     *         DllCall(g_gdi32_SelectObject, "ptr", hdc, "ptr", oldFont, "int")
+     *         DllCall(g_user32_ReleaseDC, "ptr", hwnd, "ptr", hdc, "int")
+     *         return sz
+     *     }
+     * }
+     * @
+     *
+     *
+     * ## Class instance
      *
      * If your application is designed to unload the libraries when they are no longer needed, you
      * will likely want each subsystem to obtain and manage its own token, and so you would not use
@@ -273,38 +322,28 @@ class LibraryManager extends Array {
      * value is the name of a dll and the second value is an array of names of procedures.
      */
     __New(Procedures*) {
-        loop 100 {
-            id := Random(0, 4294967295)
-            if !LibraryManager.Collection.Has(id) {
-                this.id := id
-                LibraryManager.Collection.Set(id, this)
-                ObjRelease(ObjPtr(this))
-                this.__flag_reference := true
-            }
-        }
-        if !this.id {
-            throw Error('Failed to produce a unique id.')
-        }
-        pattern := this.invalidCharPattern
-        if Procedures[1] is Map {
-            for procedureMap in Procedures {
-                for dllName, procedureList in procedureMap {
+        if Procedures.Length {
+            pattern := this.invalidCharPattern
+            if Procedures[1] is Map {
+                loop Procedures.Length {
+                    for dllName, list in Procedures[A_Index] {
+                        if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
+                            throw OSError(, , dllName)
+                        }
+                        LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
+                        this.Push(hmod)
+                    }
+                }
+            } else {
+                loop Procedures.Length / 2 {
+                    dllName := Procedures[A_Index * 2 - 1]
+                    list := Procedures[A_Index * 2]
                     if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
                         throw OSError(, , dllName)
                     }
-                    LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, procedureList)
+                    LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, list)
                     this.Push(hmod)
                 }
-            }
-        } else {
-            loop Procedures.Length / 2 {
-                dllName := Procedures[A_Index * 2 - 1]
-                procedureList := Procedures[A_Index * 2]
-                if !(hmod := DllCall(g_kernel32_LoadLibraryW, 'wstr', dllName, 'ptr')) {
-                    throw OSError(, , dllName)
-                }
-                LibraryManager_LoadLibraries(&dllName, RegExReplace(StrReplace(dllName, '.dll', ''), pattern, ''), hmod, procedureList)
-                this.Push(hmod)
             }
         }
     }
@@ -316,29 +355,7 @@ class LibraryManager extends Array {
                 }
             }
         }
-        if LibraryManager.Collection.Has(this.id) {
-            if this.__flag_reference {
-                ObjPtrAddRef(this)
-                this.DeleteProp('__flag_reference')
-            }
-            LibraryManager.Collection.Delete(this.id)
-            this.DeleteProp('id')
-        } else if this.id {
-            this.DeleteProp('id')
-        }
     }
-    __Delete() {
-        if this.__flag_reference {
-            ObjPtrAddRef(this)
-            this.DeleteProp('__flag_reference')
-        }
-        if LibraryManager.Collection.Has(this.id) {
-            LibraryManager.Collection.Delete(this.id)
-        }
-    }
-}
-
-class LibraryManagerTokenCollection extends Map {
 }
 
 LibraryManager_LoadLibraries(&dllName, modifiedDllName, hmod, list) {
@@ -347,7 +364,7 @@ LibraryManager_LoadLibraries(&dllName, modifiedDllName, hmod, list) {
         name := LIBRARYMANAGER_VAR_PREFIX '_' modifiedDllName '_' proc
         if !(%LIBRARYMANAGER_VAR_PREFIX%_%modifiedDllName%_%proc%
         := DllCall(g_kernel32_GetProcAddress, 'ptr', hmod, 'astr', proc, 'ptr')) {
-            throw OSError(, , dllName '\' proc)
+            throw OSError(, , dllName '\' proc '. Note that the procedure names are case sensitive.')
         }
     }
 }
