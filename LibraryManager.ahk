@@ -104,6 +104,31 @@ class LibraryManager extends Array {
      * @
      *
      *
+     * ## Avoiding var unset warning
+     *
+     * Since the code will not contain an expression that sets the variables directly, you will see
+     * a var unset warning before script startup unless you address this. There are two approaches.
+     *
+     * You can use {@link https://www.autohotkey.com/docs/v2/lib/_Warn.htm #Warn}, i.e.
+     * `#warn VarUnset, Off`.
+     *
+     * If using `#Warn` is undesirable, you must set the variables to some initial value.
+     *
+     * @example
+     * MyLibrary_InitializeVars() {
+     *     global g_user32_SetWindowPos, g_user32_GetClientRect,
+     *     g_user32_GetWindowRect, g_gdi32_GetTextExtentPoint32W,
+     *     g_gdi32_GetTextExtentExPoint
+     *
+     *     g_user32_SetWindowPos := g_user32_GetClientRect :=
+     *     g_user32_GetWindowRect := g_gdi32_GetTextExtentPoint32W :=
+     *     g_gdi32_GetTextExtentExPoint := 0
+     *
+     *     ; initialization logic...
+     * }
+     * @
+     *
+     *
      * ## Calling LibraryManager
      *
      * Each subsystem calls {@link LibraryManager.Prototype.__New}, specifying the dll names to be
