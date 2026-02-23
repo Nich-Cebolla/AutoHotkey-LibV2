@@ -35,15 +35,12 @@ ParseWinuserHeaderFile(Str?, Path?, Encoding := 'utf-8') {
     content := RegExReplace(str, '/\*[\w\W]+?\*/|//.*', '') ; remove comments
     patternFunction := '(?<=[\r\n]|^)[^#\r\n(]+?(?<symbol>\w+)(?<bracket>\((?<params>(?:[^)(]++|(?&bracket))*)\));'
     patternValue := '(?<=[\r\n]|^)#define[ \t]+(?<symbol>\w+)[ \t]+(?<value>(?<index>\(-\d+\))|(?<hex>0x\d+)|(?<decimal>\d+)|(?<mask>\([^-][^)]+\)))'
-    patternStruct := '(?<=[\r\n]|^)(?:typedef[ \t]+)?struct[ \t]+(?<symbol>\w+)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[ \t]*(?<alias>.*);'
+    patternStruct := '(?<=[\r\n]|^)(?:typedef[ \t]+)?struct[ \t]*(?<symbol>\w*)\s+(?<bracket>\{(?<members>(?:[^}{]++|(?&bracket))*)\})[, \t]*(?<alias>\w*),? ?(?<tail>.*);'
     functions := _GetAll(patternFunction, [])
     values := _GetAll(patternValue, [])
     structs := _GetAll(patternStruct, [])
     pointerTypes := Map()
     for match in structs {
-        if InStr(match[0], 'tagRawMouse') {
-            sleep 1
-        }
         structs[A_Index] := StructDefinition(match)
     }
 
@@ -264,7 +261,7 @@ class StructDefinition {
                     } else {
                         member.SetCalculatedValues(_GetOffset())
                     }
-                case '4', '2':
+                case '4', '2', '1':
                     ; Preceding A_PtrSize members won't impact the need for / value of padding
                     if r := Mod(offset + (member.Size == 'A_PtrSize' ? 0 : member.Size), alignment) {
                         member.SetCalculatedValues(_GetOffset(), member.Size ' + ' r, '+ ' r)
@@ -274,7 +271,7 @@ class StructDefinition {
             }
         }
     }
-    Symbol => this.Match['symbol']
+    Symbol => this.Match['symbol'] || this.Match['alias']
 
     class Members extends Array {
         static __New() {
