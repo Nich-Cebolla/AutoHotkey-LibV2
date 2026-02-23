@@ -76,6 +76,15 @@ class WinEventFilter {
      * @param {Integer|Integer[]} [Options.Event] - One or more
      * {@link https://learn.microsoft.com/en-us/windows/win32/winauto/event-constants event constants}.
      *
+     * @param {Integer} [options.flags = WINEVENT_OUTOFCONTEXT] - The following flag combinations
+     * are valid:
+     * - WINEVENT_INCONTEXT | WINEVENT_SKIPOWNPROCESS
+     * - WINEVENT_INCONTEXT | WINEVENT_SKIPOWNTHREAD
+     * - WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS
+     * - WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD
+     *
+     * Additionally, client applications can specify WINEVENT_INCONTEXT, or WINEVENT_OUTOFCONTEXT alone.
+     *
      * @param {Integer|Integer[]} [Options.Hwnd] - One or more window handles to monitor.
      *
      * @param {Integer|Integer[]} [Options.Object] - One or more
@@ -147,6 +156,11 @@ class WinEventFilter {
             this.Thread := Options.Thread
         } else {
             this.Thread := 0
+        }
+        if HasProp(options, 'flags') {
+            this.flags := options.flags
+        } else {
+            this.flags := WINEVENT_OUTOFCONTEXT
         }
         if !HasProp(options, 'DeferHook') || !options.DeferHook {
             this.Proc := WinEventFilter_%z%
