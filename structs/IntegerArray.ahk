@@ -15,38 +15,38 @@
  * Note: To adhere to AHK's convention, the value at byte offset 0 is considered index 1.
  *
  * @example
- *  ; I know that the object is going to have one more item added to it
- *  ; later, so I'll set its capacity to 4 so it doesn't need to be resized.
- *  iArr := IntegerArray(4, , 10, 23, 1991)
- *  MsgBox(iArr[1]) ; 10
- *  MsgBox(iArr[-1]) ; <integer> the fourth index hasn't been set.
- *                   ; This will still return a value, albeit
- *                   ; a meaningless one in the context of this app.
- *  MsgBox(iArr[-2]) ; 1991
- *  iArr[4] := 18
- *  MsgBox(iArr[-1]) ; 18
- *  ; enumerate the values
- *  for n in iArr {
- *      str .= n ', '
- *  }
- *  MsgBox(Trim(str, ', ')) ; 10, 23, 1991, 18
+ * ; I know that the object is going to have one more item added to it
+ * ; later, so I'll set its capacity to 4 so it doesn't need to be resized.
+ * iArr := IntegerArray(4, , 10, 23, 1991)
+ * MsgBox(iArr[1]) ; 10
+ * MsgBox(iArr[-1]) ; <integer> the fourth index hasn't been set.
+ *                  ; This will still return a value, albeit
+ *                  ; a meaningless one in the context of this app.
+ * MsgBox(iArr[-2]) ; 1991
+ * iArr[4] := 18
+ * MsgBox(iArr[-1]) ; 18
+ * ; enumerate the values
+ * for n in iArr {
+ *     s .= n ', '
+ * }
+ * MsgBox(Trim(s, ', ')) ; 10, 23, 1991, 18
  *
- *  ; In some other part of the code, there's a small possibility that
- *  ; the object needs resized, so I only resize it if the condition
- *  ; occurs.
+ * ; In some other part of the code, there's a small possibility that
+ * ; the object needs resized, so I only resize it if the condition
+ * ; occurs.
  *
- *  iArr[5] := 30 ; IndexError: Index out of range.
+ * iArr[5] := 30 ; IndexError: Index out of range.
  *
- *  if Condition {
- *      iArr.Capacity := 5
- *  }
- *  iArr[5] := 30
- *  MsgBox(iArr[-1]) ; 30
+ * if Condition {
+ *     iArr.Capacity := 5
+ * }
+ * iArr[5] := 30
+ * MsgBox(iArr[-1]) ; 30
  *
- *  ; To use in a `DllCall`, just pass the object directly
- *  if DllCall('FunctionName', 'ptr', iArr, 'int') {
- *      throw OSError()
- *  }
+ * ; To use in a `DllCall`, just pass the object directly
+ * if DllCall('FunctionName', 'ptr', iArr, 'int') {
+ *     throw OSError()
+ * }
  * @
  * The object does not track which indices are set; accessing an unset index will return an
  * indeterminate value. This means that, when calling the object in a `for` loop, it will iterate the
