@@ -461,6 +461,8 @@ class Win32StructGetMemberSize {
           , 'BOOL', '4'
           , 'BYTE', '1'
           , 'CHAR', '1'
+          , 'CLSID', 'A_PtrSize'
+          , 'CODE_BLOCKSIZE_TYPE', 'A_PtrSize' ; used by pcre2
           , 'COLORREF', '4'
           , 'const', -1
           , 'DebugEventProc', 'A_PtrSize'
@@ -499,6 +501,8 @@ class Win32StructGetMemberSize {
           , 'MSGBOXCALLBACK', 'A_PtrSize'
           , 'NotificationHookProc', 'A_PtrSize'
           , 'NotificationUnhookProc', 'A_PtrSize'
+          , 'PCRE2_SIZE', 'A_PtrSize' ; used by pcre2
+          , 'PCRE2_SPTR', 'A_PtrSize' ; used by pcre2
           , 'PEN_FLAGS', '4'
           , 'PEN_MASK', '4'
           , 'PFNTVCOMPARE', 'A_PtrSize'
@@ -511,13 +515,17 @@ class Win32StructGetMemberSize {
           , 'POINTS', '4'
           , 'PVOID', 'A_PtrSize'
           , 'PWINDOWPOS', 'A_PtrSize'
+          , 'SHELLVIEWID', 'A_PtrSize'
           , 'struct', -1
           , 'TOUCH_FLAGS', '4'
           , 'TOUCH_MASK', '4'
           , 'UINT_PTR', 'A_PtrSize'
           , 'UINT', '4'
+          , 'uint8_t', '1' ; used by pcre2
           , 'UINT16', '2'
+          , 'uint16_t', '2' ; used by pcre2
           , 'UINT32', '4'
+          , 'uint32_t', '4' ; used by pcre2
           , 'UINT64', '8'
           , 'ULONG_PTR', 'A_PtrSize'
           , 'ULONG', '4'
