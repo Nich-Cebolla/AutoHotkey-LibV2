@@ -141,11 +141,6 @@ class Window32 {
     }
     static FromDesktop(Buf?, Offset := 0) => this(DllCall(RectBase.GetDesktopWindow, 'ptr'), Buf ?? unset, Offset)
     static FromForeground(Buf?, Offset := 0) => this(DllCall(RectBase.GetForegroundWindow, 'ptr'), Buf ?? unset, Offset)
-    /**
-     * @param Cmd -
-     * - 2 : Returns a handle to the window below the given window.
-     * - 3 : Returns a handle to the window above the given window.
-     */
     static FromCursor(Buf?, Offset := 0) {
         pt := Point()
         if !DllCall(RectBase.GetCursorPos, 'ptr', pt, 'int') {
@@ -153,6 +148,11 @@ class Window32 {
         }
         return this(DllCall(RectBase.WindowFromPoint, 'int', pt.Value, 'ptr'), Buf ?? unset, Offset)
     }
+    /**
+     * @param Cmd -
+     * - 2 : Returns a handle to the window below the given window.
+     * - 3 : Returns a handle to the window above the given window.
+     */
     static FromNext(Hwnd, Cmd, Buf?, Offset := 0) => this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
     static FromParent(Hwnd, Buf?, Offset := 0) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
     static FromPoint(X, Y, Buf?, Offset := 0) => this(DllCall(RectBase.WindowFromPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr'), Buf ?? unset, Offset)
@@ -456,6 +456,10 @@ class WinRect extends Rect {
      * - 0 : `GetWindowRect`
      * - 1 : `GetClientRect`
      * - 2 : `DwmGetWindowAttribute` passing DWMWA_EXTENDED_FRAME_BOUNDS to dwAttribute.
+     * - 3 : `GetWindowRect` is called, then `ScreenToClient` is called for both coordinates using
+     *   the parent window's client area for the conversion. If `Hwnd` is a control's window handle,
+     *   this would be the same as calling
+     *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#GetPos Gui.Control.Prototype.GetPos}.
      *
      * Some controls / windows will cause `DwmGetWindowAttribute` to throw an error.
      *
@@ -480,12 +484,27 @@ class WinRect extends Rect {
     Call(*) {
         switch this.Flag, 0 {
             case 0:
-                DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this, 'int')
+                if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this.Ptr + this.Offset, 'int') {
+                    throw OSError()
+                }
             case 1:
-                DllCall(RectBase.GetClientRect, 'ptr', this.Hwnd, 'ptr', this, 'int')
+                if !DllCall(RectBase.GetClientRect, 'ptr', this.Hwnd, 'ptr', this.Ptr + this.Offset, 'int') {
+                    throw OSError()
+                }
             case 2:
-                if HRESULT := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', this.Hwnd, 'uint', 9, 'ptr', this.Buffer.Ptr, 'uint', 16, 'uint') {
+                if HRESULT := DllCall(RectBase.Dwmapi_DwmGetWindowAttribute, 'ptr', this.Hwnd, 'uint', 9, 'ptr', this.Ptr + this.Offset, 'uint', 16, 'uint') {
                     throw oserror('``DwmGetWindowAttribute`` failed.', , 'HRESULT: ' Format('{:X}', HRESULT))
+                }
+            case 3:
+                hwndParent := DllCall(RectBase.GetParent, 'ptr', this.Hwnd, 'ptr') || this.Hwnd
+                if !DllCall(RectBase.GetWindowRect, 'ptr', this.Hwnd, 'ptr', this.Ptr + this.Offset, 'int') {
+                    throw OSError()
+                }
+                if !DllCall(RectBase.ScreenToClient, 'ptr', hwndParent, 'ptr', this.Ptr + this.Offset, 'int') {
+                    throw OSError()
+                }
+                if !DllCall(RectBase.ScreenToClient, 'ptr', hwndParent, 'ptr', this.Ptr + this.Offset + 8, 'int') {
+                    throw OSError()
                 }
         }
     }
@@ -1095,9 +1114,9 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
     }
     _ValueError(name, Value) {
         if IsObject(Value) {
-            return TypeError('Invalid type passed to ``' name '``.', -2)
+            return TypeError('Invalid type passed to ``' name '``.')
         } else {
-            return ValueError('Unexpected value passed to ``' name '``.', -2, Value)
+            return ValueError('Unexpected value passed to ``' name '``.', , Value)
         }
     }
 }
