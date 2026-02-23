@@ -73,7 +73,7 @@ class WinEventHook {
      * @param {Integer} [Options.Max = 0x7FFFFFFF] - Specifies the
      * {@link https://learn.microsoft.com/en-us/windows/desktop/WinAuto/event-constants event constant}
      * for the greatest event value in the range of events that are handled by the hook function. This
-     * parameter can be set to EVENT_MAX to indicate the highest possible event value. THe default
+     * parameter can be set to EVENT_MAX to indicate the highest possible event value. The default
      * is EVENT_MAX.
      *
      * @param {*} Options.Proc - A `Func`, callable object, or pointer to a
