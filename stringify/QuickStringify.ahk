@@ -114,7 +114,7 @@ class QuickStringify {
 
         _Proc(Obj, indent) {
             c := ''
-            switch Obj.__Class {
+            switch Type(Obj) {
                 case 'Array':
                     if Obj.Length {
                         OutStr .= '['
@@ -148,9 +148,9 @@ class QuickStringify {
                             c := ','
                             indent++
                             if IsObject(key) {
-                                if key.HasOwnProp('Prototype') {
+                                if ObjHasOwnProp(key, 'Prototype') {
                                     OutStr .= eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }"'
-                                } else if key.HasOwnProp('__Class') {
+                                } else if ObjHasOwnProp(key, '__Class') {
                                     OutStr .= eol ind[indent] '"{ Prototype : ' key.__Class ' }"'
                                 } else {
                                     OutStr .= eol ind[indent] '"{ ' key.__Class ' }"'
@@ -180,7 +180,7 @@ class QuickStringify {
                     if ObjOwnPropcount(Obj) {
                         OutStr .= '{'
                         indent++
-                        for prop, val in Obj.OwnProps() {
+                        for prop, val in ObjOwnProps(Obj) {
                             OutStr .= c eol ind[indent] '"' prop '": '
                             c := ','
                             if IsObject(val) {
@@ -215,7 +215,7 @@ class QuickStringify {
                         this.%prop% := options.%prop%
                     }
                 }
-                if this.HasOwnProp('__Class') {
+                if ObjHasOwnProp(this, '__Class') {
                     this.DeleteProp('__Class')
                 }
             }

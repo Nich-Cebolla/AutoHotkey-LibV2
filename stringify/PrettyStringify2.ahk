@@ -12,6 +12,7 @@ class PrettyStringify2 {
         proto.CharThresholdMap :=
         proto.CharThresholdObject :=
         4294967295
+        proto.DepthThreshold := 0
     }
     /**
      * @description - Creates the function object.
@@ -66,6 +67,10 @@ class PrettyStringify2 {
      * If an Object's string representation is greater than `Options.CharThresholdObject`, that Object
      * is represented with a line break separating each value. The calculation does not include
      * indentation and end of line characters.
+     * @param {Integer} [options.DepthThreshold = 0] - `options.DepthThreshold` specifies the minimum
+     * depth required to invoke the behavior associated with the "charThreshold" options. For example,
+     * if `options.charThreshold` is `200`, `options.DepthThreshold` is `2`, then the substring for
+     * the root level object (depth 1) will be unaltered, even if the character count is 200 or less.
      * @param {String} [Options.Eol = "`n"] - The end of line character(s) to use when building
      * the JSON string.
      * @param {String} [Options.IndentChar = "`s"] - The character used for indentation.
@@ -102,6 +107,7 @@ class PrettyStringify2 {
                 this.CharThresholdObject := options.CharThresholdObject
             }
         }
+        this.DepthThreshold := options.DepthThreshold
     }
 
     /**
@@ -121,6 +127,7 @@ class PrettyStringify2 {
         thresholdArray := this.CharThresholdArray
         thresholdMap := this.CharThresholdMap
         thresholdObject := this.CharThresholdObject
+        DepthThreshold := this.DepthThreshold
         lenInd := StrLen(ind[1])
         lenEol := StrLen(eol)
         ws := depth := 0
@@ -133,8 +140,8 @@ class PrettyStringify2 {
         _Proc(Obj, indent, &str) {
             depth++
             c := s := ''
-            VarSetStrCapacity(&s, 64 * 2 ** (ApproxGreatestDepth - depth))
-            switch Obj.__Class {
+            VarSetStrCapacity(&s, 64 * 2 ** Max(ApproxGreatestDepth - depth, 3))
+            switch Type(Obj) {
                 case 'Array':
                     if Obj.Length {
                         _ws := ws
@@ -157,7 +164,7 @@ class PrettyStringify2 {
                             c := ', '
                         }
                         indent--
-                        if StrLen(s) - ws + _ws + 1 <= thresholdArray {
+                        if depth >= DepthThreshold && StrLen(s) - ws + _ws + 1 <= thresholdArray {
                             ws := _ws
                             str .= RegExReplace(s, '\R *(?![\]}])', '') ' ]'
                         } else {
@@ -173,9 +180,9 @@ class PrettyStringify2 {
                         indent++
                         for key, val in Obj {
                             if IsObject(key) {
-                                if key.HasOwnProp('Prototype') {
+                                if ObjHasOwnProp(key, 'Prototype') {
                                     s .= c eol ind[indent] '"{ ' key.__Class ' : ' key.Prototype.__Class ' }": '
-                                } else if key.HasOwnProp('__Class') {
+                                } else if ObjHasOwnProp(key, '__Class') {
                                     s .= c eol ind[indent] '"{ Prototype : ' key.__Class ' }": '
                                 } else {
                                     s .= c eol ind[indent] '"{ ' key.__Class ' }": '
@@ -196,7 +203,7 @@ class PrettyStringify2 {
                             }
                         }
                         indent--
-                        if StrLen(s) - ws + _ws + 1 <= thresholdMap {
+                        if depth >= DepthThreshold && StrLen(s) - ws + _ws + 1 <= thresholdMap {
                             ws := _ws
                             str .= RegExReplace(s, '\R *(?![\]}])', '') ' }'
                         } else {
@@ -210,7 +217,7 @@ class PrettyStringify2 {
                         _ws := ws
                         s .= '{ '
                         indent++
-                        for prop, val in Obj.OwnProps() {
+                        for prop, val in ObjOwnProps(Obj) {
                             s .= c eol ind[indent] '"' prop '": '
                             ws += lenInd * indent + lenEol
                             c := ', '
@@ -223,7 +230,7 @@ class PrettyStringify2 {
                             }
                         }
                         indent--
-                        if StrLen(s) - ws + _ws + 1 <= thresholdObject {
+                        if depth >= DepthThreshold && StrLen(s) - ws + _ws + 1 <= thresholdObject {
                             ws := _ws
                             str .= RegExReplace(s, '\R *(?![\]}])', '') ' }'
                         } else {
@@ -248,6 +255,7 @@ class PrettyStringify2 {
             proto.CharThresholdMap :=
             proto.CharThresholdObject :=
             ''
+            proto.DepthThreshold := 0
         }
 
         __New(options?) {
@@ -257,7 +265,7 @@ class PrettyStringify2 {
                         this.%prop% := options.%prop%
                     }
                 }
-                if this.HasOwnProp('__Class') {
+                if ObjHasOwnProp(this, '__Class') {
                     this.DeleteProp('__Class')
                 }
             }
