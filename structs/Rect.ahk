@@ -1033,7 +1033,7 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
         }
         if !IsSet(X) {
             flag_nomove := false
-            X := _Proc(subW, subL, subR, tarW, tarL, tarR, monW, monL, monR, Prefer = 'L' ? 1 : Prefer = 'R' ? -1 : 0)
+            X := _Proc(subW, tarL, tarR, monL, monR)
             if flag_nomove {
                 return Result
             }
@@ -1062,7 +1062,7 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
         }
         if !IsSet(Y) {
             flag_nomove := false
-            Y := _Proc(subH, subT, subB, tarH, tarT, tarB, monH, monT, monB, Prefer = 'T' ? 1 : Prefer = 'B' ? -1 : 0)
+            Y := _Proc(subH, tarT, tarB, monT, monB)
             if flag_nomove {
                 return Result
             }
@@ -1083,7 +1083,7 @@ RectMoveAdjacent(Subject, Target?, ContainerRect?, Dimension := 'X', Prefer := '
 
     return Result
 
-    _Proc(SubLen, SubMainSide, SubAltSide, TarLen, TarMainSide, TarAltSide, MonLen, MonMainSide, MonAltSide, Prefer) {
+    _Proc(SubLen, TarMainSide, TarAltSide, MonMainSide, MonAltSide) {
         if TarMainSide - MonMainSide > MonAltSide - TarAltSide {
             if TarMainSide - SubLen - Padding >= MonMainSide {
                 return TarMainSide - SubLen - Padding
