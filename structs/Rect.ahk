@@ -452,7 +452,7 @@ class WinRect extends Rect {
     /**
      * @param {Integer} [Hwnd = 0] - The window handle.
      * @param {Integer} [Flag = 0] - A flag that determines what function is called when the
-     * buffer's values are updated using `WinRectGetPos` or `WinRectUpdate`.
+     * buffer's values are updated using `WinGetPos` or `WinUpdate`.
      * - 0 : `GetWindowRect`
      * - 1 : `GetClientRect`
      * - 2 : `DwmGetWindowAttribute` passing DWMWA_EXTENDED_FRAME_BOUNDS to dwAttribute.
