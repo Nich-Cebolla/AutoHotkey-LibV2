@@ -4,10 +4,6 @@
     License: MIT
 */
 
-/**
- * Calls `SetWindowsHookExW`.
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowshookexw}
- */
 class WindowsHook {
     static __New() {
         this.DeleteProp('__New')
@@ -15,6 +11,9 @@ class WindowsHook {
         Proto.Handle := Proto.lpfn := Proto.OnExitCallback := 0
     }
     /**
+     * @desc - Calls
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowshookexw SetWindowsHookExW}.
+     *
      * @class
      *
      * @param {Integer} idHook - The type of hook to be installed.
@@ -24,7 +23,7 @@ class WindowsHook {
      * |  --------------------|------|------------------------|-------------------------|-------------------------------------------------  |
      * |  WH_CALLWNDPROC      |  4   |  CallWndProc           |  CWPSTRUCT              |  Monitor before a message is processed            |
      * |  WH_CALLWNDPROCRET   |  12  |  CallWndRetProc        |  CWPRETSTRUCT           |  Monitor after a message is processed             |
-     * |  WH_CBT              |  5   |  CBTProc               |  Varies by nnCode        |  Window activation, creation, move, resize, etc.  |
+     * |  WH_CBT              |  5   |  CBTProc               |  Varies by nnCode       |  Window activation, creation, move, resize, etc.  |
      * |  WH_DEBUG            |  9   |  DebugProc             |  DEBUGHOOKINFO          |  Debugging other hook procedures                  |
      * |  WH_FOREGROUNDIDLE   |  11  |  ForegroundIdleProc    |  lParam unused          |  Detect idle foreground thread                    |
      * |  WH_GETMESSAGE       |  3   |  GetMsgProc            |  MSG                    |  Intercept message queue on removal               |
@@ -35,7 +34,7 @@ class WindowsHook {
      * |  WH_MOUSE            |  7   |  MouseProc             |  MOUSEHOOKSTRUCT        |  Mouse events (per-thread)                        |
      * |  WH_MOUSE_LL         |  14  |  LowLevelMouseProc     |  MSLLHOOKSTRUCT         |  Global mouse input                               |
      * |  WH_MSGFILTER        |  -1  |  MessageProc           |  MSG                    |  Pre-translate messages in modal loops            |
-     * |  WH_SHELL            |  10  |  ShellProc             |  Varies by nnCode        |  Shell events (task switch, window create, etc.)  |
+     * |  WH_SHELL            |  10  |  ShellProc             |  Varies by nnCode       |  Shell events (task switch, window create, etc.)  |
      * |  WH_SYSMSGFILTER     |  6   |  MessageProc           |  MSG                    |  Like WH_MSGFILTER, but system-wide               |
      *
      * @param {Func|BoundFunc} HookProc - The function that will be registered as the hook procedure.
