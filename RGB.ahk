@@ -55,3 +55,38 @@ RGBToLuminosity(r, g, b) {
     + 0.7152 * (GsRGB <= 0.04045 ? GsRGB / 12.92 : ((GsRGB + 0.055) / 1.055) ** 2.4)
     + 0.0722 * (BsRGB <= 0.04045 ? BsRGB / 12.92 : ((BsRGB + 0.055) / 1.055) ** 2.4)
 }
+/**
+ * @desc - Takes a string in the format "R<n> G<n> B<n>" and returns a COLORREF as integer, where
+ * <n> is an integer between 0-255, inclusive. For example, "R0 G245 B250".
+ * @param {String} str - A string in the format "R<n> G<n> B<n>". For example, "R155 G4 B212".
+ * @returns {Integer} - The COLORREF value.
+ */
+RGBString(str) {
+    if RegExMatch(str, '[rR]\s*(\d+)\s*[gG]\s*(\d+)\s*[bB]\s*(\d+)', &match) {
+        return (match[1] & 0xFF) | ((match[2] & 0xFF) << 8) | ((match[3] & 0xFF) << 16)
+    } else {
+        throw ValueError('The string must be in the format "R<n> G<n> B<n>" where <n> is an integer between 0-255, inclusive. For example, "R0 G200 B250".', , str)
+    }
+}
+COLORREF_toHexString(colorref, prefix := '') {
+    ParseColorRef(colorref, &r, &g, &b)
+    str := prefix
+    s := Format('{:X}', r)
+    if StrLen(s) = 1 {
+        str .= '0' s
+    } else {
+        str .= s
+    }
+    s := Format('{:X}', g)
+    if StrLen(s) = 1 {
+        str .= '0' s
+    } else {
+        str .= s
+    }
+    s := Format('{:X}', b)
+    if StrLen(s) = 1 {
+        return str '0' s
+    } else {
+        return str s
+    }
+}
