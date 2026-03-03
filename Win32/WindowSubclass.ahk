@@ -4,15 +4,6 @@
     License: MIT
 */
 
-/**
- * @classdesc -
- * BOOL SetWindowSubclass
- *   HWND          hWnd,
- *   SUBCLASSPROC  pfnSubclass,
- *   UINT_PTR      uIdSubclass,
- *   DWORD_PTR     dwRefData
- * );
- */
 class WindowSubclass {
     static __New() {
         this.DeleteProp('__New')
@@ -31,7 +22,7 @@ class WindowSubclass {
         throw Error('Failed to create a unique id.')
     }
     /**
-     * Calls {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass SetWindowSubclass}
+     * @desc - Calls {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nf-commctrl-setwindowsubclass SetWindowSubclass}
      *
      * @see {@link https://learn.microsoft.com/en-us/windows/win32/controls/subclassing-overview}
      *
