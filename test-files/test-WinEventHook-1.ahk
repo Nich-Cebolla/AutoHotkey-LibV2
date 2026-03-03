@@ -16,44 +16,30 @@ class test {
     static Call(InitialCheckedEvents?, InitialCheckedObjects?) {
         Test_SetConstants()
         this.ItemHandles := []
-        this.LastHwnd := 0
         g := this.Gui := Gui('+Resize', , this)
         g.SetFont('s11 q5', 'Segoe Ui')
         this.pause := g.Add('Button', 'Section', 'Pause')
         this.pause.OnEvent('Click', 'HClickButtonPause')
         g.Add('Button' , 'ys', 'Exit').OnEvent('Click', (*) => ExitApp())
-        g.Add('Button', 'ys', 'Get Hwnd').OnEvent('Click', 'HClickGetHwnd')
+        g.Add('Button', 'ys', 'Verify').OnEvent('Click', 'HClickVerify')
         g.Add('Button', 'ys', 'Change').OnEvent('Click', 'HClickChange')
-        ctrl := g.Add('Link', 'xs r2', 'Input a <a href="https://www.autohotkey.com/docs/v2/lib/WinGetID.htm#Parameters">Win Title, Win Text, Exclude Title, or ExcludeText</a> value.`r`nOr input "0" to monitor all processes.')
+        g.Add('Checkbox', 'ys vChkHiddenWindows', 'Hidden windows')
+        ctrl := g.Add('Link', 'xs', 'Input a <a href="https://www.autohotkey.com/docs/v2/lib/WinGetID.htm#Parameters">Win Title, Win Text, Exclude Title, or ExcludeText</a> value.')
         ctrl.GetPos(, , &w)
+        g.Add('Text', 'xs w' w, 'Then, click "Verify" and you should see the label "Hwnd: ####" below change to the hwnd value. If it looks correct, click "Change" to monitor the process associated with the window. To monitor all processes, input "0", then click "Verify", then click "Change".')
         g.Add('Edit', 'xs w' w ' vEdtHwnd')
         g.Add('Text', 'xs Section', 'Hwnd:').GetPos(, , &_w)
-        g.Add('Text', 'ys w' (w - _w - g.MarginX) ' vTxtValue', '0')
+        g.Add('Text', 'ys w' ((w - _w) / 4 - g.MarginX) ' vTxtHwnd', '0')
+        g.Add('Text', 'ys', 'Title:')
+        g.Add('Text', 'ys w' ((w - _w) * 2 / 3 - g.MarginX * 2) ' vTxtTitle', '0')
+        g.Add('Button', 'xs Section', 'Clear tree-view').OnEvent('Click', 'HClickClearTreeView')
+        g.Add('Button', 'ys', 'Collapse all').OnEvent('Click', 'HClickCollapseAll')
+        g.Add('Button', 'ys', 'Expand all').OnEvent('Click', 'HClickExpandAll')
         this.Tv := g.Add('TreeView', 'xs w' w ' Section r19')
-        lv := this.LvEvent := g.Add('ListView', 'ys w' w ' r7 Section Checked', [ 'Name' ])
-        rows := this.RowsEvent := Map()
-        if IsSet(InitialCheckedEvents) {
-            this.InitialCheckedEvents := InitialCheckedEvents
-            flag_all_event := true
-            for name, n in event_alphabetized {
-                if InitialCheckedEvents.Has(name) {
-                    lv.Add('Check', name)
-                } else {
-                    lv.Add(, name)
-                    flag_all_event := false
-                }
-                rows.Set(n, A_Index)
-            }
-        } else {
-            for name, n in event_alphabetized {
-                lv.Add('Check', name)
-                rows.Set(n, A_Index)
-            }
-            flag_all_event := true
-        }
-        this.ChkObj := g.Add('Checkbox', 'xs', 'Check all')
+        this.pause.GetPos(, &y)
+        this.ChkObj := g.Add('Checkbox', 'x' (g.MarginX * 2 + w) ' y' y ' Section', 'Check all')
         this.ChkObj.OnEvent('Click', 'HClickCheckObj')
-        lv := this.LvObj := g.Add('ListView', 'xs w' w ' r7 Checked', [ 'Name' ])
+        lv := this.LvObj := g.Add('ListView', 'xs w445 r7 Checked', [ 'Name' ])
         rows := this.RowsObj := Map()
         if IsSet(InitialCheckedObjects) {
             this.InitialCheckedObjects := InitialCheckedObjects
@@ -75,11 +61,33 @@ class test {
             }
             this.ChkObj.Value := 1
         }
-        this.LvEvent.GetPos(&x, &y)
-        this.ChkObj.GetPos(, , , &h)
-        this.ChkEvent := g.Add('Checkbox', 'x' x ' y' (y - h - g.MarginY), 'Check all')
+        lv.ModifyCol(1, 'AutoHdr')
+        this.ChkEvent := g.Add('Checkbox', 'xs', 'Check all')
         this.ChkEvent.OnEvent('Click', 'HClickCheckEvent')
+        lv := this.LvEvent := g.Add('ListView', 'xs w445 r17 Checked', [ 'Name' ])
+        rows := this.RowsEvent := Map()
+        if IsSet(InitialCheckedEvents) {
+            this.InitialCheckedEvents := InitialCheckedEvents
+            flag_all_event := true
+            for name, n in event_alphabetized {
+                if InitialCheckedEvents.Has(name) {
+                    lv.Add('Check', name)
+                } else {
+                    lv.Add(, name)
+                    flag_all_event := false
+                }
+                rows.Set(n, A_Index)
+            }
+        } else {
+            for name, n in event_alphabetized {
+                lv.Add('Check', name)
+                rows.Set(n, A_Index)
+            }
+            flag_all_event := true
+        }
+        lv.ModifyCol(1, 'AutoHdr')
         this.ChkEvent.Value := flag_all_event
+        this.LvEvent.GetPos(&x, &y)
         MonitorGet(1, &l, &t)
         g.Show('x' (l + 10) ' y' (t + 100))
         g.GetPos(&x, &y, &w)
@@ -101,108 +109,179 @@ class test {
             PostMessage(this.MsgExit.Code, , , , Number(test.ScriptHwnd))
         }
     }
+    static ChangeProcess(hwnd) {
+        if this.Gui['ChkHiddenWindows'].Value {
+            DetectHiddenWindows(true)
+        } else {
+            DetectHiddenWindows(false)
+        }
+        hwnd := Number(hwnd)
+        if hProc := DllCall('Oleacc.dll\GetProcessHandleFromHwnd', 'ptr', Number(hwnd), 'ptr') {
+            this.Gui['EdtHwnd'].Text := WinGetTitle(hwnd)
+            this.Gui['TxtHwnd'].Text := hwnd
+            if process := DllCall('GetProcessId', 'ptr', hProc, 'ptr') {
+                if this.HasOwnProp('EventHook') {
+                    this.EventHook.Unhook()
+                }
+                this.EventHook := WinEventHook({
+                    Proc: WndEventProc
+                  , Process: process
+                })
+                ShowTooltip('Successfully changed the event hook window.')
+            } else {
+                err := OSError()
+                MsgBox('Failed to get process ID`r`n`r`n' err.Message '`r`nExtra:`r`n' err.Extra)
+                return
+            }
+        } else {
+            err := OSError()
+            MsgBox('Failed to get process handle`r`n' err.Message '`r`nExtra:`r`n' err.Extra)
+            return
+        }
+    }
     static CheckAll(value, lv) {
         s := (value ? '+' : '-') 'Check'
         loop lv.GetCount() {
             lv.Modify(A_Index, s)
         }
     }
-    static HClickCheckObj(ctrl, *) {
-        this.CheckAll(ctrl.Value, this.LvObj)
+    static HClickButtonPause(*) {
+        if this.pause.Text = 'Pause' {
+            this.EventHook.Unhook()
+            this.pause.SetFont('s10')
+            this.pause.Text := 'Resume'
+        } else {
+            this.EventHook.Hook()
+            this.pause.SetFont('s11')
+            this.pause.Text := 'Pause'
+        }
+    }
+    static HClickChange(*) {
+        if this.Gui['TxtHwnd'].Text = '0' {
+            this.SetToAllProcesses()
+            ShowTooltip('Now monitoring all processes.')
+        } else {
+            this.ChangeProcess(this.Gui['TxtHwnd'].Text)
+        }
     }
     static HClickCheckEvent(ctrl, *) {
         this.CheckAll(ctrl.Value, this.LvEvent)
     }
-    static HClickButtonPause(*) {
-        if this.pause.Text = 'Pause' {
-            this.EventHook.Unhook()
-            this.pause.Text := 'Resume'
-        } else {
-            this.EventHook.Hook()
-            this.pause.Text := 'Pause'
+    static HClickCheckObj(ctrl, *) {
+        this.CheckAll(ctrl.Value, this.LvObj)
+    }
+    static HClickClearTreeView(*) {
+        this.Tv.Delete()
+    }
+    static HClickCollapseAll(*) {
+        tv := this.Tv
+        hwnd := tv.Hwnd
+        id := 0
+        while id := tv.GetNext(id,'F') {
+            SendMessage(4354, 0x0001, id, hwnd) ; TVM_EXPAND, TVE_COLLAPSE
         }
     }
-    static HClickGetHwnd(*) {
-        this.Gui['TxtValue'].Text := WinExist(Number(this.Gui['EdtHwnd'].Text))
-        ShowTooltip('Check complete.')
-    }
-    static HClickChange(*) {
-        if this.Gui['EdtHwnd'].Text = '0' {
-            this.ChangeProcess(this.Gui['EdtHwnd'].Text)
-        } else {
-            this.ChangeProcess(this.Gui['TxtValue'].Text)
+    static HClickExpandAll(*) {
+        tv := this.Tv
+        hwnd := tv.Hwnd
+        id := 0
+        while id := tv.GetNext(id,'F') {
+            SendMessage(4354, 0x0002, id, hwnd) ; TVM_EXPAND, TVE_EXPAND
         }
     }
-    static ChangeProcess(hwnd) {
-        if hwnd = this.LastHwnd {
-            if hwnd = '0' {
-                return
-            }
-            this.LastHwnd := '0'
-            _Proc()
-        } else if IsNumber(hwnd) && hwnd > 0 {
-            if hProc := DllCall('Oleacc.dll\GetProcessHandleFromHwnd', 'ptr', Number(hwnd), 'ptr') {
-                this.Gui['EdtHwnd'].Text := WinGetTitle(hwnd)
-                this.Gui['TxtValue'].Text := hwnd
-                if process := DllCall('GetProcessId', 'ptr', hProc, 'ptr') {
-                    if this.HasOwnProp('EventHook') {
-                        this.EventHook.Unhook()
-                    }
-                    this.EventHook := WinEventHook({
-                        Proc: WndEventProc
-                      , Process: process
-                    })
-                    this.LastHwnd := hwnd
-                    ShowTooltip('Successfully changed the event hook window.')
+    static HClickVerify(*) {
+        if this.Gui['ChkHiddenWindows'].Value {
+            DetectHiddenWindows(true)
+        } else {
+            DetectHiddenWindows(false)
+        }
+        if IsNumber(this.Gui['EdtHwnd'].Text) {
+            if hwnd := Number(this.Gui['EdtHwnd'].Text) {
+                if WinExist(hwnd) {
+                    this.Gui['TxtHwnd'].Text := hwnd
+                    this.Gui['TxtTitle'].Text := WinGetTitle(hwnd)
+                    ShowTooltip('Window exists.')
                 } else {
-                    err := OSError()
-                    MsgBox('Failed to get process ID`r`n`r`n' err.Message '`r`nExtra:`r`n' err.Extra)
-                    return
+                    this.Gui['TxtHwnd'].Text := 0
+                    this.Gui['TxtTitle'].Text := 0
+                    ShowTooltip('Window does not exist.')
                 }
             } else {
-                err := OSError()
-                MsgBox('Failed to get process handle`r`n' err.Message '`r`nExtra:`r`n' err.Extra)
-                return
+                this.Gui['TxtHwnd'].Text := 0
+                this.Gui['TxtTitle'].Text := 0
+                ShowTooltip('Click "Change" to monitor all processes.')
             }
+        } else if hwnd := WinExist(this.Gui['EdtHwnd'].Text) {
+            this.Gui['TxtHwnd'].Text := hwnd
+            this.Gui['TxtTitle'].Text := WinGetTitle(hwnd)
+            ShowTooltip('Window exists.')
         } else {
-            _Proc()
+            this.Gui['TxtHwnd'].Text := 0
+            this.Gui['TxtTitle'].Text := 0
+            ShowTooltip('Window does not exist.')
         }
-
-        return
-
-        _Proc() {
-            if !test.HasOwnProp('InitialCheckedEvents') {
-                test.CheckAll(0, test.LvEvent)
-                test.ChkEvent.Value := 0
+    }
+    static SetInitialCheckedEvents() {
+        InitialCheckedEvents := this.InitialCheckedEvents
+        lv := this.LvEvent
+        rows := this.RowsEvent
+        for name, n in event_alphabetized {
+            if InitialCheckedEvents.Has(name) {
+                lv.Modify(rows.Get(n), 'Check')
+            } else {
+                lv.Modify(rows.Get(n), '-Check')
             }
-            if !test.HasOwnProp('InitialCheckedObjects') {
-                test.CheckAll(0, test.LvObj)
-                test.ChkObj.Value := 0
-            }
-            test.Gui['EdtHwnd'].Text := '0'
-            test.Gui['TxtValue'].Text := 'All processes'
-            if test.HasOwnProp('EventHook') {
-                test.EventHook.Unhook()
-            }
-            test.EventHook := WinEventHook({
-                Proc: WndEventProc
-              , Process: 0
-            })
         }
+    }
+    static SetInitialCheckedObjects() {
+        InitialCheckedObjects := this.InitialCheckedObjects
+        lv := this.LvObj
+        rows := this.RowsObj
+        for name, n in object_alphabetized {
+            if InitialCheckedObjects.Has(name) {
+                lv.Modify(rows.Get(n), 'Check')
+            } else {
+                lv.Modify(rows.Get(n), '-Check')
+            }
+        }
+    }
+    static SetToAllProcesses() {
+        if test.HasOwnProp('InitialCheckedEvents') {
+            this.SetInitialCheckedEvents()
+        } else {
+            test.CheckAll(0, test.LvEvent)
+            test.ChkEvent.Value := 0
+        }
+        if test.HasOwnProp('InitialCheckedObjects') {
+            this.SetInitialCheckedObjects()
+        } else {
+            test.CheckAll(0, test.LvObj)
+            test.ChkObj.Value := 0
+        }
+        test.Gui['EdtHwnd'].Text := '0'
+        test.Gui['TxtHwnd'].Text := 'All processes'
+        if test.HasOwnProp('EventHook') {
+            test.EventHook.Unhook()
+        }
+        test.EventHook := WinEventHook({
+            Proc: WndEventProc
+          , Process: 0
+        })
     }
 }
 
 WndEventProc(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsEventTime) {
+    Critical('On')
     if test.RowsEvent.Has(event)
     && ((event >= 0x0001 && event <= 0x00FF) ; EVENT_SYSTEM
     || (event >= 0x4001 && event <= 0x40FF) ; EVENT_CONSOLE
     || (event >= 0x8000 && event <= 0x80FF)) { ; EVENT_OBJECT
-        originalCritical := Critical(-1)
         rowEvent := test.RowsEvent.Get(event)
         if test.LvEvent.GetNext(rowEvent - 1, 'C') = rowEvent {
             if test.RowsObj.Has(idObject) {
                 rowObj := test.RowsObj.Get(idObject)
-                if test.LvObj.GetNext(rowObj - 1, 'C') = rowObj {
+                r := test.LvObj.GetNext(rowObj - 1, 'C')
+                if r = rowObj {
                     tv := test.Tv
                     id := tv.Add(event_map.Get(event), 0, 'First Bold')
                     test.ItemHandles.Push(id)
@@ -210,7 +289,8 @@ WndEventProc(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsE
                     if WinExist(hwnd) {
                         tv.Add('Title: ' StrReplace(StrReplace(WinGetTitle(hwnd), '`r', '``r'), '`n', '``n'), id)
                     }
-                    tv.Add('idObject: ' object_map.Get(idObject), id)
+                    tv.Add('idObject symbol: ' object_map.Get(idObject), id)
+                    tv.Add('idObject: ' idObject, id)
                     tv.Add('idChild: ' idChild, id)
                     tv.Add('idEventThread: ' idEventThread, id)
                     tv.Add('Time: ' dwmsEventTime, id)
@@ -223,11 +303,12 @@ WndEventProc(hWinEventHook, event, hwnd, idObject, idChild, idEventThread, dwmsE
                 }
             }
         }
-        Critical(originalCritical)
     }
 }
 
 OnReady(wParam, lParam, msg, hwnd) {
+    test.Gui['EdtHwnd'].Text := wParam
+    test.HClickVerify()
     test.ChangeProcess(wParam)
     test.ScriptHwnd := wParam
 }
