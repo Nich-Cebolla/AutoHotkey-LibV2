@@ -297,8 +297,8 @@ class WindowSubclassController {
      * 6. **{Integer}** - lParam
      * 7. **{Integer}** - uIdSubclass
      *
-     * If the function returns a nonzero value, that value gets returned to the system. The effect
-     * of this depends on the message.
+     * If the function returns a nonzero value, that value gets returned to the system and no further
+     * functions are called. The effect of this depends on the message.
      *
      * @param {Integer} [InsertAt] - If set, an integer indicating the index at which the function
      * is to be inserted in the list of functions. If unset, the function is appended to the end
@@ -362,8 +362,8 @@ class WindowSubclassController {
      * 5. **{Integer}** - lParam
      * 6. **{Integer}** - uIdSubclass
      *
-     * If the function returns a nonzero value, that value gets returned to the system. The effect
-     * of this depends on the message.
+     * If the function returns a nonzero value, that value gets returned to the system and no further
+     * functions are called. The effect of this depends on the message.
      *
      * @param {Integer} [InsertAt] - If set, an integer indicating the index at which the function
      * is to be inserted in the list of functions. If unset, the function is appended to the end
@@ -413,8 +413,8 @@ class WindowSubclassController {
      * 6. **{Integer}** - lParam
      * 7. **{Integer}** - uIdSubclass
      *
-     * If the function returns a nonzero value, that value gets returned to the system. The effect
-     * of this depends on the message.
+     * If the function returns a nonzero value, that value gets returned to the system and no further
+     * functions are called. The effect of this depends on the message.
      *
      * @param {Integer} [InsertAt] - If set, an integer indicating the index at which the function
      * is to be inserted in the list of functions. If unset, the function is appended to the end
