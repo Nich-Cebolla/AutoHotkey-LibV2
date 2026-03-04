@@ -250,7 +250,7 @@ class ArrayRawInputDevices {
         if this.Size + cbSize * Params.Length > this.MaxSize {
             buf := Buffer(this.Size + cbSize * Params.Length)
             if buf.Size < this.Size {
-                throw Error('Invalid size.', -1)
+                throw Error('Invalid size.')
             }
             DllCall(
                 'msvcrt.dll\memmove'
@@ -279,11 +279,11 @@ class ArrayRawInputDevices {
     Delete(Index, Count := 1, Remove := true) {
         m := this.Map
         if Index < 1 || Index > m.Count {
-            throw IndexError('Index out of range.', -1)
+            throw IndexError('Index out of range.')
         }
         cbSize := RawInputDevice.cbSize
         if cbSize < 1 {
-            throw Error('Invalid size.', -1)
+            throw Error('Invalid size.')
         }
         ptr := this.Buffer.Ptr
         list := this.List
@@ -305,7 +305,7 @@ class ArrayRawInputDevices {
         }
         if bytes := (m.Count - Index - Count + 1) * cbSize {
             if bytes < cbSize {
-                throw Error('Invalid byte count.', -1)
+                throw Error('Invalid byte count.')
             }
             offset := cbSize * (Index - 1)
             DllCall(

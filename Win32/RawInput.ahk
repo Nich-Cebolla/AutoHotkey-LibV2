@@ -73,7 +73,7 @@ class RawInput {
             if A_LastError {
                 throw OSError()
             } else {
-                throw OSError('``GetRawInputData`` failed.', -1)
+                throw OSError('``GetRawInputData`` failed.')
             }
         }
     }
@@ -340,7 +340,7 @@ class RawInputBase {
             if A_LastError {
                 throw OSError()
             } else {
-                throw OSError('``GetRawInputData`` failed.', -1)
+                throw OSError('``GetRawInputData`` failed.')
             }
         }
         if this.TypeId == NumGet(rawInputDevice.Buffer, 0, 'uint') {

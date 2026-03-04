@@ -108,7 +108,7 @@ class WindowsHook {
      */
     Hook(SetOnExit := true) {
         if this.Handle {
-            throw Error('The hook is already active.', -1)
+            throw Error('The hook is already active.')
         }
         if !this.lpfn {
             this.lpfn := CallbackCreate(this.HookProc)
@@ -143,7 +143,7 @@ class WindowsHook {
         if this.Handle {
             return this.__UnhookWindowsEx()
         } else {
-            throw Error('The hook is not currently active.', -1)
+            throw Error('The hook is not currently active.')
         }
     }
     __UnhookWindowsEx() {

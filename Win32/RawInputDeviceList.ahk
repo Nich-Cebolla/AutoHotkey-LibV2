@@ -91,7 +91,7 @@ class ArrayRawInputDeviceList {
 
         _Get(List, OutList, Name, Constructor) {
             if !List.Length {
-                throw Error('There are zero ' name ' devices in the list.', -1)
+                throw Error('There are zero ' name ' devices in the list.')
             }
             for hDevice in List {
                 OutList.Push(Constructor(hDevice))
