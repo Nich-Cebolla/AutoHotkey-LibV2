@@ -325,7 +325,6 @@ class HighlightRect extends Gui {
         this.Destroy()
     }
 
-
     border {
         Get => this.__border
         Set => this.__border := value
