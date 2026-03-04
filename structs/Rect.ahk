@@ -148,12 +148,6 @@ class Window32 {
         }
         return this(DllCall(RectBase.WindowFromPoint, 'int', pt.Value, 'ptr'), Buf ?? unset, Offset)
     }
-    /**
-     * @param Cmd -
-     * - 2 : Returns a handle to the window below the given window.
-     * - 3 : Returns a handle to the window above the given window.
-     */
-    static FromNext(Hwnd, Cmd, Buf?, Offset := 0) => this(DllCall(RectBase.GetNextWindow, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr'), Buf ?? unset, Offset)
     static FromParent(Hwnd, Buf?, Offset := 0) => this(DllCall(RectBase.GetParent, 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr'), Buf ?? unset, Offset)
     static FromPoint(X, Y, Buf?, Offset := 0) => this(DllCall(RectBase.WindowFromPoint, 'int', (X & 0xFFFFFFFF) | (Y << 32), 'ptr'), Buf ?? unset, Offset)
     static FromShell(Buf?, Offset := 0) => this(DllCall(RectBase.GetShellWindow, 'ptr'), Buf ?? unset, Offset)
@@ -1315,22 +1309,6 @@ Window32CallbackFromDesktop(*) {
 
 Window32CallbackFromForeground(*) {
     return DllCall(RectBase.GetForegroundWindow, 'ptr')
-}
-
-/**
- * @description - To use this as a callback with `Window32.Prototype.SetCallback`, you must
- * define it as a `BoundFunc` defining the "Cmd" value.
- * @example
- *  hwnd := DllCall(RectBase.GetDesktopWindow, 'ptr')
- *  win := Window32(hwnd)
- *  win.SetCallback(Window32CallbackFromNext.Bind(3))
- *  win()
- * @
- */
-Window32CallbackFromNext(Cmd, win) {
-    if hwnd := DllCall(RectBase.GetNextWindow, 'ptr', win.Hwnd, 'uint', Cmd, 'ptr') {
-        return hwnd
-    }
 }
 
 Window32CallbackFromParent(win) {

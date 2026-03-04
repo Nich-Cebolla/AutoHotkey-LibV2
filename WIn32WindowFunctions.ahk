@@ -6,7 +6,7 @@
 
 
 AllowSetForegroundWindow(PID?) {
-    if !DllCall('AllowSetForegroundProcess', 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
+    if !DllCall('AllowSetForegroundWindow', 'uint', PID ?? WinGetPid(A_ScriptHwnd), 'int') {
         throw OSError()
     }
 }
@@ -141,15 +141,6 @@ GetDesktopWindow() {
 }
 
 GetDpi(Hwnd) => DllCall('GetDpiForWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'int')
-
-/**
- * @param Cmd -
- * - 2 : Returns a handle to the window below the given window.
- * - 3 : Returns a handle to the window above the given window.
- */
-GetNextWindow(Hwnd, Cmd) {
-    return DllCall('GetNextWindow', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'uint', Cmd, 'ptr')
-}
 
 GetParent(Hwnd) {
     return DllCall('GetParent', 'ptr', IsObject(Hwnd) ? Hwnd.Hwnd : Hwnd, 'ptr')
