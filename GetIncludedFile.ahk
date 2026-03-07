@@ -72,7 +72,7 @@ class GetIncludedFile {
     }
 
     /**
-     * @classdesc - Reads a file and identifies each #include or #IncludeAgain statement. Resolves the path to
+     * @desc - Reads a file and identifies each #include or #IncludeAgain statement. Resolves the path to
      * each included file.
      *
      * Use this to get the file paths associated with all of the #include or #IncludeAgain statements
@@ -107,24 +107,28 @@ class GetIncludedFile {
      * The first item in the {@link GetIncludedFile#Result} array will not have all of the properties
      * because it will be an item created from the path passed to the `Path` parameter.
      *
+     * @class
+     *
      * @param {String} Path - The path to the file to analyze. If a relative path is provided, it
      * is assumed to be relative to the current working directory.
+     *
      * @param {Boolean} [Recursive = true] - If true, recursively processes all included files.
      * If a file is encountered more than once, a {@link GetIncludedFile.File} object is generated
      * for that encounter but the file does not get processed again.
+     *
      * @param {String} [ScriptDir = ""] - The path to the local library as described in the
      * {@link https://www.autohotkey.com/docs/v2/Scripts.htm#lib documentation}. This would be
      * the equivalent of `A_ScriptDir "\lib"` when the script is actually running. Since this function
      * is likely to be used outside of the script's context, the local library must be provided if it
      * is to be included in the search.
+     *
      * @param {String} [AhkExeDir = ""] - The path to the standard library as described in the
      * {@link https://www.autohotkey.com/docs/v2/Scripts.htm#lib documentation}. This would be the
      * equivalent of `A_AhkPath "\lib"` when the script is actually running. Since this function is
      * likely to be used outside of the script's context, the standard library must be provided if it
      * is to be included in the search.
-     * @param {String} [Encoding] - The file encoding to use when reading the files.
      *
-     * @returns {GetIncludedFile}
+     * @param {String} [Encoding] - The file encoding to use when reading the files.
      */
     __New(Path, Recursive := true, ScriptDir := '', AhkExeDir := '', Encoding?) {
         if !FileExist(Path) {
@@ -133,20 +137,20 @@ class GetIncludedFile {
         constructor := GetIncludedFile.File
         ResolveRelativePath := ObjBindMethod(GetIncludedFile, 'ResolveRelativePathRef')
         /**
-         * An array of {@link GetIncludedFile.File} objects, one for each #include or #IncludeAgain
-         * statement encountered during processing and that was associated with a file path for
-         * which `FileExist` returned nonzero. If `FileExist` returned zero, the item was added to
-         * {@link GetIncludedFile#NotFound}.
+         * @desc - An array of {@link GetIncludedFile.File} objects, one for each `#include` or
+         * `#IncludeAgain` statement encountered during processing and that was associated with a
+         * file path for which `FileExist` returned nonzero. If `FileExist` returned zero, the item
+         * was added to {@link GetIncludedFile#NotFound}.
          * @memberof GetIncludedFile
          * @instance
          * @type {GetIncludedFile.File[]}
          */
         this.Result := []
         /**
-         * An array of {@link GetIncludedFile.File} objects, one for each #include or #IncludeAgain
-         * statement encountered during processing and that was associated with a file path for
-         * which `FileExist` returned zero. If `FileExist` returned nonzero, the item was added to
-         * {@link GetIncludedFile#NotFound}.
+         * @desc - An array of {@link GetIncludedFile.File} objects, one for each `#include` or
+         * `#IncludeAgain` statement encountered during processing and that was associated with a
+         * file path for which `FileExist` returned zero. If `FileExist` returned nonzero, the item
+         * was added to {@link GetIncludedFile#NotFound}.
          * @memberof GetIncludedFile
          * @instance
          * @type {GetIncludedFile.File[]}
@@ -297,7 +301,7 @@ class GetIncludedFile {
     }
 
     /**
-     * Counts the lines of code in the project. Consecutive line breaks are replaced with
+     * @desc - Counts the lines of code in the project. Consecutive line breaks are replaced with
      * a single line break before counting. Each individual file is only processed once.
      *
      * @param {Boolean} [CodeLinesOnly = true] - If true, lines that only have a comment are not
@@ -338,14 +342,14 @@ class GetIncludedFile {
 
     GetUnique() {
         if !this.HasOwnProp('Unique') {
-        /**
-         * A map where each key is a full file path and each value is an array of {@link GetIncludedFile.File}
-         * objects, each representing an #include or #IncludeAgain statement that resolved to the
-         * same file path.
-         * @memberof GetIncludedFile
-         * @instance
-         * @type {Map}
-         */
+            /**
+             * @desc - A map where each key is a full file path and each value is an array of
+             * {@link GetIncludedFile.File} objects, each representing an `#include` or `#IncludeAgain`
+             * statement that resolved to the same file path.
+             * @memberof GetIncludedFile
+             * @instance
+             * @type {Map}
+             */
             this.Unique := Map()
             unique := this.Unique
             unique.CaseSense := false
@@ -363,6 +367,10 @@ class GetIncludedFile {
      * Constructs a string of the contents of the file passed to the parameter `Path`, recursively
      * replacing each #include and #IncludeAgain statement with the content from the appropriate file.
      * The created string is set to property {@link GetIncludedFile#Content}.
+     *
+     * @param {String} [Encoding] - The file encoding to use when reading the files.
+     *
+     * @returns {String} - The combined content.
      */
     Build(Encoding?) {
         return this.Content := this.Result[1].Build(Encoding ?? unset)
@@ -382,6 +390,10 @@ class GetIncludedFile {
          * Constructs a string of the file's contents, recursively replacing each #include and
          * #IncludeAgain statement with the content from the appropriate file. The created string
          * is set to property {@link GetIncludedFile.File#Content}.
+         *
+         * @param {String} [Encoding] - The file encoding to use when reading the files.
+         *
+         * @returns {String} - The combined content.
          */
         Build(Encoding?) {
             s := FileRead(this.FullPath, Encoding ?? unset)
