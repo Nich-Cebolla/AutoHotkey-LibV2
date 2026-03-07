@@ -215,6 +215,7 @@ class GetIncludedFile {
                             } else {
                                 ; change the current working directory
                                 cwd := _path
+                                active.WorkingDirectories.Push(match)
                             }
                         } else {
                             lib := match['lib']
@@ -249,11 +250,7 @@ class GetIncludedFile {
                         if RegExMatch(_path, '[ \t]+;.*', &match_comment) {
                             _path := StrReplace(_path, match_comment[0], '')
                         }
-                        while RegExMatch(_path, 'iS)%(A_(?:AhkPath|AppData|AppDataCommon|'
-                        'ComputerName|ComSpec|Desktop|DesktopCommon|IsCompiled|LineFile|MyDocuments|'
-                        'ProgramFiles|Programs|ProgramsCommon|ScriptDir|ScriptFullPath|ScriptName|'
-                        'Space|StartMenu|StartMenuCommon|Startup|StartupCommon|Tab|Temp|UserName|'
-                        'WinDir))%', &match_a) {
+                        while RegExMatch(_path, 'iS)%(A_\w+)%', &match_a) {
                             _path := StrReplace(match_a[0], %match_a[1]%)
                         }
                         SplitPath(_path, , , &ext, , &drive)
@@ -400,10 +397,31 @@ class GetIncludedFile {
             for item in this.Children {
                 s := RegExReplace(s, '(?<=[\r\n]|^)\Q' item.Match[0] '\E(?=[\r\n]|$)', item.Build(Encoding ?? unset), , 1)
             }
+            if this.HasOwnProp('WorkingDirectories') {
+                for match in this.WorkingDirectories {
+                    s := RegExReplace(s, '(?<=[\r\n]|^)\Q' match[0] '\E(?=[\r\n]|$)', '', , 1)
+                }
+            }
             return this.Content := s
         }
         Ignore => this.Match ? this.Match['i'] ? 1 : 0 : 0
         IsAgain => this.Match ? this.Match['again'] ? 1 : 0 : 0
         Path => this.Match ? this.Match['path'] : ''
+        /**
+         * @desc - An array of `RegExMatchInfo` objects where each object is an `#include` or
+         * `#IncludeAgain` statement which had a first parameter of a directory (not a file).
+         * The purpose of this array is to retain a list of these statements so when
+         * {@link GetIncludedFile.File.Prototype.Build} is called, those lines can be removed
+         * from the output string.
+         * @memberof GetIncludedFile
+         * @instance
+         * @type {RegExMatchInfo[]}
+         */
+        WorkingDirectories {
+            Get {
+                this.DefineProp('WorkingDirectories', { Value: [] })
+                return this.WorkingDirectories
+            }
+        }
     }
 }
