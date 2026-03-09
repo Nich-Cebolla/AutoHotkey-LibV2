@@ -1395,14 +1395,17 @@ Window32EnumChildWindows(win, Callback, lParam := 0) {
  * rectangle that contains all child windows.
  */
 Window32GetChildBoundingRect(win) {
-    rects := [Rect(), Rect(), Rect()]
-    DllCall(RectBase.EnumChildWindows, 'ptr', IsObject(win) ? win.Hwnd : win, 'ptr', cb := CallbackCreate(_EnumChildWindowsProc, 'fast',  1), 'int', 0, 'int')
+    rects := [WinRect(, 3), WinRect(, 3), WinRect(, 3)]
+    cb := CallbackCreate(_EnumChildWindowsProc, 'fast')
+    DllCall(g_user32_EnumChildWindows, 'ptr', win, 'ptr', cb, 'ptr', ObjPtr(rects), 'int')
     CallbackFree(cb)
     return rects[1]
 
-    _EnumChildWindowsProc(hwnd) {
-        DllCall(RectBase.GetWindowRect, 'ptr', Hwnd, 'ptr', rects[3], 'int')
-        DllCall(RectBase.UnionRect, 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
+    _EnumChildWindowsProc(hwnd, lparam) {
+        rects := ObjFromPtrAddRef(lparam)
+        rects[3].hwnd := hwnd
+        rects[3]()
+        DllCall(g_user32_UnionRect, 'ptr', rects[2], 'ptr', rects[3], 'ptr', rects[1], 'int')
         rects.Push(rects.RemoveAt(1))
         return 1
     }
