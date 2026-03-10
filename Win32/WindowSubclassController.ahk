@@ -33,7 +33,7 @@ class WindowSubclass {
      *
      * @class
      *
-     * @param {*} SubclassProc - Tthe function that will be used as the subclass procedure, or the
+     * @param {*} SubclassProc - The function that will be used as the subclass procedure, or the
      * pointer to the function.
      *
      * If `SubclassProc` is a function object, it is passed to
@@ -531,7 +531,7 @@ class WindowSubclass_CallbackCollection extends Array {
 class WindowSubclass_Nmhdr {
     static __New() {
         this.DeleteProp('__New')
-        this.Prototype.Size := A_PtrSize * 2 + 4
+        this.Prototype.Size := A_PtrSize * 3 ; +4 padding on x64
     }
     /**
      * @desc - A wrapper around the
