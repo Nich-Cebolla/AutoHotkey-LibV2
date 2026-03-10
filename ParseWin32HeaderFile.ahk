@@ -510,6 +510,7 @@ class Win32StructGetMemberSize {
           , 'POINTER_FLAGS', '4'
           , 'POINTER_INPUT_TYPE', '4'
           , 'POINTS', '4'
+          , 'PUINT', 'A_PtrSize'
           , 'PVOID', 'A_PtrSize'
           , 'PWINDOWPOS', 'A_PtrSize'
           , 'SHELLVIEWID', 'A_PtrSize'
