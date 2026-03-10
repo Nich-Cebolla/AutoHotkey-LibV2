@@ -570,7 +570,7 @@ class WindowSubclass_Nmhdr {
  * @param {Integer} dwRefData - The reference data provided to `SetWindowSubclass`.
  */
 WindowSubclassController_SubclassProc(HwndSubclass, uMsg, wParam, lParam, uIdSubclass, dwRefData) {
-    Critical('On')
+    Critical(-1)
     subclassController := ObjFromPtrAddRef(dwRefData)
     switch uMsg {
     case 0x0111: ; WM_COMMAND
