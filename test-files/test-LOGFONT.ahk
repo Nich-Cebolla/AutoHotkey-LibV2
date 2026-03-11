@@ -1,4 +1,5 @@
 ﻿#Include ..\structs\LOGFONT.ahk
+#SingleInstance force
 
 main_width := 1100
 
@@ -97,12 +98,11 @@ slider := g2.Add('Slider', 'x' sliderx ' y' slidery ' w' (width - g2.MarginX * 3
 slider.OnEvent('Change', HChangeSliderEscapement)
 lvwidth := main_width - g2.MarginX * 2
 columns := ['Name']
-for proto in [TextMetric.Prototype, NewTextMetric.Prototype] {
-    for prop in proto.OwnProps() {
-        desc := proto.GetOwnPropDesc(prop)
-        if HasProp(desc, 'Get') && !InStr(prop, 'Ptr') {
-            columns.Push(prop)
-        }
+proto := NewTextMetric.Prototype
+for prop in proto.OwnProps() {
+    desc := proto.GetOwnPropDesc(prop)
+    if HasProp(desc, 'Get') && !InStr(prop, 'Ptr') {
+        columns.Push(prop)
     }
 }
 slider.GetPos(, &sliy, , &slih)
@@ -131,10 +131,12 @@ HClickButtonListFonts(Ctrl, *) {
     g := Ctrl.Gui
     lv := g['LvFonts']
     lv.Delete()
+    charSet := g.InputControlGroup.Get('Charset').Edit.Text
+    faceNames := g.InputControlGroup.Get('Face names').Edit.Text
     Logfont.EnumFonts(
         EnumFontFamExProc
-      , g.InputControlGroup.Get('Face names').Edit.Text || unset
-      , g.InputControlGroup.Get('Charset').Edit.Text || unset
+      , StrLen(faceNames) ? faceNames : unset
+      , StrLen(charSet) ? charSet : unset
       , ObjPtr(lv))
     loop columns.Length {
         lv.ModifyCol(A_Index, 'AutoHdr')
@@ -143,18 +145,19 @@ HClickButtonListFonts(Ctrl, *) {
 EnumFontFamExProc(lpelfe, lpntme, FontType, lParam) {
     lv := ObjFromPtrAddRef(lParam)
     params := EnumFontFamExProcParams(lpelfe, lpntme, FontType)
-    items := [params.FullName]
+    items := [ params.FullName ]
     columns := lv.Columns
     items.Capacity := columns.Length
     if params.IsTrueType {
-        ntm := params.TextMetric.TextMetric
-        loop columns.Length - 1 {
-            items.Push(ntm.%columns[A_Index + 1]%)
-        }
+        tm := params.TextMetric.TextMetric
     } else {
         tm := params.TextMetric
-        loop columns.Length - 5 {
+    }
+    loop columns.Length - 1 {
+        if HasProp(tm, columns[A_Index + 1]) {
             items.Push(tm.%columns[A_Index + 1]%)
+        } else {
+            items.Push('')
         }
     }
     lv.Add(, items*)
