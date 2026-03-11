@@ -19,7 +19,7 @@
 class Logfont {
     static __New() {
         this.DeleteProp('__New')
-        global WM_GETFONT := 0x0031, WM_SETFONT := 0x0030, LF_DEFAULT_ENCODING := 'UTF-16'
+        Logfont_SetConstants()
         Proto := this.Prototype
         Proto.Encoding := LF_DEFAULT_ENCODING
         /**
@@ -634,8 +634,16 @@ class EnumFontFamExProcParams {
          * A {@link Logfont} object.
          * @memberof EnumFontFamExProcParams
          * @instance
+         * @type {Logfont}
          */
         this.Logfont := Logfont.FromPtr(lpelfe)
+        /**
+         * A {@link EnumLogFontExW} object.
+         * @memberof EnumFontFamExProcParams
+         * @instance
+         * @type {EnumLogFontExW}
+         */
+        this.LogFontEx := EnumLogFontExW(lpelfe)
         /**
          * The full name of the font, e.g. "Arial Bold".
          * @memberof EnumFontFamExProcParams
@@ -675,275 +683,200 @@ class EnumFontFamExProcParams {
     IsTrueType => this.FontType & 0x0004
 }
 
+class EnumLogFontExW {
+    static __New() {
+        this.DeleteProp('__New')
+        Logfont_SetConstants()
+        proto := this.Prototype
+        proto.Size :=
+        4 +    ; LONG  lfHeight                      0
+        4 +    ; LONG  lfWidth                       4
+        4 +    ; LONG  lfEscapement                  8
+        4 +    ; LONG  lfOrientation                 12
+        4 +    ; LONG  lfWeight                      16
+        1 +    ; BYTE  lfItalic                      20
+        1 +    ; BYTE  lfUnderline                   21
+        1 +    ; BYTE  lfStrikeOut                   22
+        1 +    ; BYTE  lfCharSet                     23
+        1 +    ; BYTE  lfOutPrecision                24
+        1 +    ; BYTE  lfClipPrecision               25
+        1 +    ; BYTE  lfQuality                     26
+        1 +    ; BYTE  lfPitchAndFamily              27
+        64 +   ; WCHAR lfFaceName[LF_FACESIZE]       28
+        128 +  ; WCHAR elfFullName[LF_FULLFACESIZE]  92
+        64 +   ; WCHAR elfStyle[LF_FACESIZE]         220
+        64     ; WCHAR elfScript[LF_FACESIZE]        284
+                                                   ; 348
+    }
+    /**
+     * @desc - A wrapper around the
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-enumlogfontexw EnumLogFontExW}
+     * structure.
+     */
+    __New(ptr) {
+        this.ptr := ptr
+    }
+    CharSet => NumGet(this, 23, 'uchar')
+    ClipPrecision => NumGet(this, 25, 'uchar')
+    Escapement => NumGet(this, 8, 'int')
+    FaceName => StrGet(this.ptr + 28, 32, LF_DEFAULT_ENCODING)
+    Family => NumGet(this, 27, 'uchar') & 0xF0
+    FullName => StrGet(this.ptr + 92, 64, LF_DEFAULT_ENCODING)
+    Height => NumGet(this, 0, 'int')
+    Italic => NumGet(this, 20, 'uchar')
+    Orientation => NumGet(this, 12, 'int')
+    OutPrecision => NumGet(this, 24, 'uchar')
+    Pitch => NumGet(this, 27, 'uchar') & 0x0F
+    Quality => NumGet(this, 26, 'uchar')
+    Script => StrGet(this.ptr + 284, 32, LF_DEFAULT_ENCODING)
+    StrikeOut => NumGet(this, 22, 'uchar')
+    Style => StrGet(this.ptr + 220, 32, LF_DEFAULT_ENCODING)
+    Underline => NumGet(this, 21, 'uchar')
+    Weight => NumGet(this, 16, 'int')
+    Width => NumGet(this, 4, 'int')
+}
 class TextMetric {
     static __New() {
         this.DeleteProp('__New')
-        /**
-         * The structure's size.
-         * @memberof TextMetric
-         * @instance
-         */
-        this.Prototype.Size :=
-        4 +    ; LONG tmHeight              0
-        4 +    ; LONG tmAscent              4
-        4 +    ; LONG tmDescent             8
-        4 +    ; LONG tmInternalLeading     12
-        4 +    ; LONG tmExternalLeading     16
-        4 +    ; LONG tmAveCharWidth        20
-        4 +    ; LONG tmMaxCharWidth        24
-        4 +    ; LONG tmWeight              28
-        4 +    ; LONG tmOverhang            32
-        4 +    ; LONG tmDigitizedAspectX    36
-        4 +    ; LONG tmDigitizedAspectY    40
-        2 +    ; WCHAR tmFirstChar          44
-        2 +    ; WCHAR tmLastChar           46
-        2 +    ; WCHAR tmDefaultChar        48
-        2 +    ; WCHAR tmBreakChar          50
-        1 +    ; BYTE tmItalic              52
-        1 +    ; BYTE tmUnderlined          53
-        1 +    ; BYTE tmStruckOut           54
-        1 +    ; BYTE tmPitchAndFamily      55
-        1 +    ; BYTE tmCharSet             56
-        3      ; alignment padding
-        this.Prototype.DefineProp('Clone', { Call: LF_CloneBuffer })
+        Logfont_SetConstants()
+        proto := this.Prototype
+        proto.size :=
+        ; SizeType       Symbol                Offset   Padding
+        4 +   ; LONG     tmHeight              0
+        4 +       ; LONG     tmAscent              4
+        4 +       ; LONG     tmDescent             8
+        4 +       ; LONG     tmInternalLeading     12
+        4 +       ; LONG     tmExternalLeading     16
+        4 +       ; LONG     tmAveCharWidth        20
+        4 +       ; LONG     tmMaxCharWidth        24
+        4 +       ; LONG     tmWeight              28
+        4 +       ; LONG     tmOverhang            32
+        4 +       ; LONG     tmDigitizedAspectX    36
+        4 +       ; LONG     tmDigitizedAspectY    40
+        2 +       ; WCHAR    tmFirstChar           44
+        2 +       ; WCHAR    tmLastChar            46
+        2 +       ; WCHAR    tmDefaultChar         48
+        2 +       ; WCHAR    tmBreakChar           50
+        1 +       ; BYTE     tmItalic              52
+        1 +       ; BYTE     tmUnderlined          53
+        1 +       ; BYTE     tmStruckOut           54
+        1 +       ; BYTE     tmPitchAndFamily      55
+        A_PtrSize ; BYTE     tmCharSet             56    + 4 on x64
+        proto.offset_Height            := 0
+        proto.offset_Ascent            := 4
+        proto.offset_Descent           := 8
+        proto.offset_InternalLeading   := 12
+        proto.offset_ExternalLeading   := 16
+        proto.offset_AveCharWidth      := 20
+        proto.offset_MaxCharWidth      := 24
+        proto.offset_Weight            := 28
+        proto.offset_Overhang          := 32
+        proto.offset_DigitizedAspectX  := 36
+        proto.offset_DigitizedAspectY  := 40
+        proto.offset_FirstChar         := 44
+        proto.offset_LastChar          := 46
+        proto.offset_DefaultChar       := 48
+        proto.offset_BreakChar         := 50
+        proto.offset_Italic            := 52
+        proto.offset_Underlined        := 53
+        proto.offset_StruckOut         := 54
+        proto.offset_PitchAndFamily    := 55
+        proto.offset_CharSet           := 56
+        proto.DefineProp('Clone', { Call: LF_CloneBuffer })
     }
     /**
-     * @description - Maps a pointer received by a Windows API function to object properties.
-     *
-     * Do not cache a reference to this object unless you are certain that the AHK process is
-     * managing the memory. Typically the system will be managing the memory. If you need
-     * access to the values outside of the scope which this object is constructed, use
-     * {@link TextMetric.Prototype.Clone} to make a copy.
+     * @description - A wrapper around the
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-textmetricw TEXTMETRICW}
+     * structure.
      *
      * @class
      * @param {Integer} Ptr - The pointer to the structure.
      */
-    __New(Ptr) {
-        /**
-         * A faux buffer object.
-         * @memberof TextMetric
-         * @instance
-         */
-        this.Buffer := { Ptr: Ptr, Size: this.Size }
+    __New(ptr) {
+        this.ptr := ptr
     }
-    /**
-     * @description - Copies the bytes from this `TextMetric` object's buffer to another buffer.
-     * @param {TextMetric|Buffer|Object} [Buf] - If set, one of the following three kinds of objects:
-     * - A `TextMetric` object.
-     * - A `Buffer` object.
-     * - An object with properties { Ptr, Size }.
-     *
-     * The size of the buffer must be at least `TextMetric.Prototype.Size + Offset`.
-     *
-     * If unset, `TextMetric.Prototype.Clone` will create a buffer of adequate size.
-     * @param {Integer} [Offset = 0] - The byte offset from the start of `Buf` into which the TEXTMETRIC
-     * structure will be copied. If `Buf` is unset, then the TEXTMETRIC structure will begin at
-     * byte `Offset` within the buffer created by `TextMetric.Prototype.Clone`.
-     * @param {Boolean} [MakeInstance = true] - If true, then an instance of `TextMetric` will be
-     * created and returned by the function. If false, then only the buffer object will be returned;
-     * the object will not have any of the properties or methods associated with the `TextMetric` class.
-     * @returns {Buffer|TextMetric} - Depending on the value of `MakeInstance`, the `Buffer` object
-     * or the `TextMetric` object.
-     * @throws {Error} - The input buffer's size is insufficient.
-     */
-    Clone(Buf?, Offset := 0, MakeInstance := true) {
-        ; This is overridden
-    }
-    /**
-     * Gets the height (ascent + descent) of characters.
-     * @memberof TextMetric
-     * @instance
-     */
-    Height => NumGet(this, 0, 'int')
-    /**
-     * Gets the ascent (units above the base line) of characters.
-     * @memberof TextMetric
-     * @instance
-     */
-    Ascent => NumGet(this, 4, 'int')
-    /**
-     * Gets the descent (units below the base line) of characters.
-     * @memberof TextMetric
-     * @instance
-     */
-    Descent => NumGet(this, 8, 'int')
-    /**
-     * Gets the The amount of leading (space) inside the bounds set by the tmHeight member. Accent
-     * marks and other diacritical characters may occur in this area. The designer may set this
-     * member to zero.
-     * @memberof TextMetric
-     * @instance
-     */
-    InternalLeading => NumGet(this, 12, 'int')
-    /**
-     * Gets the The amount of extra leading (space) that the application adds between rows. Since
-     * this area is outside the font, it contains no marks and is not altered by text output calls
-     * in either OPAQUE or TRANSPARENT mode. The designer may set this member to zero.
-     * @memberof TextMetric
-     * @instance
-     */
-    ExternalLeading => NumGet(this, 16, 'int')
-    /**
-     * Gets the average width of characters in the font (generally defined as the width of the letter
-     * x). This value does not include overhang required for bold or italic characters.
-     * @memberof TextMetric
-     * @instance
-     */
-    AveCharWidth => NumGet(this, 20, 'int')
-    /**
-     * Gets the width of the widest character in the font.
-     * @memberof TextMetric
-     * @instance
-     */
-    MaxCharWidth => NumGet(this, 24, 'int')
-    /**
-     * Gets the weight.
-     * @memberof TextMetric
-     * @instance
-     */
-    Weight => NumGet(this, 28, 'int')
-    /**
-     * Gets the extra width per string that may be added to some synthesized fonts. When synthesizing
-     * some attributes, such as bold or italic, graphics device interface (GDI) or a device may have
-     * to add width to a string on both a per-character and per-string basis. For example, GDI makes
-     * a string bold by expanding the spacing of each character and overstriking by an offset value;
-     * it italicizes a font by shearing the string. In either case, there is an overhang past the
-     * basic string. For bold strings, the overhang is the distance by which the overstrike is offset.
-     * For italic strings, the overhang is the amount the top of the font is sheared past the bottom
-     * of the font
-     *
-     * The tmOverhang member enables the application to determine how much of the character width
-     * returned by a GetTextExtentPoint32 function call on a single character is the actual character
-     * width and how much is the per-string extra width. The actual width is the extent minus the
-     * overhang.
-     * @memberof TextMetric
-     * @instance
-     */
-    Overhang => NumGet(this, 32, 'int')
-    /**
-     * Gets the horizontal aspect of the device for which the font was designed.
-     * @memberof TextMetric
-     * @instance
-     */
-    DigitizedAspectX => NumGet(this, 36, 'int')
-    /**
-     * Gets the vertical aspect of the device for which the font was designed. The ratio of the
-     * tmDigitizedAspectX and tmDigitizedAspectY members is the aspect ratio of the device for which
-     * the font was designed.
-     * @memberof TextMetric
-     * @instance
-     */
-    DigitizedAspectY => NumGet(this, 40, 'int')
-    /**
-     * Gets the value of the first character defined in the font.
-     * @memberof TextMetric
-     * @instance
-     */
-    FirstChar => NumGet(this, 44, 'uchar')
-    /**
-     * Gets the value of the last character defined in the font.
-     * @memberof TextMetric
-     * @instance
-     */
-    LastChar => NumGet(this, 46, 'uchar')
-    /**
-     * Gets the value of the character to be substituted for characters that are not in the font.
-     * @memberof TextMetric
-     * @instance
-     */
-    DefaultChar => NumGet(this, 48, 'uchar')
-    /**
-     * Gets the value of the character to be used to define word breaks for text justification.
-     * @memberof TextMetric
-     * @instance
-     */
-    BreakChar => NumGet(this, 50, 'uchar')
-    IsDevice => (NumGet(this, 55, 'uchar') >> 3) & 1
-    IsRaster => !((NumGet(this, 55, 'uchar') >> 1) & 1) && !((NumGet(this, 55, 'uchar') >> 2) & 1)
-    IsVector => ((NumGet(this, 55, 'uchar') >> 1) & 1) && !((NumGet(this, 55, 'uchar') >> 2) & 1)
-    /**
-     * Gets the italic flag (nonzero is italic).
-     * @memberof TextMetric
-     * @instance
-     */
-    Italic => NumGet(this, 52, 'uchar')
-    /**
-     * Gets the underlined flag (nonzero is underlined).
-     * @memberof TextMetric
-     * @instance
-     */
-    Underlined => NumGet(this, 53, 'uchar')
-    /**
-     * Gets the strikeout flag (nonzero is struckout).
-     * @memberof TextMetric
-     * @instance
-     */
-    StruckOut => NumGet(this, 54, 'uchar')
-    /**
-     * Gets the family.
-     * @memberof TextMetric
-     * @instance
-     */
-    Family => NumGet(this, 55, 'uchar') & 0xF0
-    /**
-     * Returns a boolean indicating if the font is variable pitch.
-     * @memberof TextMetric
-     * @instance
-     */
-    IsVariablePitch => NumGet(this, 55, 'uchar') & 1
-    /**
-     * Gets the tmPitchAndFamily member. The pitch and family of the selected font. The low-order
-     * bit (bit 0) specifies the pitch of the font. If it is 1, the font is variable pitch (or
-     * proportional). If it is 0, the font is fixed pitch (or monospace). Bits 1 and 2 specify the
-     * font type. If both bits are 0, the font is a raster font; if bit 1 is 1 and bit 2 is 0, the
-     * font is a vector font; if bit 1 is 0 and bit 2 is set, or if both bits are 1, the font is
-     * some other type. Bit 3 is 1 if the font is a device font; otherwise, it is 0.
-     *
-     * The four high-order bits designate the font family. The tmPitchAndFamily member can be
-     * combined with the hexadecimal value 0xF0 by using the bitwise AND operator and can then be
-     * compared with the font family names for an identical match. For more information about the
-     * font families, see LOGFONT.
-     *
-     * Also see {@link TextMetric#IsDevice}, {@link TextMetric#IsRaster}, {@link TextMetric#IsVector},
-     * {@link TextMetric#Family}, {@link TextMetric#IsVariablePitch}.
-     */
-    PitchAndFamily => NumGet(this, 55, 'uchar')
-    /**
-     * Gets the character set of the font.
-     * @memberof TextMetric
-     * @instance
-     */
-    CharSet => NumGet(this, 56, 'uchar')
-    Ptr => this.Buffer.Ptr
+    Ascent => NumGet(this.ptr, this.offset_Ascent, 'uint')
+    AveCharWidth => NumGet(this.ptr, this.offset_AveCharWidth, 'uint')
+    BreakChar => NumGet(this.ptr, this.offset_BreakChar, 'ushort')
+    CharSet => NumGet(this.ptr, this.offset_CharSet, 'uchar')
+    DefaultChar => NumGet(this.ptr, this.offset_DefaultChar, 'ushort')
+    Descent => NumGet(this.ptr, this.offset_Descent, 'uint')
+    DigitizedAspectX => NumGet(this.ptr, this.offset_DigitizedAspectX, 'uint')
+    DigitizedAspectY => NumGet(this.ptr, this.offset_DigitizedAspectY, 'uint')
+    ExternalLeading => NumGet(this.ptr, this.offset_ExternalLeading, 'uint')
+    FirstChar => NumGet(this.ptr, this.offset_FirstChar, 'ushort')
+    Height => NumGet(this.ptr, this.offset_Height, 'uint')
+    InternalLeading => NumGet(this.ptr, this.offset_InternalLeading, 'uint')
+    IsDevice => (NumGet(this, this.offset_PitchAndFamily, 'uchar') >> 3) & 1
+    IsRaster => !((NumGet(this, this.offset_PitchAndFamily, 'uchar') >> 1) & 1) && !((NumGet(this, this.offset_PitchAndFamily, 'uchar') >> 2) & 1)
+    IsVector => ((NumGet(this, this.offset_PitchAndFamily, 'uchar') >> 1) & 1) && !((NumGet(this, this.offset_PitchAndFamily, 'uchar') >> 2) & 1)
+    Italic => NumGet(this.ptr, this.offset_Italic, 'uchar')
+    LastChar => NumGet(this.ptr, this.offset_LastChar, 'ushort')
+    MaxCharWidth => NumGet(this.ptr, this.offset_MaxCharWidth, 'uint')
+    Overhang => NumGet(this.ptr, this.offset_Overhang, 'uint')
+    PitchAndFamily => NumGet(this.ptr, this.offset_PitchAndFamily, 'uchar')
+    StruckOut => NumGet(this.ptr, this.offset_StruckOut, 'uchar')
+    Underlined => NumGet(this.ptr, this.offset_Underlined, 'uchar')
+    Weight => NumGet(this.ptr, this.offset_Weight, 'uint')
 }
-
-class NewTextMetric extends TextMetric {
+class NewTextMetric {
     static __New() {
         this.DeleteProp('__New')
-        this.Prototype.Size := this.Prototype.Base.Size +
-        4 +    ; DWORD ntmFlags         60
-        4 +    ; UINT  ntmSizeEM        64
-        4 +    ; UINT  ntmCellHeight    68
-        4      ; UINT  ntmAvgWidth      72
-        this.Prototype.DefineProp('Clone', { Call: LF_CloneBuffer })
+        proto := this.Prototype
+        proto.size :=
+        ; Size  Type       Symbol                Offset         Padding
+        4 +             ; LONG     tmHeight              0
+        4 +             ; LONG     tmAscent              4
+        4 +             ; LONG     tmDescent             8
+        4 +             ; LONG     tmInternalLeading     12
+        4 +             ; LONG     tmExternalLeading     16
+        4 +             ; LONG     tmAveCharWidth        20
+        4 +             ; LONG     tmMaxCharWidth        24
+        4 +             ; LONG     tmWeight              28
+        4 +             ; LONG     tmOverhang            32
+        4 +             ; LONG     tmDigitizedAspectX    36
+        4 +             ; LONG     tmDigitizedAspectY    40
+        2 +             ; WCHAR    tmFirstChar           44
+        2 +             ; WCHAR    tmLastChar            46
+        2 +             ; WCHAR    tmDefaultChar         48
+        2 +             ; WCHAR    tmBreakChar           50
+        1 +             ; BYTE     tmItalic              52
+        1 +             ; BYTE     tmUnderlined          53
+        1 +             ; BYTE     tmStruckOut           54
+        1 +             ; BYTE     tmPitchAndFamily      55
+        4 +             ; BYTE     tmCharSet             56       ; + 3
+        4 +             ; DWORD    ntmFlags              60
+        4 +             ; UINT     ntmSizeEM             64
+        4 +             ; UINT     ntmCellHeight         68
+        4               ; UINT     ntmAvgWidth           72
+        proto.offset_Height            := 0
+        proto.offset_Ascent            := 4
+        proto.offset_Descent           := 8
+        proto.offset_InternalLeading   := 12
+        proto.offset_ExternalLeading   := 16
+        proto.offset_AveCharWidth      := 20
+        proto.offset_MaxCharWidth      := 24
+        proto.offset_Weight            := 28
+        proto.offset_Overhang          := 32
+        proto.offset_DigitizedAspectX  := 36
+        proto.offset_DigitizedAspectY  := 40
+        proto.offset_FirstChar         := 44
+        proto.offset_LastChar          := 46
+        proto.offset_DefaultChar       := 48
+        proto.offset_BreakChar         := 50
+        proto.offset_Italic            := 52
+        proto.offset_Underlined        := 53
+        proto.offset_StruckOut         := 54
+        proto.offset_PitchAndFamily    := 55
+        proto.offset_CharSet           := 56
+        proto.offset_Flags            := 60
+        proto.offset_SizeEM           := 64
+        proto.offset_CellHeight       := 68
+        proto.offset_AvgWidth         := 72
+        proto.DefineProp('Clone', { Call: LF_CloneBuffer })
     }
-    /**
-     * @description - Maps a pointer received by a Windows API function to object properties.
-     *
-     * Do not cache a reference to this object unless you are certain that the AHK process is
-     * managing the memory. Typically the system will be managing the memory. If you need
-     * access to the values outside of the scope which this object is constructed, use
-     * {@link NewTextMetric.Prototype.Clone} to make a copy.
-     *
-     * @class
-     * @param {Integer} Ptr - The pointer to the structure.
-     */
-    __New(Ptr) {
-        /**
-         * @memberof NewTextMetric
-         * @instance
-         */
-        this.Buffer := { Ptr: Ptr, Size: this.Size }
+    __New(ptr) {
+        this.ptr := ptr
     }
     /**
      * @description - Copies the bytes from this `NewTextMetric` object's buffer to another buffer.
@@ -978,46 +911,30 @@ class NewTextMetric extends TextMetric {
     QueryFontFlag(Value) {
         return this.Flags & Value
     }
-
-    /**
-     * Specifies whether the font is italic, underscored, outlined, bold, and so forth. May be any
-     * reasonable combination of the following values:
-     * - 0	- NTM_ITALIC          : italic
-     * - 5	- NTM_BOLD            : bold
-     * - 8	- NTM_REGULAR         : regular
-     * - 16	- NTM_NONNEGATIVE_AC  : no glyph in a font at any size has a negative A or C space.
-     * - 17	- NTM_PS_OPENTYPE     : PostScript OpenType font
-     * - 18	- NTM_TT_OPENTYPE     : TrueType OpenType font
-     * - 19	- NTM_MULTIPLEMASTER  : multiple master font
-     * - 20	- NTM_TYPE1           : Type 1 font
-     * - 21	- NTM_DSIG            : font with a digital signature. This allows traceability and ensures
-     *   that the font has been tested and is not corrupted
-     * @memberof NewTextMetric
-     * @instance
-     */
-    Flags => NumGet(this, 60, 'uint')
-    /**
-     * Gets the size of the em square for the font. This value is in notional units (that is, the
-     * units for which the font was designed).
-     * @memberof NewTextMetric
-     * @instance
-     */
-    SizeEM => NumGet(this, 64, 'uint')
-    /**
-     * Gets the height, in notional units, of the font. This value should be compared with the value
-     * of the ntmSizeEM member.
-     * @memberof NewTextMetric
-     * @instance
-     */
-    CellHeight => NumGet(this, 68, 'uint')
-    /**
-     * Gets the average width of characters in the font, in notional units. This value should be
-     * compared with the value of the ntmSizeEM member.
-     * @memberof NewTextMetric
-     * @instance
-     */
-    AvgWidth => NumGet(this, 72, 'uint')
-    Ptr => this.Buffer.Ptr
+    Ascent => NumGet(this.ptr, this.offset_Ascent, 'uint')
+    AveCharWidth => NumGet(this.ptr, this.offset_AveCharWidth, 'uint')
+    AvgWidth => NumGet(this.ptr, this.offset_AvgWidth, 'uint')
+    BreakChar => NumGet(this.ptr, this.offset_BreakChar, 'ushort')
+    CellHeight => NumGet(this.ptr, this.offset_CellHeight, 'uint')
+    CharSet => NumGet(this.ptr, this.offset_CharSet, 'uchar')
+    DefaultChar => NumGet(this.ptr, this.offset_DefaultChar, 'ushort')
+    Descent => NumGet(this.ptr, this.offset_Descent, 'uint')
+    DigitizedAspectX => NumGet(this.ptr, this.offset_DigitizedAspectX, 'uint')
+    DigitizedAspectY => NumGet(this.ptr, this.offset_DigitizedAspectY, 'uint')
+    ExternalLeading => NumGet(this.ptr, this.offset_ExternalLeading, 'uint')
+    FirstChar => NumGet(this.ptr, this.offset_FirstChar, 'ushort')
+    Flags => NumGet(this.ptr, this.offset_Flags, 'uint')
+    Height => NumGet(this.ptr, this.offset_Height, 'uint')
+    InternalLeading => NumGet(this.ptr, this.offset_InternalLeading, 'uint')
+    Italic => NumGet(this.ptr, this.offset_Italic, 'uchar')
+    LastChar => NumGet(this.ptr, this.offset_LastChar, 'ushort')
+    MaxCharWidth => NumGet(this.ptr, this.offset_MaxCharWidth, 'uint')
+    Overhang => NumGet(this.ptr, this.offset_Overhang, 'uint')
+    PitchAndFamily => NumGet(this.ptr, this.offset_PitchAndFamily, 'uchar')
+    SizeEM => NumGet(this.ptr, this.offset_SizeEM, 'uint')
+    StruckOut => NumGet(this.ptr, this.offset_StruckOut, 'uchar')
+    Underlined => NumGet(this.ptr, this.offset_Underlined, 'uchar')
+    Weight => NumGet(this.ptr, this.offset_Weight, 'uint')
 }
 
 /**
@@ -1048,7 +965,7 @@ class NewTextMetricEx {
          * @memberof NewTextMetricEx
          * @instance
          */
-        this.Buffer := { Ptr: Ptr, Size: this.Size }
+        this.ptr := ptr
         /**
          * A NEWTEXTMETRIC structure mapped to an AHK `NewTextMetric` object.
          * @memberof NewTextMetricEx
@@ -1110,8 +1027,6 @@ class NewTextMetricEx {
         }
         return Buf
     }
-
-    Ptr => this.Buffer.Ptr
 }
 
 class FontSignature {
@@ -1447,12 +1362,7 @@ class FontSignature {
      * @param {Integer} Ptr - The pointer to the structure.
      */
     __New(Ptr) {
-        /**
-         * A faux buffer object.
-         * @memberof FontSignature
-         * @instance
-         */
-        this.Buffer := { Ptr: Ptr, Size: this.Size }
+        this.ptr := ptr
     }
     /**
      * @description - Copies the bytes from this `FontSignature` object's buffer to another buffer.
@@ -1565,7 +1475,6 @@ class FontSignature {
             }
         }
     }
-    Ptr => this.Buffer.Ptr
 }
 
 LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
@@ -1611,125 +1520,15 @@ LF_CloneBuffer(Self, Buf?, Offset := 0, MakeInstance := true) {
     return Buf
 }
 
+Logfont_SetConstants(force := false) {
+    global
+    if IsSet(Logfont_constants_set) && !force {
+        return
+    }
 
-/*
+    WM_GETFONT := 0x0031
+    WM_SETFONT := 0x0030
+    LF_DEFAULT_ENCODING := 'UTF-16'
 
-Static values related to fonts:
-
-#define OUT_DEFAULT_PRECIS          0
-#define OUT_STRING_PRECIS           1
-#define OUT_CHARACTER_PRECIS        2
-#define OUT_STROKE_PRECIS           3
-#define OUT_TT_PRECIS               4
-#define OUT_DEVICE_PRECIS           5
-#define OUT_RASTER_PRECIS           6
-#define OUT_TT_ONLY_PRECIS          7
-#define OUT_OUTLINE_PRECIS          8
-#define OUT_SCREEN_OUTLINE_PRECIS   9
-#define OUT_PS_ONLY_PRECIS          10
-
-#define CLIP_DEFAULT_PRECIS     0
-#define CLIP_CHARACTER_PRECIS   1
-#define CLIP_STROKE_PRECIS      2
-#define CLIP_MASK               0xf
-#define CLIP_LH_ANGLES          (1<<4)
-#define CLIP_TT_ALWAYS          (2<<4)
-#if (_WIN32_WINNT >= _WIN32_WINNT_LONGHORN)
-#define CLIP_DFA_DISABLE        (4<<4)
-#endif // (_WIN32_WINNT >= _WIN32_WINNT_LONGHORN)
-#define CLIP_EMBEDDED           (8<<4)
-
-#define DEFAULT_QUALITY         0
-#define DRAFT_QUALITY           1
-#define PROOF_QUALITY           2
-#if(WINVER >= 0x0400)
-#define NONANTIALIASED_QUALITY  3
-#define ANTIALIASED_QUALITY     4
-#endif // WINVER >= 0x0400
-
-#if (_WIN32_WINNT >= _WIN32_WINNT_WINXP)
-#define CLEARTYPE_QUALITY       5
-#define CLEARTYPE_NATURAL_QUALITY       6
-#endif
-
-#define DEFAULT_PITCH           0
-#define FIXED_PITCH             1
-#define VARIABLE_PITCH          2
-#if(WINVER >= 0x0400)
-#define MONO_FONT               8
-#endif // WINVER >= 0x0400
-
-#define ANSI_CHARSET            0
-#define DEFAULT_CHARSET         1
-#define SYMBOL_CHARSET          2
-#define SHIFTJIS_CHARSET        128
-#define HANGEUL_CHARSET         129
-#define HANGUL_CHARSET          129
-#define GB2312_CHARSET          134
-#define CHINESEBIG5_CHARSET     136
-#define OEM_CHARSET             255
-#if(WINVER >= 0x0400)
-#define JOHAB_CHARSET           130
-#define HEBREW_CHARSET          177
-#define ARABIC_CHARSET          178
-#define GREEK_CHARSET           161
-#define TURKISH_CHARSET         162
-#define VIETNAMESE_CHARSET      163
-#define THAI_CHARSET            222
-#define EASTEUROPE_CHARSET      238
-#define RUSSIAN_CHARSET         204
-
-#define MAC_CHARSET             77
-#define BALTIC_CHARSET          186
-
-#define FS_LATIN1               0x00000001L
-#define FS_LATIN2               0x00000002L
-#define FS_CYRILLIC             0x00000004L
-#define FS_GREEK                0x00000008L
-#define FS_TURKISH              0x00000010L
-#define FS_HEBREW               0x00000020L
-#define FS_ARABIC               0x00000040L
-#define FS_BALTIC               0x00000080L
-#define FS_VIETNAMESE           0x00000100L
-#define FS_THAI                 0x00010000L
-#define FS_JISJAPAN             0x00020000L
-#define FS_CHINESESIMP          0x00040000L
-#define FS_WANSUNG              0x00080000L
-#define FS_CHINESETRAD          0x00100000L
-#define FS_JOHAB                0x00200000L
-#define FS_SYMBOL               0x80000000L
-#endif // WINVER >= 0x0400
-
-// Font Families
-#define FF_DONTCARE         0x00 (0)    /* Don't care or don't know.
-#define FF_ROMAN            0x10 (16)   /* Variable stroke width, serifed.
-                                        /* Times Roman, Century Schoolbook, etc.
-#define FF_SWISS            0x20 (32)   /* Variable stroke width, sans-serifed.
-                                        /* Helvetica, Swiss, etc.
-#define FF_MODERN           0x30 (48)   /* Constant stroke width, serifed or sans-serifed.
-                                        /* Pica, Elite, Courier, etc.
-#define FF_SCRIPT           0x40 (64)   /* Cursive, etc.
-#define FF_DECORATIVE       0x50 (80)   /* Old English, etc.
-
-/* Font Weights
-#define FW_DONTCARE         0
-#define FW_THIN             100
-#define FW_EXTRALIGHT       200
-#define FW_LIGHT            300
-#define FW_NORMAL           400
-#define FW_MEDIUM           500
-#define FW_SEMIBOLD         600
-#define FW_BOLD             700
-#define FW_EXTRABOLD        800
-#define FW_HEAVY            900
-
-#define FW_ULTRALIGHT       FW_EXTRALIGHT
-#define FW_REGULAR          FW_NORMAL
-#define FW_DEMIBOLD         FW_SEMIBOLD
-#define FW_ULTRABOLD        FW_EXTRABOLD
-#define FW_BLACK            FW_HEAVY
-
-; https://learn.microsoft.com/en-us/previous-versions/dd162618(v=vs.85)
-#define RASTER_FONTTYPE     0x0001
-#define DEVICE_FONTTYPE     0x0002
-#define TRUETYPE_FONTTYPE   0x0004
+    Logfont_constants_set := true
+}
