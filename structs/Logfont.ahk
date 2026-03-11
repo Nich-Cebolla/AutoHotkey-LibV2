@@ -742,7 +742,7 @@ class TextMetric {
         proto := this.Prototype
         proto.size :=
         ; SizeType       Symbol                Offset   Padding
-        4 +   ; LONG     tmHeight              0
+        4 +       ; LONG     tmHeight              0
         4 +       ; LONG     tmAscent              4
         4 +       ; LONG     tmDescent             8
         4 +       ; LONG     tmInternalLeading     12
