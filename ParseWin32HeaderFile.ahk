@@ -223,6 +223,8 @@ class StructDefinition {
             A_PtrSize_count++
         } else if IsNumber(members[-1].EffectiveSize) {
             offset += members[-1].EffectiveSize
+        } else if RegExMatch(members[-1].EffectiveSize, '(\d+)\s*\+\s*(\d+)', &matchSize) {
+            offset += matchSize[2]
         } else {
             throw Error('There is a logical error in the script.', -1)
         }
@@ -531,7 +533,7 @@ class Win32StructGetMemberSize {
           , 'union', -1
           , 'USHORT', '2'
           , 'void', 'A_PtrSize'
-          , 'WCHAR', '1'
+          , 'WCHAR', '2'
           , 'WNDPROC', 'A_PtrSize'
           , 'WORD', '2'
           , 'WPARAM', 'A_PtrSize'
