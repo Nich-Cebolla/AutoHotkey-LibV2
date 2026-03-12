@@ -49,7 +49,7 @@ class GetListOfFonts {
      */
     static Call(CharSet := 0) {
         static lf := Buffer(92, 0)
-        , cb := CallbackCreate(Callback, 'F')
+        cb := CallbackCreate(Callback, 'F')
         originalCritical := Critical('On')
         NumPut('uchar', CharSet, lf, 23)
         list := []
@@ -58,6 +58,7 @@ class GetListOfFonts {
         DllCall(g_gdi32_EnumFontFamiliesExW, 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', 0, 'uint', 0, 'uint')
         DllCall(g_user32_ReleaseDC, 'ptr', 0, 'ptr', hdc)
         list.Capacity := list.Length
+        CallbackFree(cb)
         Critical(originalCritical)
 
         return list
@@ -106,7 +107,7 @@ class GetListOfFonts {
      */
     static ToMap(CharSet := 0) {
         static lf := Buffer(92, 0)
-        , cb := CallbackCreate(Callback, 'F')
+        cb := CallbackCreate(Callback, 'F')
         originalCritical := Critical('On')
         NumPut('uchar', CharSet, lf, 23)
         list := Map()
@@ -115,6 +116,7 @@ class GetListOfFonts {
         DllCall(g_gdi32_EnumFontFamiliesExW, 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', 0, 'uint', 0, 'uint')
         DllCall(g_user32_ReleaseDC, 'ptr', 0, 'ptr', hdc)
         list.Capacity := list.Count
+        CallbackFree(cb)
         Critical(originalCritical)
 
         return list
@@ -163,7 +165,7 @@ class GetListOfFonts {
      */
     static ToString(CharSet := 0) {
         static lf := Buffer(92, 0)
-        , cb := CallbackCreate(Callback, 'F')
+        cb := CallbackCreate(Callback, 'F')
         originalCritical := Critical('On')
         NumPut('uchar', CharSet, lf, 23)
         s := ''
@@ -171,6 +173,7 @@ class GetListOfFonts {
         hdc := DllCall(g_user32_GetDC, 'ptr', 0, 'ptr')
         DllCall(g_gdi32_EnumFontFamiliesExW, 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', 0, 'uint', 0, 'uint')
         DllCall(g_user32_ReleaseDC, 'ptr', 0, 'ptr', hdc)
+        CallbackFree(cb)
         Critical(originalCritical)
 
         return Sort(SubStr(s, 1, -1), 'U')
