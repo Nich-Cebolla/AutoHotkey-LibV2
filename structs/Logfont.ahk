@@ -150,7 +150,7 @@ class Logfont {
                 result.Push(DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', lParam, 'uint', 0, 'uint'))
             }
         } else {
-            lf.FaceName := ''
+            NumPut('char', 0, lf, 32)
             result.Push(DllCall('gdi32\EnumFontFamiliesExW', 'ptr', hdc, 'ptr', lf, 'ptr', cb, 'ptr', lParam, 'uint', 0, 'uint'))
         }
         DllCall('ReleaseDC', 'ptr', 0, 'ptr', hdc)
