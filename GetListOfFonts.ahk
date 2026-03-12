@@ -60,9 +60,9 @@ class GetListOfFonts {
      */
     static Call(CharSet := 0) {
         NumPut('ushort', CharSet, this.lf, 23)
-        hdc := DllCall(g_user32_GetDC, 'ptr', 0, 'ptr')
         list := []
         list.Capacity := 1024
+        hdc := DllCall(g_user32_GetDC, 'ptr', 0, 'ptr')
         DllCall(g_gdi32_EnumFontFamiliesExW, 'ptr', hdc, 'ptr', this.lf, 'ptr', this.cbList, 'ptr', ObjPtr(list), 'uint', 0, 'uint')
         DllCall(g_user32_ReleaseDC, 'ptr', 0, 'ptr', hdc)
         list.Capacity := list.Length
@@ -146,9 +146,9 @@ class GetListOfFonts {
      */
     static ToMap(CharSet := 0) {
         NumPut('ushort', CharSet, this.lf, 23)
-        hdc := DllCall(g_user32_GetDC, 'ptr', 0, 'ptr')
         list := Map()
         list.Capacity := 1024
+        hdc := DllCall(g_user32_GetDC, 'ptr', 0, 'ptr')
         DllCall(g_gdi32_EnumFontFamiliesExW, 'ptr', hdc, 'ptr', this.lf, 'ptr', this.cbMap, 'ptr', ObjPtr(list), 'uint', 0, 'uint')
         DllCall(g_user32_ReleaseDC, 'ptr', 0, 'ptr', hdc)
         list.Capacity := list.Count
