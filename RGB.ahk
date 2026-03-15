@@ -104,7 +104,7 @@ COLORREF_toHexString(colorref, prefix := '') {
  */
 HexToColorRef(str) {
     if RegExMatch(str, 'iS)(?:0x|#|^)([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', &match) {
-        return RGB(Number('0x' match[1]),Number('0x' match[2]),Number('0x' match[3]))
+        return RGB(Number('0x' match[1]), Number('0x' match[2]), Number('0x' match[3]))
     } else {
         throw ValueError('Invalid input string.', , str)
     }
