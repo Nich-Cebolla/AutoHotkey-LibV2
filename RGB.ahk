@@ -60,6 +60,8 @@ RGBToLuminosity(r, g, b) {
  * <n> is an integer between 0-255, inclusive. For example, "R0 G245 B250".
  * @param {String} str - A string in the format "R<n> G<n> B<n>". For example, "R155 G4 B212".
  * @returns {Integer} - The COLORREF value.
+ * @throws {ValueError} - "The string must be in the format `"R<n> G<n> B<n>`" where <n> is an
+ * integer between 0-255, inclusive. For example, `"R0 G200 B250`"."
  */
 RGBString(str) {
     if RegExMatch(str, '[rR]\s*(\d+)\s*[gG]\s*(\d+)\s*[bB]\s*(\d+)', &match) {
@@ -88,5 +90,22 @@ COLORREF_toHexString(colorref, prefix := '') {
         return str '0' s
     } else {
         return str s
+    }
+}
+/**
+ * @desc - Converts a hexadecimal string representation of a color value to the COLORREF integer.
+ *
+ * @param {String} str - The string. The string can optionally have a "0x" prefix or "#" prefix.
+ *
+ * These are each valid:
+ * - 0xFFFFFF
+ * - #FFFFFF
+ * - FFFFFF
+ */
+HexToColorRef(str) {
+    if RegExMatch(str, 'iS)(?:0x|#|^)([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', &match) {
+        return RGB(Number('0x' match[1]),Number('0x' match[2]),Number('0x' match[3]))
+    } else {
+        throw ValueError('Invalid input string.', , str)
     }
 }
