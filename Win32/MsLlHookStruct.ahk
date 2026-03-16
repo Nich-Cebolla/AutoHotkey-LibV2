@@ -122,4 +122,5 @@ MsLlHookStruct_SetConstants(force := false) {
     ; WM_NCXBUTTONDOWN := 0x00AB
     ; WM_NCXBUTTONUP := 0x00AC
     ; WM_NCXBUTTONDBLCLK := 0x00AD
+    MsLlHookStruct_constants_set := true
 }
