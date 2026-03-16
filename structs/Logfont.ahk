@@ -4,18 +4,6 @@
     License: MIT
 */
 
-/*
-    See the bottom of the file for static Windows API symbols related to fonts.
-
-    Note you cannot use an Ahk `Gui` handle with `Logfont`; it has to be a `Gui.Control` or some
-    other type of window.
-*/
-
-
-/**
- * @classdesc - A wrapper around the LOGFONT structure.
- * {@link https://learn.microsoft.com/en-us/windows/win32/api/dimm/ns-dimm-logfontw}
- */
 class Logfont {
     static __New() {
         this.DeleteProp('__New')
@@ -246,7 +234,14 @@ class Logfont {
         return lf
     }
     /**
-     * Constructs a new {@link Logfont} object, optionally associating the object with a window handle.
+    /**
+     * @desc - A wrapper around the
+     * {@link https://learn.microsoft.com/en-us/windows/win32/api/dimm/ns-dimm-logfontw LOGFONT}
+     * structure.
+     *
+     * Note you cannot use an Ahk `Gui` handle with `Logfont`; it has to be a `Gui.Control` or some
+     * other type of window.
+     *
      * @class
      *
      * @example
@@ -270,8 +265,10 @@ class Logfont {
      * `Hwnd` is set with a nonzero value, `Logfont.Prototype.Call` is called to initialize this
      * {@link Logfont} object's properties with values obtained from the window. If `Hwnd` is zero, this
      * {@link Logfont} object's properties will all be zero.
+     *
      * @param {String} [Encoding] - The encoding used when getting and setting string values associated
      * with LOGFONT members. The default encoding used by {@link Logfont} objects is UTF-16.
+     *
      * @return {Logfont}
      */
     __New(Hwnd := 0, Encoding?) {
