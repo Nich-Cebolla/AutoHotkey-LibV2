@@ -11,6 +11,8 @@
  * @param {String} [RelativeTo] - The location `Path` is relative to. If unset, the working directory
  * is used. `RelativeTo` can also be relative with "..\" leading segments.
  * @returns {String}
+ *
+ * @throws {ValueError} - "Invalid input parameters."
  */
 ResolveRelativePath(Path, RelativeTo?) {
     if IsSet(RelativeTo) && RelativeTo {
@@ -29,6 +31,12 @@ ResolveRelativePath(Path, RelativeTo?) {
     if InStr(Path, '.\') {
         _Process(&Path, &RelativeTo)
         return RTrim(Path, '\')
+    } else if Path = '..' {
+        if pos := InStr(RelativeTo, '\', , , -1) {
+            return SubStr(RelativeTo, 1, pos - 1)
+        } else {
+            _Throw()
+        }
     } else {
         return RTrim(RelativeTo '\' Path, '\')
     }
@@ -68,7 +76,7 @@ ResolveRelativePath(Path, RelativeTo?) {
         }
     }
     _Throw() {
-        throw ValueError('Invalid input parameters.', -2)
+        throw ValueError('Invalid input parameters.')
     }
 }
 
@@ -99,6 +107,13 @@ ResolveRelativePathRef(&Path, RelativeTo?) {
     }
     if InStr(Path, '.\') {
         if _Process(&Path, &RelativeTo) {
+            return 1
+        }
+    } else if Path = '..' {
+        if pos := InStr(RelativeTo, '\', , , -1) {
+            Path := SubStr(RelativeTo, 1, pos - 1)
+            return 0
+        } else {
             return 1
         }
     } else {
