@@ -8,6 +8,8 @@
 class GuiResizer {
     static __New() {
         this.DeleteProp('__New')
+        this.collection := Map()
+        this.collection.Default := ''
         hMod := DllCall('GetModuleHandleW', 'wstr', 'user32', 'ptr')
         global g_user32_BeginDeferWindowPos := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'BeginDeferWindowPos', 'ptr')
         , g_user32_ClientToScreen := DllCall('GetProcAddress', 'ptr', hMod, 'astr', 'ClientToScreen', 'ptr')
@@ -155,15 +157,19 @@ class GuiResizer {
      *
      * @param {Object} [Options] - An object with options as property : value pairs.
      *
-     * @param {Integer} [Options.AddRemove = 1] - The value to pass to the `AddRemove` parameter
-     * of {@link https://www.autohotkey.com/docs/v2/lib/GuiOnEvent.htm Gui.Prototype.OnEvent} when
+     * @param {Integer} [Options.AddRemove = 1] - If `Options.CallbackSetEventHandler` is unset,
+     * `Options.AddRemove` is passed to the `AddRemove` parameter of
+     * {@link https://www.autohotkey.com/docs/v2/lib/GuiOnEvent.htm Gui.Prototype.OnEvent} when
      * setting the Size event handler.
+     *
+     * If `Options.CallbackSetEventHandler` is set, `Options.AddRemove` is passed to the third
+     * parameter of that function.
      *
      * @param {*} [Options.CallbackOnEnd] - A `Func` or callable object that is called when the resize
      * loop ends.
      *
      * Parameters:
-     * 1. The {@link GuiResizer} object
+     * 1. **{GuiResizer}** - The {@link GuiResizer} object
      *
      * The return value is ignored.
      *
@@ -171,9 +177,32 @@ class GuiResizer {
      * loop is about to begin.
      *
      * Parameters:
-     * 1. The {@link GuiResizer} object
+     * 1. **{GuiResizer}** - The {@link GuiResizer} object
      *
      * The return value is ignored.
+     *
+     * @param {*} [Options.CallbackSetEventHandler] - A `Func` or callable object that is called to
+     * enable or disable the event handler. If unset, the native
+     * {@link https://www.autohotkey.com/docs/v2/lib/GuiOnEvent.htm#Size Size Gui event} is used,
+     * passing `Options.AddRemove` to the `AddRemove` parameter. If set, the callback is called
+     * with the following parameters:
+     *
+     * Parameters:
+     * 1. **{GuiResizer}** - The {@link GuiResizer} object.
+     * 2. **{Integer}** - If enabling the event handler, the value of `Options.AddRemove`. If
+     *    disabling the event handler, 0.
+     *
+     * The return value is ignored.
+     *
+     * Your function must appropriately enable or disable the event handler depending on the value
+     * of the third parameter. The function object to call in response to the event is the
+     * {@link GuiResizer} object. For example, the below code is representative of the code used when
+     * `Options.CallbackSetEventHandler` is **unset**. What you should observe is that the
+     * {@link GuiResizer} object is passed directly as the second parameter.
+     *
+     * @example
+     * GuiObj.OnEvent("Size", this, Options.AddRemove)
+     * @
      *
      * @param {Integer} [Options.DpiAwarenessContext] - If set, this must be a valid dpi awareness
      * context. Immediately before each resize cycle, SetThreadDpiAwarenessContext is called with
@@ -204,6 +233,18 @@ class GuiResizer {
      * this value.
      */
     __New(GuiObj, Options?, Controls?, DeferActivation := false, ControlsOnly := false) {
+        loop 10000 {
+            id := Random(1, 4294967295)
+            if !GuiResizer.collection.Has(id) {
+                this.id := id
+                GuiResizer.collection.Set(id, this)
+                ObjRelease(ObjPtr(this))
+                break
+            }
+        }
+        if !this.HasOwnProp('id') {
+            throw Error('Failed to produce a unique id.')
+        }
         GuiResizer.Options(this, Options ?? unset)
         this.HwndGui := GuiObj.Hwnd
         /**
@@ -222,8 +263,7 @@ class GuiResizer {
         this.Rect := GuiResizer_Rect()
         constructor := this.Constructor := Class()
         constructor.Base := GuiResizer_Item
-        constructor.Prototype := { GuiResizer: this, __Class: constructor.Base.Prototype.__Class }
-        ObjRelease(ObjPtr(this))
+        constructor.Prototype := { idGuiResizer: this.id, __Class: constructor.Base.Prototype.__Class }
         ObjSetBase(constructor.Prototype, constructor.Base.Prototype)
         if !DeferActivation {
             this.Activate(Controls ?? unset, ControlsOnly)
@@ -292,7 +332,11 @@ class GuiResizer {
             proc(this.Gui)
         }
         if !flag_status {
-            this.Gui.OnEvent('Size', this, this.AddRemove)
+            if this.CallbackSetEventHandler {
+                this.CallbackSetEventHandler.Call(this, this.AddRemove)
+            } else {
+                this.Gui.OnEvent('Size', this, this.AddRemove)
+            }
         }
         this.Status := 3
         if noDefer.Move.Length || noDefer.Size.Length || noDefer.MoveAndSize.Length {
@@ -534,7 +578,11 @@ class GuiResizer {
      * Disables the Size event callback.
      */
     Deactivate() {
-        this.Gui.OnEvent('Size', this, 0)
+        if this.CallbackSetEventHandler {
+            this.CallbackSetEventHandler.Call(this, 0)
+        } else {
+            this.Gui.OnEvent('Size', this, 0)
+        }
         this.Status := 0
     }
     /**
@@ -572,15 +620,16 @@ class GuiResizer {
         }
         this.Status := 3
         Critical(originalCritical)
-        this.Gui.OnEvent('Size', this, 1)
+        if this.CallbackSetEventHandler {
+            this.CallbackSetEventHandler.Call(this, this.AddRemove)
+        } else {
+            this.Gui.OnEvent('Size', this, this.AddRemove)
+        }
     }
     __Delete() {
-        if this.HasOwnProp('Constructor') && this.Constructor.HasOwnProp('Prototype') {
-            proto := this.Constructor.Prototype
-            if proto.HasOwnProp('GuiResizer') && proto.GuiResizer = this {
-                ObjPtrAddRef(this)
-                proto.DeleteProp('GuiResizer')
-            }
+        ObjPtrAddRef(this)
+        if GuiResizer.collection.Has(this.id) {
+            GuiResizer.collection.Delete(this.id)
         }
     }
 
@@ -591,6 +640,7 @@ class GuiResizer {
             AddRemove: -1
           , CallbackOnEnd: ''
           , CallbackOnStart: ''
+          , CallbackSetEventHandler: ''
           , DpiAwarenessContext: ''
           , MaxH: ''
           , MaxW: ''
@@ -889,6 +939,7 @@ class GuiResizer_Item {
     Flags_Move => GuiResizer_Swp_Move
     Flags_MoveAndSize => GuiResizer_Swp_MoveAndSize
     Flags_Size => GuiResizer_Swp_Size
+    GuiResizer => GuiResizer.collection.Get(this.idGuiResizer)
 }
 
 class GuiResizer_Rect extends Buffer {
