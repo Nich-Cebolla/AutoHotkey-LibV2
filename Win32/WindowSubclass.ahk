@@ -45,10 +45,9 @@ class WindowSubclass {
      *
      * @param {Integer} uIdSubclass - Serves as the unique id for this subclass.
      *
-     * @param {Integer} [HwndSubclass = A_ScriptHwnd] - The handle to the window for which `SubclassProc`
+     * @param {Integer} HwndSubclass - The handle to the window for which `SubclassProc`
      * will intercept its messages and notifications. Note that the window must have been
-     * created by the AHK process. The default is
-     * {@link https://www.autohotkey.com/docs/v2/Variables.htm#ScriptHwnd A_ScriptHwnd}.
+     * created by the AHK process.
      *
      * @param {Buffer|Integer} [dwRefData] - If set, a buffer containing data that will be passed to the
      * subclass procedure, or a pointer to a memory address containing the data, or the data itself
@@ -59,7 +58,7 @@ class WindowSubclass {
      * @param {Boolean} [DeferActivation = false] - If true, `SetWindowSubclass` is not called; your
      * code must call {@link WindowSubclass.Prototype.Install}.
      */
-    __New(SubclassProc, uIdSubclass, HwndSubclass := A_ScriptHwnd, dwRefData?, DeferActivation := false) {
+    __New(SubclassProc, uIdSubclass, HwndSubclass, dwRefData?, DeferActivation := false) {
         this.uIdSubclass := uIdSubclass
         this.hwndSubclass := HwndSubclass
         if IsSet(dwRefData) {
