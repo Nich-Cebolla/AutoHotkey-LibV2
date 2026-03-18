@@ -454,6 +454,10 @@ class WinRect extends Rect {
      *   the parent window's client area for the conversion. If `Hwnd` is a control's window handle,
      *   this would be the same as calling
      *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#GetPos Gui.Control.Prototype.GetPos}.
+     *   {@link https://www.autohotkey.com/docs/v2/lib/GuiControl.htm#GetPos Gui.Control.Prototype.GetPos}.
+     * - 4 : `GetWindowRect` is called for both the window and its parent window, then it calculates
+     *   the position of the window relative to the top-left corner of the parent window's display
+     *   area (including non-client area).
      *
      * Some controls / windows will cause `DwmGetWindowAttribute` to throw an error.
      *
@@ -500,6 +504,16 @@ class WinRect extends Rect {
                 if !DllCall(RectBase.ScreenToClient, 'ptr', hwndParent, 'ptr', this.Ptr + this.Offset + 8, 'int') {
                     throw OSError()
                 }
+            case 4:
+                hwndParent := DllCall(g_user32_GetParent, 'ptr', this.Hwnd, 'ptr') || this.Hwnd
+                if !DllCall(g_user32_GetWindowRect, 'ptr', this.Hwnd, 'ptr', this.Ptr, 'int') {
+                    throw OSError()
+                }
+                wrc := WinRect(hwndParent, 0)
+                this.l -= wrc.l
+                this.r -= wrc.l
+                this.t -= wrc.t
+                this.b -= wrc.t
         }
     }
 }
