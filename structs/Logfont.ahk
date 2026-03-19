@@ -422,7 +422,6 @@ class Logfont {
     __Delete() {
         if this.Handle {
             DllCall('DeleteObject', 'ptr', this.Handle)
-            this.Handle := 0
         }
     }
     /**
