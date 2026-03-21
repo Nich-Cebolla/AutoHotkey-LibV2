@@ -37,8 +37,7 @@ class WindowSubclass {
      * pointer to the function.
      *
      * If `SubclassProc` is a function object, it is passed to
-     * {@link https://www.autohotkey.com/docs/v2/lib/CallbackCreate.htm CallbackCreate}, passing
-     * option "F" to the "Options" parameter.
+     * {@link https://www.autohotkey.com/docs/v2/lib/CallbackCreate.htm CallbackCreate}.
      *
      * See {@link https://learn.microsoft.com/en-us/windows/win32/api/commctrl/nc-commctrl-subclassproc}
      * for details.
@@ -65,7 +64,7 @@ class WindowSubclass {
             this.dwRefData := dwRefData
         }
         if IsObject(SubclassProc) {
-            this.pfnSubclass := CallbackCreate(SubclassProc, 'F')
+            this.pfnSubclass := CallbackCreate(SubclassProc)
             this.__flag_callbackFree := true
         } else {
             this.pfnSubclass := SubclassProc

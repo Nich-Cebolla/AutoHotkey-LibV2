@@ -129,7 +129,7 @@ class WinEventHook {
             options := this.Options
             if !this.Proc {
                 if IsObject(options.Proc) {
-                    this.Proc := CallbackCreate(options.Proc, 'Fast', 7)
+                    this.Proc := CallbackCreate(options.Proc, , 7)
                 } else {
                     this.Proc := options.Proc
                 }
