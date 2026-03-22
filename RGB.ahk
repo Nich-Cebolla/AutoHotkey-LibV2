@@ -30,7 +30,7 @@ ColorRefToARGB(colorref, alpha := 255) {
  * GetColorFromUser(&r, &g, &b)
  * GuiObj.BackColor := RGB(r, g, b)
  * txt := GuiObj.Add('Text', , 'Hello, world!')
- * if RGBToLuminosity(r, g, b) >= 0.7 {
+ * if RGBToBrightness(r, g, b) >= 130 {
  *    txt.SetFont('c' RGB(0, 0, 0)) ; use a dark font
  * } else {
  *    txt.SetFont('c' RGB(255, 255, 255)) ; use a light font
@@ -44,16 +44,13 @@ ColorRefToARGB(colorref, alpha := 255) {
  * }
  * @
  *
- * @returns {Float} - A float between 0 and 1 indicating the luminosity, where 1.0 is totally bright
- * (255, 255, 255) and 0.0 is totally dark (0, 0, 0).
+ * @returns {Float} - A float between 0 and 255 indicating the perceived brightness of a color. 0 is
+ * totally black, 255 is totally white. A value of `130` is an approximate threshold between what someone
+ * may perceive as relatively light vs. dark, though this varies by individual, context, device,
+ * and display settings.
  */
-RGBToLuminosity(r, g, b) {
-    RsRGB := r / 255
-    GsRGB := g / 255
-    BsRGB := b / 255
-    return 0.2126 * (RsRGB <= 0.04045 ? RsRGB / 12.92 : ((RsRGB + 0.055) / 1.055) ** 2.4)
-    + 0.7152 * (GsRGB <= 0.04045 ? GsRGB / 12.92 : ((GsRGB + 0.055) / 1.055) ** 2.4)
-    + 0.0722 * (BsRGB <= 0.04045 ? BsRGB / 12.92 : ((BsRGB + 0.055) / 1.055) ** 2.4)
+RGBToBrightness(r, g, b) {
+    return sqrt(0.299 * R ** 2 + 0.587 * G ** 2 + 0.114 * B ** 2)
 }
 /**
  * @desc - Takes a string in the format "R<n> G<n> B<n>" and returns a COLORREF as integer, where
