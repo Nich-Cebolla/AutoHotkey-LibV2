@@ -1,5 +1,5 @@
 ﻿/*
-    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/Heapsort.ahk
+    Github: https://github.com/Nich-Cebolla/AutoHotkey-LibV2/blob/main/HeapsortStable.ahk
     Author: Nich-Cebolla
     License: MIT
 */
@@ -173,4 +173,3 @@ HeapsortStable(arr, compare := (a, b) => a - b) {
     }
     return arr
 }
-
