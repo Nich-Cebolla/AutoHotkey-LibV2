@@ -1,4 +1,5 @@
 ﻿
+#requires AutoHotkey >=v2.0-a
 #include ..\HeapsortStable.ahk
 
 test()
