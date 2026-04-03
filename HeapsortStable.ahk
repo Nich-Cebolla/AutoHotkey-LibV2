@@ -14,10 +14,10 @@
  * @param {*} [compare = (a, b) => a - b] - A `Func` or callable object that compares two values.
  *
  * Parameters:
- * 1. A value to be compared.
- * 2. A value to be compared.
+ * 1. **{*}** - A value to be compared.
+ * 2. **{*}** - A value to be compared.
  *
- * Returns {Number} - A number to one of the following effects:
+ * Returns **{Number}** - A number to one of the following effects:
  * - If the number is less than zero it indicates the first parameter is less than the second parameter.
  * - If the number is zero it indicates the two parameters are equal.
  * - If the number is greater than zero it indicates the first parameter is greater than the second parameter.
