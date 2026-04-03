@@ -132,7 +132,5 @@ class test {
 
             throw Error('Missing item.', , o.value)
         }
-
-        sleep 1
     }
 }
