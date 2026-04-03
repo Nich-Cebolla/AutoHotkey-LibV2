@@ -5,7 +5,7 @@
 */
 
 /**
- * Characteristics of {@link HeapsortStable}:
+ * @desc - Characteristics of {@link HeapsortStable}:
  * - In-place sorting (mutates the input array).
  * - Stable (Preserves original order of equal elements).
  *
