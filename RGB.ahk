@@ -1,26 +1,80 @@
 ﻿
-RGB(r := 0, g := 0, b := 0) {
+/**
+ * @desc - Converts RGB to the numeric value of 0xRRGGBB.
+ * @returns {Integer}
+ */
+RGB(r, g, b) {
+    return Number('0x' Format('{:02X}{:02X}{:02X}', r & 0xFF, g & 0xFF, b & 0xFF))
+}
+/**
+ * @desc - Converts RGB to win32 COLORREF value.
+ * @returns {Integer}
+ */
+RGBToColorref(r := 0, g := 0, b := 0) {
     return (r & 0xFF) | ((g & 0xFF) << 8) | ((b & 0xFF) << 16)
 }
-ParseColorref(colorref, &OutR?, &OutG?, &OutB?) {
-    OutR := colorref & 0xFF
-    OutG := (colorref >> 8) & 0xFF
-    OutB := (colorref >> 16) & 0xFF
+/**
+ * @desc - Converts RGB to the 0xRRGGBB hexadecimal representation as string.
+ * @returns {String}
+ */
+RGBToHexString(r, g, b, prefix := '') {
+    return prefix Format('{:02X}{:02X}{:02X}', r & 0xFF, g & 0xFF, b & 0xFF)
 }
-ARGB(a := 0, r := 0, g := 0, b := 0) {
-    return ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF)
+/**
+ * @desc - Retrieves the RGB components from a COLORREF value.
+ */
+ParseColorref(colorref, &outR?, &outG?, &outB?) {
+    outR := colorref & 0xFF
+    outG := (colorref >> 8) & 0xFF
+    outB := (colorref >> 16) & 0xFF
 }
-ParseARGB(color, &OutA?, &OutR?, &OutG?, &OutB?) {
-    OutA := (color >> 24) & 0xFF
-    OutR := (color >> 16) & 0xFF
-    OutG := (color >> 8) & 0xFF
-    OutB := color & 0xFF
+/**
+ * @desc - Retrieves the RGB components from a 0xRRGGBB value.
+ */
+ParseRGB(color, &outR?, &outG?, &outB?) {
+    color := color & 0xFFFFFF
+    outR := (color >> 16) & 0xFF
+    outG := (color >> 8) & 0xFF
+    outB := color & 0xFF
 }
+/**
+ * @desc - Converts ARGB to the numeric value of 0xAARRGGBB.
+ * @returns {Integer}
+ */
+ARGB(a, r, g, b) {
+    return Number('0x' Format('{:02X}{:02X}{:02X}{:02X}', a & 0xFF, r & 0xFF, g & 0xFF, b & 0xFF))
+}
+/**
+ * @desc - Converts ARGB to the 0xAARRGGBB hexadecimal representation as string.
+ * @returns {String}
+ */
+ARGBToHexString(a, r, g, b, prefix := '') {
+    return prefix Format('{:02X}{:02X}{:02X}{:02X}', a & 0xFF, r & 0xFF, g & 0xFF, b & 0xFF)
+}
+/**
+ * @desc - Retrieves the ARGB components from a 0xAARRGGBB value.
+ */
+ParseARGB(color, &outA?, &outR?, &outG?, &outB?) {
+    color := color & 0xFFFFFFFF
+    outA := (color >> 24) & 0xFF
+    outR := (color >> 16) & 0xFF
+    outG := (color >> 8) & 0xFF
+    outB :=  color & 0xFF
+}
+/**
+ * @desc - Retrieves the ARGB components from a 0xAARRGGBB value.
+ * @returns {Integer}
+ */
 ColorrefToARGB(colorref, alpha := 255) {
-    r := colorref & 0xFF
-    g := (colorref >> 8) & 0xFF
-    b := (colorref >> 16) & 0xFF
+    ParseColorref(colorref, &r, &g, &b)
     return ARGB(alpha, r, g, b)
+}
+/**
+ * @desc - Converts an ARGB value to the 0xAARRGGBB representation as string.
+ * @returns {String}
+ */
+PackedARGBToHexString(color, prefix := '') {
+    return prefix Format('{:08X}', color & 0xFFFFFFFF)
 }
 
 /**
@@ -53,52 +107,12 @@ RGBToBrightness(r, g, b) {
     return sqrt(0.299 * R ** 2 + 0.587 * G ** 2 + 0.114 * B ** 2)
 }
 /**
- * @desc - Takes a string in the format "R<n> G<n> B<n>" and returns a COLORREF as integer, where
- * <n> is an integer between 0-255, inclusive. For example, "R0 G245 B250".
- * @param {String} str - A string in the format "R<n> G<n> B<n>". For example, "R155 G4 B212".
- * @returns {Integer} - The COLORREF value.
- * @throws {ValueError} - "The string must be in the format `"R<n> G<n> B<n>`" where <n> is an
- * integer between 0-255, inclusive. For example, `"R0 G200 B250`"."
- */
-RGBString(str) {
-    if RegExMatch(str, '[rR]\s*(\d+)\s*[gG]\s*(\d+)\s*[bB]\s*(\d+)', &match) {
-        return (match[1] & 0xFF) | ((match[2] & 0xFF) << 8) | ((match[3] & 0xFF) << 16)
-    } else {
-        throw ValueError('The string must be in the format "R<n> G<n> B<n>" where <n> is an integer between 0-255, inclusive. For example, "R0 G200 B250".', , str)
-    }
-}
-/**
  * @desc - Converts COLORREF to the color hexadecimal representation as string.
  * @returns {String}
  */
 ColorrefToHexString(colorref, prefix := '') {
-    ParseColorRef(colorref, &r, &g, &b)
+    ParseColorref(colorref, &r, &g, &b)
     str := prefix
-    s := Format('{:X}', r)
-    if StrLen(s) = 1 {
-        str .= '0' s
-    } else {
-        str .= s
-    }
-    s := Format('{:X}', g)
-    if StrLen(s) = 1 {
-        str .= '0' s
-    } else {
-        str .= s
-    }
-    s := Format('{:X}', b)
-    if StrLen(s) = 1 {
-        return str '0' s
-    } else {
-        return str s
-    }
-}
-/**
- * @desc - Converts RGB to the color hexadecimal representation as string.
- * @returns {String}
- */
-RGBToHexString(r, g, b) {
-    str := ''
     s := Format('{:X}', r)
     if StrLen(s) = 1 {
         str .= '0' s
@@ -129,8 +143,8 @@ RGBToHexString(r, g, b) {
  * - FFFFFF
  */
 HexToColorref(str) {
-    if RegExMatch(str, 'iS)(?:0x|#|^)([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', &match) {
-        return RGB(Number('0x' match[1]), Number('0x' match[2]), Number('0x' match[3]))
+    if RegExMatch(str, 'i)^(?:0x|#)?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', &match) {
+        return RGBToColorref(Number('0x' match[1]), Number('0x' match[2]), Number('0x' match[3]))
     } else {
         throw ValueError('Invalid input string.', , str)
     }
