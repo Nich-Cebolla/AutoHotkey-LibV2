@@ -28,7 +28,7 @@ ColorrefToARGB(colorref, alpha := 255) {
  * GuiObj := Gui()
  * GuiObj.SetFont("s11 q5 bold")
  * GetColorFromUser(&r, &g, &b)
- * GuiObj.BackColor := RGB(r, g, b)
+ * GuiObj.BackColor := RGBToHexString(r, g, b)
  * txt := GuiObj.Add("Text", , "Hello, world!")
  * if RGBToBrightness(r, g, b) >= 130 {
  *    txt.SetFont("c0x" RGBToHexString(0, 0, 0)) ; use a dark font
