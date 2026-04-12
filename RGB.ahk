@@ -90,6 +90,31 @@ ColorrefToHexString(colorref, prefix := '') {
     }
 }
 /**
+ * @desc - Converts RGB to the color hexadecimal representation as string.
+ * @returns {String}
+ */
+RGBToHexString(r, g, b) {
+    str := ''
+    s := Format('{:X}', r)
+    if StrLen(s) = 1 {
+        str .= '0' s
+    } else {
+        str .= s
+    }
+    s := Format('{:X}', g)
+    if StrLen(s) = 1 {
+        str .= '0' s
+    } else {
+        str .= s
+    }
+    s := Format('{:X}', b)
+    if StrLen(s) = 1 {
+        return str '0' s
+    } else {
+        return str s
+    }
+}
+/**
  * @desc - Converts a hexadecimal string representation of a color value to the COLORREF integer.
  *
  * @param {String} str - The string. The string can optionally have a "0x" prefix or "#" prefix.
