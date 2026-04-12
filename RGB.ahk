@@ -2,7 +2,7 @@
 RGB(r := 0, g := 0, b := 0) {
     return (r & 0xFF) | ((g & 0xFF) << 8) | ((b & 0xFF) << 16)
 }
-ParseColorRef(colorref, &OutR?, &OutG?, &OutB?) {
+ParseColorref(colorref, &OutR?, &OutG?, &OutB?) {
     OutR := colorref & 0xFF
     OutG := (colorref >> 8) & 0xFF
     OutB := (colorref >> 16) & 0xFF
@@ -16,7 +16,7 @@ ParseARGB(color, &OutA?, &OutR?, &OutG?, &OutB?) {
     OutG := (color >> 8) & 0xFF
     OutB := color & 0xFF
 }
-ColorRefToARGB(colorref, alpha := 255) {
+ColorrefToARGB(colorref, alpha := 255) {
     r := colorref & 0xFF
     g := (colorref >> 8) & 0xFF
     b := (colorref >> 16) & 0xFF
@@ -26,14 +26,14 @@ ColorRefToARGB(colorref, alpha := 255) {
 /**
  * @example
  * GuiObj := Gui()
- * GuiObj.SetFont('s11 q5 bold')
+ * GuiObj.SetFont("s11 q5 bold")
  * GetColorFromUser(&r, &g, &b)
  * GuiObj.BackColor := RGB(r, g, b)
- * txt := GuiObj.Add('Text', , 'Hello, world!')
+ * txt := GuiObj.Add("Text", , "Hello, world!")
  * if RGBToBrightness(r, g, b) >= 130 {
- *    txt.SetFont('c' RGB(0, 0, 0)) ; use a dark font
+ *    txt.SetFont("c0x" RGBToHexString(0, 0, 0)) ; use a dark font
  * } else {
- *    txt.SetFont('c' RGB(255, 255, 255)) ; use a light font
+ *    txt.SetFont("c0x" RGBToHexString(255, 255, 255)) ; use a light font
  * }
  * GuiObj.Show()
  *
@@ -67,7 +67,7 @@ RGBString(str) {
         throw ValueError('The string must be in the format "R<n> G<n> B<n>" where <n> is an integer between 0-255, inclusive. For example, "R0 G200 B250".', , str)
     }
 }
-COLORREF_toHexString(colorref, prefix := '') {
+ColorrefToHexString(colorref, prefix := '') {
     ParseColorRef(colorref, &r, &g, &b)
     str := prefix
     s := Format('{:X}', r)
@@ -99,7 +99,7 @@ COLORREF_toHexString(colorref, prefix := '') {
  * - #FFFFFF
  * - FFFFFF
  */
-HexToColorRef(str) {
+HexToColorref(str) {
     if RegExMatch(str, 'iS)(?:0x|#|^)([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', &match) {
         return RGB(Number('0x' match[1]), Number('0x' match[2]), Number('0x' match[3]))
     } else {
