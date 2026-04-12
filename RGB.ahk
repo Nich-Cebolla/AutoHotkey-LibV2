@@ -67,6 +67,10 @@ RGBString(str) {
         throw ValueError('The string must be in the format "R<n> G<n> B<n>" where <n> is an integer between 0-255, inclusive. For example, "R0 G200 B250".', , str)
     }
 }
+/**
+ * @desc - Converts COLORREF to the color hexadecimal representation as string.
+ * @returns {String}
+ */
 ColorrefToHexString(colorref, prefix := '') {
     ParseColorRef(colorref, &r, &g, &b)
     str := prefix
